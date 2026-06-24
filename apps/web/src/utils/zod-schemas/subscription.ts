@@ -7,3 +7,12 @@ export const createSubscriptionSchema = z.object({
 })
 
 export type CreateSubscriptionInput = z.infer<typeof createSubscriptionSchema>
+
+export const adminUpdateSubscriptionSchema = z.object({
+  subscription_id: z.string().uuid(),
+  end_date: z.string().date().optional(),
+  plan_id: z.string().uuid().optional(),
+  cancel: z.boolean().optional(),
+})
+
+export type AdminUpdateSubscriptionInput = z.infer<typeof adminUpdateSubscriptionSchema>
