@@ -1,7 +1,7 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { signOutAction } from '@/data/auth/sign-out'
+import { Bell } from '@phosphor-icons/react/dist/ssr'
+import { StudentBottomNav } from '@/components/student/StudentBottomNav'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseClient()
@@ -16,33 +16,58 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   if (profile?.role !== 'student') redirect('/login')
 
+  const initials = profile.full_name
+    ?.split(' ')
+    .map((n: string) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() ?? '?'
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b px-4 py-3 flex items-center justify-between">
-        <span className="font-semibold text-sm">Synapse</span>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Top bar */}
+      <header
+        className="shrink-0 flex items-center justify-between px-4 border-b"
+        style={{
+          height: '56px',
+          backgroundColor: 'var(--surface, #fff)',
+          borderColor: 'var(--border)',
+        }}
+      >
+        <span
+          className="text-base tracking-tight"
+          style={{ fontFamily: "'DM Serif Display', serif", color: 'var(--foreground)' }}
+        >
+          Synapse
+        </span>
+
         <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">{profile.full_name}</span>
-          <form action={signOutAction}>
-            <button type="submit" className="text-xs text-destructive">Déconnexion</button>
-          </form>
+          {/* Notification bell — slot for Phase 6 */}
+          <button
+            type="button"
+            className="cursor-pointer transition-colors duration-150"
+            aria-label="Notifications"
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            <Bell size={20} weight="regular" />
+          </button>
+
+          {/* Avatar */}
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+            style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}
+          >
+            {initials}
+          </div>
         </div>
       </header>
-      <main className="flex-1 p-4 pb-20">{children}</main>
-      {/* Bottom nav — mobile-first */}
-      <nav className="fixed bottom-0 inset-x-0 border-t bg-background flex">
-        <Link href="/student/dashboard" className="flex-1 flex flex-col items-center py-3 text-xs gap-1">
-          Abonnement
-        </Link>
-        <Link href="/student/qr" className="flex-1 flex flex-col items-center py-3 text-xs gap-1">
-          QR Code
-        </Link>
-        <Link href="/student/reservation" className="flex-1 flex flex-col items-center py-3 text-xs gap-1">
-          Réserver
-        </Link>
-        <Link href="/student/loyalty" className="flex-1 flex flex-col items-center py-3 text-xs gap-1">
-          Points
-        </Link>
-      </nav>
+
+      {/* Page content */}
+      <main className="flex-1 px-4 pt-4 pb-24">
+        {children}
+      </main>
+
+      <StudentBottomNav />
     </div>
   )
 }
