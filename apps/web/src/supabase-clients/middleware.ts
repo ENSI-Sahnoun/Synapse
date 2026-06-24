@@ -57,7 +57,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/sign-up') ||
     pathname.startsWith('/auth') ||
     pathname.startsWith('/forgot-password') ||
-    pathname.startsWith('/update-password')
+    pathname.startsWith('/update-password') ||
+    pathname.startsWith('/kiosk/setup')
 
   // Redirect logged-in users away from auth pages
   if (isPublicPath && user) {
@@ -82,6 +83,17 @@ export async function updateSession(request: NextRequest) {
   const role = await getUserRole(supabase, user.id)
 
   // Role-based access enforcement
+
+  // Kiosk: accessible to employees and admins — no redirect to role home
+  if (pathname.startsWith('/kiosk')) {
+    if (role === 'admin' || role === 'employee') {
+      return supabaseResponse
+    }
+    const url = request.nextUrl.clone()
+    url.pathname = role === 'student' ? ROLE_HOME['student'] : '/login'
+    return NextResponse.redirect(url)
+  }
+
   if (pathname.startsWith('/admin') && role !== 'admin') {
     const url = request.nextUrl.clone()
     url.pathname = role ? ROLE_HOME[role] : '/login'

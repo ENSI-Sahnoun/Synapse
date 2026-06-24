@@ -10,6 +10,14 @@ export default async function AdminEmployeesPage() {
         <h1 className="text-2xl font-semibold">Employés</h1>
         <Button asChild><Link href="/admin/employees/new">Nouvel employé</Link></Button>
       </div>
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 mb-6">
+        <p className="font-medium">Configuration du kiosque d&apos;accès</p>
+        <p className="mt-1 text-xs">
+          Créez un compte employé dédié (ex. <code>kiosk@synapse.tn</code>), puis
+          rendez-vous sur l&apos;appareil kiosque et connectez-vous via{' '}
+          <strong>/kiosk/setup</strong>. Le kiosque restera connecté en permanence.
+        </p>
+      </div>
       <div className="border rounded-md">
         <table className="w-full text-sm">
           <thead>
