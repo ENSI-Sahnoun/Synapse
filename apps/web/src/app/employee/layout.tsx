@@ -2,6 +2,13 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { signOutAction } from '@/data/auth/sign-out'
+import {
+  ChartBar,
+  Users,
+  ShoppingCart,
+  QrCode,
+  SignOut,
+} from '@phosphor-icons/react/dist/ssr'
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseClient()
@@ -16,35 +23,77 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
 
   if (!profile || !['admin', 'employee'].includes(profile.role)) redirect('/login')
 
+  const navItems = [
+    { href: '/employee/dashboard', label: 'Tableau de bord', Icon: ChartBar },
+    { href: '/employee/students', label: 'Étudiants', Icon: Users },
+    { href: '/employee/pos', label: 'Caisse', Icon: ShoppingCart },
+    { href: '/employee/checkin', label: 'Contrôle accès', Icon: QrCode },
+  ]
+
   return (
     <div className="flex min-h-screen">
-      <aside className="w-64 border-r bg-sidebar flex flex-col">
-        <div className="p-4 border-b">
-          <h1 className="font-semibold text-sm">Synapse</h1>
-          <p className="text-xs text-muted-foreground">Accueil</p>
+      <aside
+        className="w-60 flex flex-col shrink-0"
+        style={{ backgroundColor: 'var(--sidebar)' }}
+      >
+        {/* Logo */}
+        <div className="px-5 py-5 border-b" style={{ borderColor: 'var(--sidebar-border)' }}>
+          <p
+            className="text-lg tracking-tight"
+            style={{ fontFamily: "'DM Serif Display', serif", color: 'var(--sidebar-foreground)' }}
+          >
+            Synapse
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--sidebar-muted)' }}>
+            Accueil
+          </p>
         </div>
-        <nav className="flex-1 p-4 space-y-1 text-sm">
-          <Link href="/employee/dashboard" className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent">
-            Tableau de bord
-          </Link>
-          <Link href="/employee/students" className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent">
-            Étudiants
-          </Link>
-          <Link href="/employee/pos" className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent">
-            Caisse
-          </Link>
-          <Link href="/employee/checkin" className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent">
-            Contrôle accès
-          </Link>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
+          {navItems.map(({ href, label, Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors duration-150 cursor-pointer"
+              style={{ color: 'var(--sidebar-foreground)' }}
+            >
+              <Icon size={18} weight="regular" />
+              {label}
+            </Link>
+          ))}
         </nav>
-        <div className="p-4 border-t text-xs text-muted-foreground">
-          <p>{profile.full_name}</p>
-          <form action={signOutAction}>
-            <button type="submit" className="text-destructive mt-1">Déconnexion</button>
+
+        {/* User footer */}
+        <div className="px-5 py-4 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
+          <p className="text-xs font-medium truncate" style={{ color: 'var(--sidebar-foreground)' }}>
+            {profile.full_name}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--sidebar-muted)' }}>
+            {profile.role === 'admin' ? 'Administrateur' : 'Employé'}
+          </p>
+          <form action={signOutAction} className="mt-2">
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 text-xs cursor-pointer transition-colors duration-150"
+              style={{ color: 'var(--sidebar-muted)' }}
+            >
+              <SignOut size={14} />
+              Déconnexion
+            </button>
           </form>
         </div>
+
+        <style>{`
+          nav a:hover {
+            background-color: var(--sidebar-accent);
+          }
+        `}</style>
       </aside>
-      <main className="flex-1 p-6">{children}</main>
+
+      <main className="flex-1 p-6" style={{ backgroundColor: 'var(--background)' }}>
+        {children}
+      </main>
     </div>
   )
 }
