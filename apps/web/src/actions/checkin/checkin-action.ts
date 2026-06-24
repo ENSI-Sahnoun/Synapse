@@ -2,7 +2,7 @@
 
 import { employeeActionClient } from '@/lib/safe-action'
 import { checkinSchema, type CheckinResult } from '@/utils/zod-schemas/checkin'
-import { verifyQrToken } from '@/lib/qr-token'
+import { isValidQrTokenFormat } from '@/lib/qr-token'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { differenceInDays, parseISO, startOfDay } from 'date-fns'
 
@@ -11,23 +11,25 @@ export const checkinAction = employeeActionClient
   .action(async ({ parsedInput }): Promise<CheckinResult> => {
     const { qrToken } = parsedInput
 
-    const studentId = verifyQrToken(qrToken)
-    if (!studentId) {
+    if (!isValidQrTokenFormat(qrToken)) {
       return { status: 'DENIED_UNKNOWN' }
     }
 
     const admin = createSupabaseAdminClient()
 
+    // Lookup student by stored token value
     const { data: profile, error: profileError } = await admin
       .from('profiles')
       .select('id, full_name, role')
-      .eq('id', studentId)
+      .eq('qr_token', qrToken)
       .eq('role', 'student')
       .single()
 
     if (profileError || !profile) {
       return { status: 'DENIED_UNKNOWN' }
     }
+
+    const studentId = profile.id
 
     const { data: openAttendance } = await admin
       .from('attendance')
