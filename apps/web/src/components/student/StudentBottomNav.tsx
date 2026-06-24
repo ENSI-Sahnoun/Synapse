@@ -21,6 +21,7 @@ export function StudentBottomNav() {
         backgroundColor: 'var(--surface, #fff)',
         borderColor: 'var(--border)',
         paddingBottom: 'env(safe-area-inset-bottom)',
+        minHeight: '64px',
       }}
     >
       {tabs.map(({ href, label, Icon }) => {

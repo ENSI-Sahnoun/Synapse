@@ -67,7 +67,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
           <form action={signOutAction} className="mt-2">
             <button
               type="submit"
-              className="flex items-center gap-1.5 text-xs cursor-pointer transition-colors duration-150"
+              className="flex items-center gap-1.5 text-xs cursor-pointer transition-colors duration-150 signout-btn"
               style={{ color: 'var(--sidebar-muted)' }}
             >
               <SignOut size={14} />
@@ -76,6 +76,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
           </form>
         </div>
 
+        <style>{`.signout-btn:hover { color: var(--destructive) !important; }`}</style>
       </aside>
 
       <main className="flex-1 p-6" style={{ backgroundColor: 'var(--background)' }}>

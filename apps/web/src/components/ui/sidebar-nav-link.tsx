@@ -28,7 +28,7 @@ export function SidebarNavLink({ href, label, Icon }: SidebarNavLinkProps) {
         borderLeftColor: active ? 'var(--sidebar-active-border)' : 'transparent',
       }}
     >
-      <Icon size={18} weight={active ? 'bold' : 'regular'} />
+      <Icon size={20} weight={active ? 'bold' : 'regular'} />
       {label}
     </Link>
   )

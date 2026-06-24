@@ -19,6 +19,34 @@
 
 ---
 
+### Task 0: Install dependencies
+
+**Files:** none
+
+- [ ] **Step 1: Install web app dependencies**
+
+```bash
+cd apps/web && npm install
+```
+
+Expected: `node_modules/.bin/next` exists after install.
+
+- [ ] **Step 2: Verify dev server starts**
+
+```bash
+cd apps/web && npx next --version
+```
+
+Expected: prints Next.js version, no "not found" error.
+
+- [ ] **Step 3: Commit if package-lock changed**
+
+```bash
+git diff --name-only | grep package-lock && git add apps/web/package-lock.json && git commit -m "chore(web): install dependencies" || echo "no lock changes"
+```
+
+---
+
 ### Task 1: Zod schemas + Supabase admin client
 
 **Files:**

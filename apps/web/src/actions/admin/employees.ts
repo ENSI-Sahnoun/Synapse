@@ -2,7 +2,6 @@
 
 import { adminActionClient } from '@/lib/safe-action'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
-import { createSupabaseClient } from '@/supabase-clients/server'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 
@@ -51,7 +50,7 @@ export const updateEmployeeAction = adminActionClient
   .schema(updateEmployeeSchema)
   .action(async ({ parsedInput }) => {
     const { id, ...updates } = parsedInput
-    const supabase = await createSupabaseClient()
+    const supabase = createSupabaseAdminClient()
     const { error } = await supabase
       .from('profiles')
       .update(updates)

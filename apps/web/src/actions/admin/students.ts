@@ -2,7 +2,6 @@
 
 import { adminActionClient } from '@/lib/safe-action'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
-import { createSupabaseClient } from '@/supabase-clients/server'
 import { updateStudentSchema } from '@/utils/zod-schemas/student'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
@@ -13,7 +12,7 @@ export const updateStudentAction = adminActionClient
   .schema(updateStudentSchema)
   .action(async ({ parsedInput }) => {
     const { id, email: _email, ...updates } = parsedInput
-    const supabase = await createSupabaseClient()
+    const supabase = createSupabaseAdminClient()
     const { error } = await supabase
       .from('profiles')
       .update(updates)

@@ -23,7 +23,6 @@
     "@effect/platform-node": "^0.106.0",
     "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/dm-serif-display": "^5.2.8",
-    "@fontsource/inter": "^5.2.8",
     "@fontsource/roboto-mono": "^5.2.9",
     "@headlessui/react": "^2.2.10",
     "@heroicons/react": "^2.2.0",

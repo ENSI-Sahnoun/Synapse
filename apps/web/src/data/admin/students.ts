@@ -44,7 +44,7 @@ export async function getStudentWithSubscription(id: string) {
 
   const today = new Date().toISOString().split('T')[0]
 
-  const { data: subscription } = await supabase
+  const { data: subscription, error: subError } = await supabase
     .from('subscriptions')
     .select('id, start_date, end_date, paid_amount, plan_id, subscription_plans(id, name, duration_days, price_dt)')
     .eq('student_id', id)
@@ -52,6 +52,8 @@ export async function getStudentWithSubscription(id: string) {
     .order('end_date', { ascending: false })
     .limit(1)
     .maybeSingle()
+
+  if (subError) console.error('[getStudentWithSubscription] subscription query error:', subError)
 
   const { data: plans } = await supabase
     .from('subscription_plans')

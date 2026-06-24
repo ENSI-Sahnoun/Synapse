@@ -2,7 +2,7 @@
 
 import { adminActionClient } from '@/lib/safe-action'
 import { adminUpdateSubscriptionSchema } from '@/utils/zod-schemas/subscription'
-import { createSupabaseClient } from '@/supabase-clients/server'
+import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { subDays, format } from 'date-fns'
 import { revalidatePath } from 'next/cache'
 
@@ -10,7 +10,7 @@ export const adminUpdateSubscriptionAction = adminActionClient
   .schema(adminUpdateSubscriptionSchema)
   .action(async ({ parsedInput }) => {
     const { subscription_id, end_date, plan_id, cancel } = parsedInput
-    const supabase = await createSupabaseClient()
+    const supabase = createSupabaseAdminClient()
 
     type UpdatesType = {
       end_date?: string
