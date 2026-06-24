@@ -168,7 +168,7 @@ export function PropertiesPanel({
           <SelectContent>
             <SelectItem value="none">Indépendante</SelectItem>
             {allTables.map((t) => (
-              <SelectItem key={t.localId} value={t.id}>
+              <SelectItem key={t.localId} value={t.localId}>
                 {t.label || `Table ${t.localId.slice(0, 6)}`}
               </SelectItem>
             ))}

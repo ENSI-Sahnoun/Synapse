@@ -5,7 +5,7 @@ import type Konva from 'konva'
 
 export type TableData = {
   localId: string       // always a UUID (client-generated for new, DB id for persisted)
-  id: string            // same as localId — tables always have a UUID from creation
+  id: string | undefined  // undefined for unsaved tables; DB uuid once persisted
   room_id: string
   label: string
   position_x: number

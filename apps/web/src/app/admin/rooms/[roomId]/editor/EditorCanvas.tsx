@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { Stage, Layer, Line, Transformer } from 'react-konva'
+import { Stage, Layer, Line } from 'react-konva'
 import type Konva from 'konva'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
@@ -88,7 +88,6 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
   const [seats, setSeats] = useState<SeatTokenData[]>(initialSeats.map(dbSeatToData))
   const [selection, setSelection] = useState<Selection>(null)
   const [snapEnabled, setSnapEnabled] = useState(true)
-  const transformerRef = useRef<Konva.Transformer>(null)
   const stageRef = useRef<Konva.Stage>(null)
 
   const selectedTable =
@@ -192,7 +191,7 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
       const tableId = crypto.randomUUID()
       const newTable: TableData = {
         localId: tableId,
-        id: tableId,
+        id: undefined,
         room_id: roomId,
         label: '',
         position_x: snap(CANVAS_WIDTH / 2),
@@ -343,7 +342,7 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
     save({
       room_id: roomId,
       tables: tables.map((t) => ({
-        id: t.id,
+        id: t.localId,
         room_id: t.room_id,
         label: t.label,
         position_x: t.position_x,
@@ -492,10 +491,6 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
                 />
               ))}
 
-              <Transformer
-                ref={transformerRef}
-                rotationSnaps={Array.from({ length: 24 }, (_, i) => i * 15)}
-              />
             </Layer>
           </Stage>
         </div>
