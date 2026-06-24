@@ -1,7 +1,8 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
-import { Bell } from '@phosphor-icons/react/dist/ssr'
+import { Bell, SignOut } from '@phosphor-icons/react/dist/ssr'
 import { StudentBottomNav } from '@/components/student/StudentBottomNav'
+import { signOutAction } from '@/data/auth/sign-out'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseClient()
@@ -59,6 +60,18 @@ export default async function StudentLayout({ children }: { children: React.Reac
           >
             {initials}
           </div>
+
+          {/* Logout */}
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              aria-label="Déconnexion"
+              className="cursor-pointer transition-colors duration-150"
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              <SignOut size={20} />
+            </button>
+          </form>
         </div>
       </header>
 

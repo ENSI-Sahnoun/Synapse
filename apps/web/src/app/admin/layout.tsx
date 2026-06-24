@@ -23,6 +23,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/admin/employees', label: 'Employés', icon: 'UserCircle' },
     { href: '/admin/subscription-plans', label: 'Formules', icon: 'CreditCard' },
     { href: '/admin/rooms', label: 'Salles', icon: 'Buildings' },
+    { href: '/employee/checkin', label: 'Contrôle accès', icon: 'QrCode' },
+    { href: '/employee/students', label: 'Guichet étudiants', icon: 'IdentificationCard' },
   ]
 
   return (

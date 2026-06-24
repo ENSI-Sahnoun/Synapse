@@ -150,6 +150,16 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
     [snap],
   )
 
+  const handleSeatRotate = useCallback((localId: string, delta: number) => {
+    setSeats((prev) =>
+      prev.map((s) =>
+        s.localId === localId
+          ? { ...s, rotation: snapRotation((s.rotation + delta + 360) % 360, 15) }
+          : s,
+      ),
+    )
+  }, [])
+
   // delta: degrees to add (e.g. +15 or -15)
   const handleTableRotate = useCallback((localId: string, delta: number) => {
     setTables((prev) => {
@@ -513,6 +523,7 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
           onDeleteSeat={handleDeleteSeat}
           onAddChairToTable={handleAddChairToTable}
           onTableRotate={handleTableRotate}
+          onSeatRotate={handleSeatRotate}
         />
       </div>
     </div>
