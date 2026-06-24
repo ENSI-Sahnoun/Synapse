@@ -1,7 +1,6 @@
 import { getMyProfile, getMyActiveSubscription, getMyLoyaltyBalance } from '@/data/student/profile'
-import { differenceInDays, parseISO } from 'date-fns'
+import { differenceInDays, parseISO, format, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { format } from 'date-fns'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -12,7 +11,7 @@ export default async function StudentDashboardPage() {
     getMyLoyaltyBalance(),
   ])
 
-  const today = new Date()
+  const today = startOfDay(new Date())
   const daysRemaining = activeSubscription
     ? differenceInDays(parseISO(activeSubscription.end_date), today)
     : 0
@@ -20,7 +19,7 @@ export default async function StudentDashboardPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Bonjour, {profile.full_name.split(' ')[0]}</h1>
+        <h1 className="text-xl font-semibold">Bonjour, {profile.full_name?.split(' ')[0] || 'étudiant'}</h1>
         <p className="text-muted-foreground text-sm">{profile.university ?? 'Synapse'}</p>
       </div>
 

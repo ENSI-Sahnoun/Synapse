@@ -23,7 +23,12 @@ export const studentSignupAction = actionClient
       },
     })
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+        throw new Error('Un compte existe déjà avec cet email')
+      }
+      throw new Error('Erreur lors de la création du compte')
+    }
 
     // handle_new_user trigger creates the profile automatically
     // role defaults to 'student'

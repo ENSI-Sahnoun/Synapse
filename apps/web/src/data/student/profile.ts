@@ -19,7 +19,8 @@ export async function getMyProfile() {
 
 export async function getMyActiveSubscription() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError) throw new Error('Session invalide')
   if (!user) return null
 
   const today = new Date().toISOString().split('T')[0]
@@ -41,7 +42,8 @@ export async function getMyActiveSubscription() {
 
 export async function getMyLoyaltyBalance() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError) throw new Error('Session invalide')
   if (!user) return 0
 
   const { data } = await supabase
