@@ -2,7 +2,9 @@ import { getLoggedInUserId, getLoggedInUserProfile } from '@/data/user/user'
 import { createSafeActionClient } from 'next-safe-action'
 import 'server-only'
 
-export const actionClient = createSafeActionClient().use(
+export const actionClient = createSafeActionClient({
+  handleServerError: (e) => e.message,
+}).use(
   async ({ next, clientInput, metadata }) => {
     if (process.env.NODE_ENV === 'development') {
       console.log('LOGGING MIDDLEWARE')
