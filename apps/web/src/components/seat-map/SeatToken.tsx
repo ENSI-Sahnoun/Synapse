@@ -4,7 +4,8 @@ import { Group, Circle, Text } from 'react-konva'
 import type Konva from 'konva'
 
 export type SeatTokenData = {
-  id: string | undefined
+  localId: string           // stable client-side key, always set
+  id: string | undefined    // DB id, undefined for unsaved seats
   room_id: string
   label: string
   position_x: number
@@ -24,8 +25,8 @@ const RADIUS = 24
 type Props = {
   seat: SeatTokenData
   isSelected: boolean
-  onDragEnd: (id: string | undefined, x: number, y: number) => void
-  onClick: (id: string | undefined) => void
+  onDragEnd: (localId: string, x: number, y: number) => void
+  onClick: (localId: string) => void
 }
 
 export function SeatToken({ seat, isSelected, onDragEnd, onClick }: Props) {
@@ -33,7 +34,7 @@ export function SeatToken({ seat, isSelected, onDragEnd, onClick }: Props) {
   const strokeColor = isSelected ? '#f59e0b' : '#1e3a5f'
 
   function handleDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
-    onDragEnd(seat.id, e.target.x(), e.target.y())
+    onDragEnd(seat.localId, e.target.x(), e.target.y())
   }
 
   return (
@@ -42,8 +43,8 @@ export function SeatToken({ seat, isSelected, onDragEnd, onClick }: Props) {
       y={seat.position_y}
       draggable
       onDragEnd={handleDragEnd}
-      onClick={() => onClick(seat.id)}
-      onTap={() => onClick(seat.id)}
+      onClick={() => onClick(seat.localId)}
+      onTap={() => onClick(seat.localId)}
     >
       <Circle
         radius={RADIUS}

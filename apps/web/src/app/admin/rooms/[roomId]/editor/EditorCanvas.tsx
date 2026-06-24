@@ -17,6 +17,7 @@ const SEAT_RADIUS = 24
 
 function dbSeatToToken(s: Seat): SeatTokenData {
   return {
+    localId: s.id,
     id: s.id,
     room_id: s.room_id,
     label: s.label,
@@ -45,12 +46,12 @@ type Props = {
 
 export function EditorCanvas({ roomId, initialSeats }: Props) {
   const [seats, setSeats] = useState<SeatTokenData[]>(initialSeats.map(dbSeatToToken))
-  const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
+  const [selectedLocalId, setSelectedLocalId] = useState<string | undefined>(undefined)
   const [popoverOpen, setPopoverOpen] = useState(false)
   const popoverAnchorRef = useRef<HTMLDivElement>(null!)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const selectedSeat = seats.find((s) => s.id === selectedId) ?? null
+  const selectedSeat = seats.find((s) => s.localId === selectedLocalId) ?? null
 
   const { execute: saveSeats, isPending: isSaving } = useAction(upsertSeatsAction, {
     onSuccess: ({ data }) => {
@@ -73,24 +74,26 @@ export function EditorCanvas({ roomId, initialSeats }: Props) {
     },
   })
 
-  const handleDragEnd = useCallback((id: string | undefined, x: number, y: number) => {
+  const handleDragEnd = useCallback((localId: string, x: number, y: number) => {
     const clampedX = Math.max(SEAT_RADIUS, Math.min(CANVAS_WIDTH - SEAT_RADIUS, x))
     const clampedY = Math.max(SEAT_RADIUS, Math.min(CANVAS_HEIGHT - SEAT_RADIUS, y))
     setSeats((prev) =>
       prev.map((s) =>
-        s.id === id ? { ...s, position_x: clampedX, position_y: clampedY } : s,
+        s.localId === localId ? { ...s, position_x: clampedX, position_y: clampedY } : s,
       ),
     )
   }, [])
 
-  const handleSeatClick = useCallback((id: string | undefined) => {
-    setSelectedId(id)
+  const handleSeatClick = useCallback((localId: string) => {
+    setSelectedLocalId(localId)
     setPopoverOpen(true)
   }, [])
 
   const handleAddSeat = () => {
     const label = nextLabel(seats)
+    const localId = crypto.randomUUID()
     const newSeat: SeatTokenData = {
+      localId,
       id: undefined,
       room_id: roomId,
       label,
@@ -99,27 +102,28 @@ export function EditorCanvas({ roomId, initialSeats }: Props) {
       status: 'free',
     }
     setSeats((prev) => [...prev, newSeat])
-    setSelectedId(undefined)
+    setSelectedLocalId(undefined)
   }
 
-  const handleLabelChange = (id: string | undefined, label: string) => {
-    setSeats((prev) => prev.map((s) => (s.id === id ? { ...s, label } : s)))
+  const handleLabelChange = (localId: string, label: string) => {
+    setSeats((prev) => prev.map((s) => (s.localId === localId ? { ...s, label } : s)))
   }
 
-  const handleOutOfServiceToggle = (id: string | undefined, outOfService: boolean) => {
+  const handleOutOfServiceToggle = (localId: string, outOfService: boolean) => {
     setSeats((prev) =>
       prev.map((s) =>
-        s.id === id ? { ...s, status: outOfService ? 'out_of_service' : 'free' } : s,
+        s.localId === localId ? { ...s, status: outOfService ? 'out_of_service' : 'free' } : s,
       ),
     )
   }
 
-  const handleDelete = (id: string | undefined) => {
-    if (id) {
-      deleteSeat({ id, room_id: roomId })
+  const handleDelete = (localId: string) => {
+    const seat = seats.find((s) => s.localId === localId)
+    if (seat?.id) {
+      deleteSeat({ id: seat.id, room_id: roomId })
     }
-    setSeats((prev) => prev.filter((s) => s.id !== id))
-    setSelectedId(undefined)
+    setSeats((prev) => prev.filter((s) => s.localId !== localId))
+    setSelectedLocalId(undefined)
   }
 
   const handleSave = () => {
@@ -183,15 +187,15 @@ export function EditorCanvas({ roomId, initialSeats }: Props) {
               height={CANVAS_HEIGHT}
               fill="transparent"
               onClick={() => {
-                setSelectedId(undefined)
+                setSelectedLocalId(undefined)
                 setPopoverOpen(false)
               }}
             />
             {seats.map((seat) => (
               <SeatToken
-                key={seat.id ?? seat.label}
+                key={seat.localId}
                 seat={seat}
-                isSelected={seat.id === selectedId}
+                isSelected={seat.localId === selectedLocalId}
                 onDragEnd={handleDragEnd}
                 onClick={handleSeatClick}
               />

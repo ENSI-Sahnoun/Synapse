@@ -17,9 +17,9 @@ type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
   anchorRef: React.RefObject<HTMLDivElement>
-  onLabelChange: (id: string | undefined, label: string) => void
-  onOutOfServiceToggle: (id: string | undefined, outOfService: boolean) => void
-  onDelete: (id: string | undefined) => void
+  onLabelChange: (localId: string, label: string) => void
+  onOutOfServiceToggle: (localId: string, outOfService: boolean) => void
+  onDelete: (localId: string) => void
 }
 
 export function SeatEditPopover({
@@ -48,7 +48,7 @@ export function SeatEditPopover({
             id="seat-label"
             value={seat.label}
             maxLength={10}
-            onChange={(e) => onLabelChange(seat.id, e.target.value)}
+            onChange={(e) => onLabelChange(seat.localId, e.target.value)}
             placeholder="A1"
           />
         </div>
@@ -57,7 +57,7 @@ export function SeatEditPopover({
           <Switch
             id="out-of-service"
             checked={seat.status === 'out_of_service'}
-            onCheckedChange={(checked) => onOutOfServiceToggle(seat.id, checked)}
+            onCheckedChange={(checked) => onOutOfServiceToggle(seat.localId, checked)}
           />
         </div>
         <div className="border-t pt-2">
@@ -66,7 +66,7 @@ export function SeatEditPopover({
             size="sm"
             className="w-full"
             onClick={() => {
-              onDelete(seat.id)
+              onDelete(seat.localId)
               onOpenChange(false)
             }}
           >
