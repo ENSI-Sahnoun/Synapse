@@ -1,223 +1,524 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { Stage, Layer, Rect } from 'react-konva'
+import { Stage, Layer, Line, Transformer } from 'react-konva'
+import type Konva from 'konva'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { TableToken, type TableData } from '@/components/seat-map/TableToken'
 import { SeatToken, type SeatTokenData } from '@/components/seat-map/SeatToken'
-import { SeatEditPopover } from '@/components/seat-map/SeatEditPopover'
-import { upsertSeatsAction, deleteSeatAction } from '@/actions/seats'
-import type { Seat } from '@/data/seats'
-import { Plus, FloppyDisk } from '@phosphor-icons/react'
+import { PropertiesPanel } from '@/components/seat-map/PropertiesPanel'
+import { upsertSeatMapAction, deleteTableAction, deleteSeatAction } from '@/actions/admin/seat-map'
+import type { RoomTable, Seat } from '@/data/admin/seat-map'
+import {
+  snapToGrid,
+  snapRotation,
+  rotatePoint,
+  chairPositionsAroundTable,
+  distributeHorizontally,
+  distributeVertically,
+} from '@/components/seat-map/canvas-utils'
+import { Plus, FloppyDisk, ArrowsHorizontal, ArrowsVertical, GridFour } from '@phosphor-icons/react'
 
 const CANVAS_WIDTH = 900
 const CANVAS_HEIGHT = 600
+const GRID_SIZE = 40
 const SEAT_RADIUS = 24
+const DEFAULT_TABLE_W = 120
+const DEFAULT_TABLE_H = 80
 
-function dbSeatToToken(s: Seat): SeatTokenData {
+function dbTableToData(t: RoomTable): TableData {
+  return {
+    localId: t.id,
+    id: t.id,
+    room_id: t.room_id,
+    label: t.label,
+    position_x: t.position_x,
+    position_y: t.position_y,
+    width: t.width,
+    height: t.height,
+    rotation: t.rotation,
+  }
+}
+
+function dbSeatToData(s: Seat): SeatTokenData {
   return {
     localId: s.id,
     id: s.id,
     room_id: s.room_id,
+    table_id: s.table_id,
     label: s.label,
     position_x: s.position_x,
     position_y: s.position_y,
+    rotation: s.rotation,
     status: s.status as SeatTokenData['status'],
   }
 }
 
-function nextLabel(existing: SeatTokenData[]): string {
-  const labels = new Set(existing.map((s) => s.label))
-  const rows = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-  for (const row of rows) {
+function nextSeatLabel(existingLabels: Set<string>): string {
+  for (const row of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
     for (let n = 1; n <= 20; n++) {
       const label = `${row}${n}`
-      if (!labels.has(label)) return label
+      if (!existingLabels.has(label)) return label
     }
   }
-  return `P${existing.length + 1}`
+  return `P${existingLabels.size + 1}`
 }
+
+type Selection =
+  | { type: 'table'; localId: string }
+  | { type: 'seat'; localId: string }
+  | null
 
 type Props = {
   roomId: string
+  initialTables: RoomTable[]
   initialSeats: Seat[]
 }
 
-export function EditorCanvas({ roomId, initialSeats }: Props) {
-  const [seats, setSeats] = useState<SeatTokenData[]>(initialSeats.map(dbSeatToToken))
-  const [selectedLocalId, setSelectedLocalId] = useState<string | undefined>(undefined)
-  const [popoverOpen, setPopoverOpen] = useState(false)
-  const popoverAnchorRef = useRef<HTMLDivElement>(null!)
-  const containerRef = useRef<HTMLDivElement>(null)
+export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
+  const [tables, setTables] = useState<TableData[]>(initialTables.map(dbTableToData))
+  const [seats, setSeats] = useState<SeatTokenData[]>(initialSeats.map(dbSeatToData))
+  const [selection, setSelection] = useState<Selection>(null)
+  const [snapEnabled, setSnapEnabled] = useState(true)
+  const transformerRef = useRef<Konva.Transformer>(null)
+  const stageRef = useRef<Konva.Stage>(null)
 
-  const selectedSeat = seats.find((s) => s.localId === selectedLocalId) ?? null
+  const selectedTable =
+    selection?.type === 'table'
+      ? tables.find((t) => t.localId === selection.localId) ?? null
+      : null
+  const selectedSeat =
+    selection?.type === 'seat'
+      ? seats.find((s) => s.localId === selection.localId) ?? null
+      : null
 
-  const { execute: saveSeats, isPending: isSaving } = useAction(upsertSeatsAction, {
-    onSuccess: ({ data }) => {
-      if (data?.seats) {
-        setSeats(data.seats.map(dbSeatToToken))
+  const panelSelection = selectedTable
+    ? { type: 'table' as const, item: selectedTable }
+    : selectedSeat
+      ? { type: 'seat' as const, item: selectedSeat }
+      : null
+
+  const { execute: save, isPending: isSaving } = useAction(upsertSeatMapAction, {
+    onSuccess: () => toast.success('Plan de salle enregistré'),
+    onError: ({ error }) => toast.error(error.serverError ?? "Erreur lors de l'enregistrement"),
+  })
+
+  const { execute: execDeleteTable } = useAction(deleteTableAction, {
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur suppression table'),
+  })
+
+  const { execute: execDeleteSeat } = useAction(deleteSeatAction, {
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur suppression chaise'),
+  })
+
+  // --- Snap helper ---
+  const snap = useCallback(
+    (v: number) => (snapEnabled ? snapToGrid(v, GRID_SIZE) : v),
+    [snapEnabled],
+  )
+
+  // --- Table handlers ---
+  const handleTableDragEnd = useCallback(
+    (localId: string, x: number, y: number) => {
+      const snappedX = snap(x)
+      const snappedY = snap(y)
+      setTables((prev) => {
+        const table = prev.find((t) => t.localId === localId)
+        if (!table) return prev
+        const dx = snappedX - table.position_x
+        const dy = snappedY - table.position_y
+        setSeats((prevSeats) =>
+          prevSeats.map((s) =>
+            s.table_id === localId
+              ? { ...s, position_x: s.position_x + dx, position_y: s.position_y + dy }
+              : s,
+          ),
+        )
+        return prev.map((t) =>
+          t.localId === localId ? { ...t, position_x: snappedX, position_y: snappedY } : t,
+        )
+      })
+    },
+    [snap],
+  )
+
+  // delta: degrees to add (e.g. +15 or -15)
+  const handleTableRotate = useCallback((localId: string, delta: number) => {
+    setTables((prev) => {
+      const table = prev.find((t) => t.localId === localId)
+      if (!table) return prev
+      const newRotation = snapRotation(table.rotation + delta, 15)
+      const cx = table.position_x
+      const cy = table.position_y
+      setSeats((prevSeats) =>
+        prevSeats.map((s) => {
+          if (s.table_id !== localId) return s
+          const rotated = rotatePoint(s.position_x, s.position_y, cx, cy, delta)
+          return {
+            ...s,
+            position_x: rotated.x,
+            position_y: rotated.y,
+            rotation: snapRotation((s.rotation + delta + 360) % 360, 15),
+          }
+        }),
+      )
+      return prev.map((t) => (t.localId === localId ? { ...t, rotation: newRotation } : t))
+    })
+  }, [])
+
+  // --- Seat handlers ---
+  const handleSeatDragEnd = useCallback(
+    (localId: string, x: number, y: number) => {
+      setSeats((prev) =>
+        prev.map((s) =>
+          s.localId === localId ? { ...s, position_x: snap(x), position_y: snap(y) } : s,
+        ),
+      )
+    },
+    [snap],
+  )
+
+  // --- Add table + chairs ---
+  const handleAddTableWithChairs = useCallback(
+    (chairCount: number) => {
+      const tableId = crypto.randomUUID()
+      const newTable: TableData = {
+        localId: tableId,
+        id: tableId,
+        room_id: roomId,
+        label: '',
+        position_x: snap(CANVAS_WIDTH / 2),
+        position_y: snap(CANVAS_HEIGHT / 2),
+        width: DEFAULT_TABLE_W,
+        height: DEFAULT_TABLE_H,
+        rotation: 0,
       }
-      toast.success('Plan de salle enregistré')
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError ?? "Erreur lors de l'enregistrement")
-    },
-  })
+      const chairPositions = chairPositionsAroundTable(newTable, chairCount)
 
-  const { execute: deleteSeat } = useAction(deleteSeatAction, {
-    onSuccess: () => {
-      toast.success('Place supprimée')
+      // Build labels sequentially to avoid self-reference inside .map()
+      const existingLabels = new Set(seats.map((s) => s.label))
+      const newSeats: SeatTokenData[] = []
+      for (let i = 0; i < chairPositions.length; i++) {
+        const pos = chairPositions[i]
+        const label = nextSeatLabel(existingLabels)
+        existingLabels.add(label)
+        newSeats.push({
+          localId: crypto.randomUUID(),
+          id: undefined,
+          room_id: roomId,
+          table_id: tableId,
+          label,
+          position_x: snap(pos.x),
+          position_y: snap(pos.y),
+          rotation: pos.rotation,
+          status: 'free',
+        })
+      }
+      setTables((prev) => [...prev, newTable])
+      setSeats((prev) => [...prev, ...newSeats])
     },
-    onError: ({ error }) => {
-      toast.error(error.serverError ?? 'Erreur lors de la suppression')
-    },
-  })
+    [roomId, seats, snap],
+  )
 
-  const handleDragEnd = useCallback((localId: string, x: number, y: number) => {
-    const clampedX = Math.max(SEAT_RADIUS, Math.min(CANVAS_WIDTH - SEAT_RADIUS, x))
-    const clampedY = Math.max(SEAT_RADIUS, Math.min(CANVAS_HEIGHT - SEAT_RADIUS, y))
-    setSeats((prev) =>
-      prev.map((s) =>
-        s.localId === localId ? { ...s, position_x: clampedX, position_y: clampedY } : s,
-      ),
-    )
-  }, [])
-
-  const handleSeatClick = useCallback((localId: string) => {
-    setSelectedLocalId(localId)
-    setPopoverOpen(true)
-  }, [])
-
-  const handleAddSeat = () => {
-    const label = nextLabel(seats)
-    const localId = crypto.randomUUID()
+  // --- Add independent chair ---
+  const handleAddIndependentChair = useCallback(() => {
+    const existingLabels = new Set(seats.map((s) => s.label))
+    const label = nextSeatLabel(existingLabels)
     const newSeat: SeatTokenData = {
-      localId,
+      localId: crypto.randomUUID(),
       id: undefined,
       room_id: roomId,
+      table_id: null,
       label,
-      position_x: 60 + (seats.length % 10) * 10,
-      position_y: 60 + Math.floor(seats.length / 10) * 10,
+      position_x: snap(80),
+      position_y: snap(80),
+      rotation: 0,
       status: 'free',
     }
     setSeats((prev) => [...prev, newSeat])
-    setSelectedLocalId(undefined)
-  }
+  }, [roomId, seats, snap])
 
-  const handleLabelChange = (localId: string, label: string) => {
-    setSeats((prev) => prev.map((s) => (s.localId === localId ? { ...s, label } : s)))
-  }
+  // --- Add chair to existing table ---
+  const handleAddChairToTable = useCallback(
+    (tableLocalId: string) => {
+      const table = tables.find((t) => t.localId === tableLocalId)
+      if (!table) return
+      const linkedSeats = seats.filter((s) => s.table_id === tableLocalId)
+      const newCount = linkedSeats.length + 1
+      const positions = chairPositionsAroundTable(table, newCount)
+      const lastPos = positions[newCount - 1]
+      const existingLabels = new Set(seats.map((s) => s.label))
+      const label = nextSeatLabel(existingLabels)
+      const newSeat: SeatTokenData = {
+        localId: crypto.randomUUID(),
+        id: undefined,
+        room_id: roomId,
+        table_id: tableLocalId,
+        label,
+        position_x: snap(lastPos.x),
+        position_y: snap(lastPos.y),
+        rotation: lastPos.rotation,
+        status: 'free',
+      }
+      setSeats((prev) => [...prev, newSeat])
+    },
+    [roomId, seats, tables, snap],
+  )
 
-  const handleOutOfServiceToggle = (localId: string, outOfService: boolean) => {
-    setSeats((prev) =>
-      prev.map((s) =>
-        s.localId === localId ? { ...s, status: outOfService ? 'out_of_service' : 'free' } : s,
-      ),
-    )
-  }
+  // --- Delete ---
+  const handleDeleteTable = useCallback(
+    (localId: string) => {
+      const table = tables.find((t) => t.localId === localId)
+      if (table?.id) execDeleteTable({ id: table.id, room_id: roomId })
+      // Unlink chairs (don't delete them)
+      setSeats((prev) => prev.map((s) => (s.table_id === localId ? { ...s, table_id: null } : s)))
+      setTables((prev) => prev.filter((t) => t.localId !== localId))
+      setSelection(null)
+    },
+    [tables, roomId, execDeleteTable],
+  )
 
-  const handleDelete = (localId: string) => {
-    const seat = seats.find((s) => s.localId === localId)
-    if (seat?.id) {
-      deleteSeat({ id: seat.id, room_id: roomId })
+  const handleDeleteSeat = useCallback(
+    (localId: string) => {
+      const seat = seats.find((s) => s.localId === localId)
+      if (seat?.id) execDeleteSeat({ id: seat.id, room_id: roomId })
+      setSeats((prev) => prev.filter((s) => s.localId !== localId))
+      setSelection(null)
+    },
+    [seats, roomId, execDeleteSeat],
+  )
+
+  // --- Properties panel changes ---
+  const handleTableChange = useCallback((localId: string, patch: Partial<TableData>) => {
+    setTables((prev) => prev.map((t) => (t.localId === localId ? { ...t, ...patch } : t)))
+  }, [])
+
+  const handleSeatChange = useCallback((localId: string, patch: Partial<SeatTokenData>) => {
+    setSeats((prev) => prev.map((s) => (s.localId === localId ? { ...s, ...patch } : s)))
+  }, [])
+
+  // --- Distribute ---
+  const handleDistributeHorizontal = () => {
+    if (selection?.type === 'table') {
+      const newXs = distributeHorizontally(
+        tables.map((t) => ({ x: t.position_x, width: t.width })),
+        GRID_SIZE,
+      )
+      setTables((prev) => prev.map((t, i) => ({ ...t, position_x: newXs[i] })))
+    } else if (selection?.type === 'seat') {
+      const newXs = distributeHorizontally(
+        seats.map((s) => ({ x: s.position_x, width: SEAT_RADIUS * 2 })),
+        GRID_SIZE,
+      )
+      setSeats((prev) => prev.map((s, i) => ({ ...s, position_x: newXs[i] })))
     }
-    setSeats((prev) => prev.filter((s) => s.localId !== localId))
-    setSelectedLocalId(undefined)
   }
 
+  const handleDistributeVertical = () => {
+    if (selection?.type === 'table') {
+      const newYs = distributeVertically(
+        tables.map((t) => ({ y: t.position_y, height: t.height })),
+        GRID_SIZE,
+      )
+      setTables((prev) => prev.map((t, i) => ({ ...t, position_y: newYs[i] })))
+    } else if (selection?.type === 'seat') {
+      const newYs = distributeVertically(
+        seats.map((s) => ({ y: s.position_y, height: SEAT_RADIUS * 2 })),
+        GRID_SIZE,
+      )
+      setSeats((prev) => prev.map((s, i) => ({ ...s, position_y: newYs[i] })))
+    }
+  }
+
+  // --- Save ---
   const handleSave = () => {
-    if (seats.length === 0) {
-      toast.error("Ajoutez au moins une place avant d'enregistrer")
-      return
-    }
-    saveSeats({
+    save({
       room_id: roomId,
+      tables: tables.map((t) => ({
+        id: t.id,
+        room_id: t.room_id,
+        label: t.label,
+        position_x: t.position_x,
+        position_y: t.position_y,
+        width: t.width,
+        height: t.height,
+        rotation: t.rotation,
+      })),
       seats: seats.map((s) => ({
         id: s.id,
-        room_id: roomId,
+        room_id: s.room_id,
+        table_id: s.table_id,
         label: s.label,
         position_x: s.position_x,
         position_y: s.position_y,
+        rotation: s.rotation,
         status: s.status,
       })),
     })
   }
 
+  // --- Grid lines ---
+  const gridLines: React.ReactNode[] = []
+  for (let x = 0; x <= CANVAS_WIDTH; x += GRID_SIZE) {
+    gridLines.push(
+      <Line key={`v${x}`} points={[x, 0, x, CANVAS_HEIGHT]} stroke="#e2e8f0" strokeWidth={0.5} />,
+    )
+  }
+  for (let y = 0; y <= CANVAS_HEIGHT; y += GRID_SIZE) {
+    gridLines.push(
+      <Line
+        key={`h${y}`}
+        points={[0, y, CANVAS_WIDTH, y]}
+        stroke="#e2e8f0"
+        strokeWidth={0.5}
+      />,
+    )
+  }
+
+  const hasSelection = selection !== null
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant="outline" onClick={handleAddSeat}>
-          <Plus className="mr-2 h-4 w-4" />
-          Ajouter une place
-        </Button>
-        <Button onClick={handleSave} disabled={isSaving}>
-          <FloppyDisk className="mr-2 h-4 w-4" />
-          {isSaving ? 'Enregistrement…' : 'Enregistrer le plan'}
-        </Button>
-        <span className="text-muted-foreground text-sm">
-          {seats.length} place{seats.length !== 1 ? 's' : ''}
-        </span>
-      </div>
+    <div className="flex gap-4">
+      {/* Main column */}
+      <div className="flex-1 space-y-3 min-w-0">
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Add table dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Plus className="mr-1 h-4 w-4" />
+                Ajouter une table
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {[1, 2, 4, 6].map((n) => (
+                <DropdownMenuItem key={n} onClick={() => handleAddTableWithChairs(n)}>
+                  {n} place{n > 1 ? 's' : ''}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-      <div
-        ref={containerRef}
-        className="relative overflow-hidden rounded-lg border bg-slate-50"
-        style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
-      >
+          {/* Add independent chair */}
+          <Button variant="outline" size="sm" onClick={handleAddIndependentChair}>
+            <Plus className="mr-1 h-4 w-4" />
+            Chaise indépendante
+          </Button>
+
+          {/* Distribute — only when something selected */}
+          {hasSelection && (
+            <>
+              <div className="h-5 w-px bg-border" />
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Distribuer horizontalement"
+                onClick={handleDistributeHorizontal}
+              >
+                <ArrowsHorizontal className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Distribuer verticalement"
+                onClick={handleDistributeVertical}
+              >
+                <ArrowsVertical className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant={snapEnabled ? 'secondary' : 'ghost'}
+              size="icon"
+              title="Grille magnétique"
+              onClick={() => setSnapEnabled((v) => !v)}
+            >
+              <GridFour className="h-4 w-4" />
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving} size="sm">
+              <FloppyDisk className="mr-1 h-4 w-4" />
+              {isSaving ? 'Enregistrement…' : 'Enregistrer'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Canvas */}
         <div
-          ref={popoverAnchorRef}
-          className="pointer-events-none absolute"
-          style={
-            selectedSeat
-              ? {
-                  left: selectedSeat.position_x + SEAT_RADIUS,
-                  top: selectedSeat.position_y - SEAT_RADIUS,
-                }
-              : { left: 0, top: 0 }
-          }
-        />
+          className="relative overflow-hidden rounded-lg border bg-slate-50"
+          style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
+        >
+          <Stage
+            ref={stageRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            onClick={(e) => {
+              if (e.target === e.target.getStage()) setSelection(null)
+            }}
+          >
+            <Layer>
+              {/* Grid */}
+              {gridLines}
 
-        <Stage width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
-          <Layer>
-            <Rect
-              x={0}
-              y={0}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
-              fill="transparent"
-              onClick={() => {
-                setSelectedLocalId(undefined)
-                setPopoverOpen(false)
-              }}
-            />
-            {seats.map((seat) => (
-              <SeatToken
-                key={seat.localId}
-                seat={seat}
-                isSelected={seat.localId === selectedLocalId}
-                onDragEnd={handleDragEnd}
-                onClick={handleSeatClick}
+              {/* Tables */}
+              {tables.map((table) => (
+                <TableToken
+                  key={table.localId}
+                  table={table}
+                  isSelected={selection?.localId === table.localId}
+                  onSelect={(localId) => setSelection({ type: 'table', localId })}
+                  onDragEnd={handleTableDragEnd}
+                />
+              ))}
+
+              {/* Seats */}
+              {seats.map((seat) => (
+                <SeatToken
+                  key={seat.localId}
+                  seat={seat}
+                  isSelected={selection?.localId === seat.localId}
+                  onDragEnd={handleSeatDragEnd}
+                  onClick={(localId) => setSelection({ type: 'seat', localId })}
+                />
+              ))}
+
+              <Transformer
+                ref={transformerRef}
+                rotationSnaps={Array.from({ length: 24 }, (_, i) => i * 15)}
               />
-            ))}
-          </Layer>
-        </Stage>
+            </Layer>
+          </Stage>
+        </div>
 
-        <SeatEditPopover
-          seat={selectedSeat}
-          open={popoverOpen}
-          onOpenChange={setPopoverOpen}
-          anchorRef={popoverAnchorRef}
-          onLabelChange={handleLabelChange}
-          onOutOfServiceToggle={handleOutOfServiceToggle}
-          onDelete={handleDelete}
-        />
+        <p className="text-xs text-muted-foreground">
+          Cliquez pour sélectionner · Faites glisser pour repositionner · Utilisez les boutons de
+          rotation dans le panneau · Enregistrez pour sauvegarder
+        </p>
       </div>
 
-      <p className="text-muted-foreground text-xs">
-        Cliquez sur une place pour la modifier. Faites glisser pour la repositionner.
-        Appuyez sur Enregistrer pour sauvegarder le plan.
-      </p>
+      {/* Properties panel */}
+      <div className="w-56 rounded-lg border bg-card">
+        <PropertiesPanel
+          selection={panelSelection}
+          allTables={tables}
+          onTableChange={handleTableChange}
+          onSeatChange={handleSeatChange}
+          onDeleteTable={handleDeleteTable}
+          onDeleteSeat={handleDeleteSeat}
+          onAddChairToTable={handleAddChairToTable}
+          onTableRotate={handleTableRotate}
+        />
+      </div>
     </div>
   )
 }

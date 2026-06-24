@@ -1,5 +1,5 @@
 import { getRoomById } from '@/data/admin/rooms'
-import { getSeatsByRoom } from '@/data/seats'
+import { getSeatMap } from '@/data/admin/seat-map'
 import { EditorCanvas } from './EditorCanvas'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -10,10 +10,7 @@ type Props = { params: Promise<{ roomId: string }> }
 
 export default async function SeatMapEditorPage({ params }: Props) {
   const { roomId } = await params
-  const [room, seats] = await Promise.all([
-    getRoomById(roomId),
-    getSeatsByRoom(roomId),
-  ])
+  const [room, { tables, seats }] = await Promise.all([getRoomById(roomId), getSeatMap(roomId)])
 
   if (!room) notFound()
 
@@ -29,13 +26,13 @@ export default async function SeatMapEditorPage({ params }: Props) {
         <div>
           <h1 className="text-2xl font-semibold">Éditeur — {room.name}</h1>
           <p className="text-muted-foreground text-sm">
-            Capacité déclarée : {room.capacity} places · {seats.length} place
-            {seats.length !== 1 ? 's' : ''} positionnée{seats.length !== 1 ? 's' : ''}
+            {tables.length} table{tables.length !== 1 ? 's' : ''} · {seats.length} place
+            {seats.length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
 
-      <EditorCanvas roomId={room.id} initialSeats={seats} />
+      <EditorCanvas roomId={room.id} initialTables={tables} initialSeats={seats} />
     </div>
   )
 }

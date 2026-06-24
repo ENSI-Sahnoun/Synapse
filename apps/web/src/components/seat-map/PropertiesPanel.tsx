@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Trash, Plus } from '@phosphor-icons/react'
+import { Trash, Plus, ArrowCounterClockwise, ArrowClockwise } from '@phosphor-icons/react'
 import type { TableData } from './TableToken'
 import type { SeatTokenData } from './SeatToken'
 
@@ -28,6 +28,7 @@ type Props = {
   onDeleteTable: (localId: string) => void
   onDeleteSeat: (localId: string) => void
   onAddChairToTable: (tableLocalId: string) => void
+  onTableRotate?: (localId: string, delta: number) => void
 }
 
 export function PropertiesPanel({
@@ -38,6 +39,7 @@ export function PropertiesPanel({
   onDeleteTable,
   onDeleteSeat,
   onAddChairToTable,
+  onTableRotate,
 }: Props) {
   if (!selection) {
     return (
@@ -88,9 +90,27 @@ export function PropertiesPanel({
 
         <div className="space-y-1">
           <Label>Rotation</Label>
-          <p className="text-sm text-muted-foreground">
-            {table.rotation}° (utilisez la poignée sur le canevas)
-          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              title="Tourner −15°"
+              onClick={() => onTableRotate?.(table.localId, -15)}
+            >
+              <ArrowCounterClockwise className="h-3.5 w-3.5" />
+            </Button>
+            <span className="flex-1 text-center text-sm tabular-nums">{table.rotation}°</span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              title="Tourner +15°"
+              onClick={() => onTableRotate?.(table.localId, 15)}
+            >
+              <ArrowClockwise className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
 
         <Button
