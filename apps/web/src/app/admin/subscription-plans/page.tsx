@@ -37,7 +37,12 @@ export default async function SubscriptionPlansPage() {
                   </span>
                 </td>
                 <td className="px-4 py-2">
-                  <TogglePlanButton id={plan.id} isActive={plan.is_active} />
+                  <div className="flex gap-2 justify-end">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/admin/subscription-plans/${plan.id}/edit`}>Modifier</Link>
+                    </Button>
+                    <TogglePlanButton id={plan.id} isActive={plan.is_active} />
+                  </div>
                 </td>
               </tr>
             ))}
