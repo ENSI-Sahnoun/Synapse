@@ -1,16 +1,31 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
+
+beforeAll(() => {
+  process.env.QR_HMAC_SECRET = 'test-secret-key-for-unit-tests-only'
+})
+
+const STUDENT_ID = '550e8400-e29b-41d4-a716-446655440000'
 
 describe('generateQrToken', () => {
-  it('returns token with SYNAPSE- prefix and 8-char suffix', async () => {
+  it('returns token matching SYNAPSE-{8 uppercase alphanumeric}', async () => {
     const { generateQrToken } = await import('./qr-token')
-    const token = generateQrToken()
-    expect(token).toMatch(/^SYNAPSE-[A-Z0-9]{8}$/)
+    expect(generateQrToken(STUDENT_ID, 0)).toMatch(/^SYNAPSE-[A-Z0-9]{8}$/)
   })
 
-  it('produces unique tokens on each call', async () => {
+  it('is deterministic for same studentId + version', async () => {
     const { generateQrToken } = await import('./qr-token')
-    const tokens = new Set(Array.from({ length: 20 }, () => generateQrToken()))
-    expect(tokens.size).toBe(20)
+    expect(generateQrToken(STUDENT_ID, 0)).toBe(generateQrToken(STUDENT_ID, 0))
+  })
+
+  it('produces different token when version bumped', async () => {
+    const { generateQrToken } = await import('./qr-token')
+    expect(generateQrToken(STUDENT_ID, 0)).not.toBe(generateQrToken(STUDENT_ID, 1))
+  })
+
+  it('produces different tokens for different student IDs', async () => {
+    const { generateQrToken } = await import('./qr-token')
+    const other = '660e8400-e29b-41d4-a716-446655440001'
+    expect(generateQrToken(STUDENT_ID, 0)).not.toBe(generateQrToken(other, 0))
   })
 })
 

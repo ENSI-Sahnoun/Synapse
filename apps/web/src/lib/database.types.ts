@@ -142,7 +142,9 @@ export type Database = {
           phone: string | null
           qr_token: string | null
           role: string
+          student_number: number
           study_level: string | null
+          token_version: number
           university: string | null
           updated_at: string
         }
@@ -153,7 +155,9 @@ export type Database = {
           phone?: string | null
           qr_token?: string | null
           role?: string
+          student_number?: never
           study_level?: string | null
+          token_version?: number
           university?: string | null
           updated_at?: string
         }
@@ -164,7 +168,9 @@ export type Database = {
           phone?: string | null
           qr_token?: string | null
           role?: string
+          student_number?: never
           study_level?: string | null
+          token_version?: number
           university?: string | null
           updated_at?: string
         }

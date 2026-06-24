@@ -18,7 +18,7 @@ export default async function StudentQrPage() {
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('full_name, qr_token')
+    .select('full_name, qr_token, student_number')
     .eq('id', user.id)
     .single()
 
@@ -42,6 +42,11 @@ export default async function StudentQrPage() {
       <div className="text-center">
         <h1 className="text-xl font-semibold">Mon QR Code</h1>
         <p className="text-sm text-muted-foreground mt-1">{profile.full_name}</p>
+        {profile.student_number && (
+          <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+            #{profile.student_number}
+          </p>
+        )}
       </div>
 
       <div className="bg-white p-4 rounded-2xl shadow-lg">
