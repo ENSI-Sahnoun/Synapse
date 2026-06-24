@@ -26,7 +26,7 @@ export async function getStudentById(id: string) {
     .from('profiles')
     .select(`
       id, full_name, phone, university, study_level, qr_token, created_at,
-      subscriptions (
+      subscriptions!subscriptions_student_id_fkey (
         id, start_date, end_date, paid_amount, created_at,
         subscription_plans ( name, duration_days, price_dt )
       )
