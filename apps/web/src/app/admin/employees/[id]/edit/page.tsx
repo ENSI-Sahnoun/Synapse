@@ -1,5 +1,6 @@
 import { getProfileById } from '@/data/admin/students'
 import { EditEmployeeForm } from '@/components/admin/EditEmployeeForm'
+import { ResetCredentialsForm } from '@/components/admin/ResetCredentialsForm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -20,6 +21,8 @@ export default async function AdminEditEmployeePage({
       </Link>
       <h1 className="text-2xl font-semibold">Modifier — {profile.full_name}</h1>
       <EditEmployeeForm employee={profile} redirectTo="/admin/employees" />
+      <hr className="my-6" />
+      <ResetCredentialsForm userId={id} />
     </div>
   )
 }

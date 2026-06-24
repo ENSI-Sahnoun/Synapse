@@ -81,3 +81,35 @@ export const hardDeleteUserAction = adminActionClient
     revalidatePath('/admin/employees')
     return { success: true }
   })
+
+const resetEmailSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email('Email invalide'),
+})
+
+const resetPasswordSchema = z.object({
+  id: z.string().uuid(),
+  password: z.string().min(8, 'Minimum 8 caractères'),
+})
+
+export const adminResetEmailAction = adminActionClient
+  .schema(resetEmailSchema)
+  .action(async ({ parsedInput }) => {
+    const { id, email } = parsedInput
+    const adminSupabase = createSupabaseAdminClient()
+    const { error } = await adminSupabase.auth.admin.updateUserById(id, { email })
+    if (error) throw new Error(`Erreur: ${error.message}`)
+    revalidatePath('/admin/students')
+    revalidatePath('/admin/employees')
+    return { success: true }
+  })
+
+export const adminResetPasswordAction = adminActionClient
+  .schema(resetPasswordSchema)
+  .action(async ({ parsedInput }) => {
+    const { id, password } = parsedInput
+    const adminSupabase = createSupabaseAdminClient()
+    const { error } = await adminSupabase.auth.admin.updateUserById(id, { password })
+    if (error) throw new Error(`Erreur: ${error.message}`)
+    return { success: true }
+  })

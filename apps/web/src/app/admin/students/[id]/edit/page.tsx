@@ -1,5 +1,6 @@
 import { getProfileById } from '@/data/admin/students'
 import { EditStudentForm } from '@/components/students/EditStudentForm'
+import { ResetCredentialsForm } from '@/components/admin/ResetCredentialsForm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -20,6 +21,8 @@ export default async function AdminEditStudentPage({
       </Link>
       <h1 className="text-2xl font-semibold">Modifier — {profile.full_name}</h1>
       <EditStudentForm student={profile} redirectTo="/admin/students" />
+      <hr className="my-6" />
+      <ResetCredentialsForm userId={id} />
     </div>
   )
 }
