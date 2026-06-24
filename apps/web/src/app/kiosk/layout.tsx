@@ -28,7 +28,10 @@ export default async function KioskLayout({
   }
 
   return (
-    <div className="bg-black text-white w-screen h-screen overflow-hidden fixed inset-0">
+    <div
+      className="text-white w-screen h-screen overflow-hidden fixed inset-0"
+      style={{ backgroundColor: 'var(--sidebar)' }}
+    >
       {children}
     </div>
   )
