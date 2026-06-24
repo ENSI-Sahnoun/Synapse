@@ -1,6 +1,6 @@
 'use client'
 
-import { Stage, Layer, Rect, Text, Group, Arc } from 'react-konva'
+import { Stage, Layer, Rect, Text, Group } from 'react-konva'
 import type { RoomTable, Seat } from '@/data/admin/seat-map'
 
 const CANVAS_WIDTH = 900
@@ -8,7 +8,9 @@ const CANVAS_HEIGHT = 600
 
 const SEAT_W = 30
 const SEAT_H = 26
-const BACK_Y = -(SEAT_H / 2) - 2 - 10
+const BACK_H = 9
+const BACK_GAP = 3
+const BACK_Y = -(SEAT_H / 2) - BACK_GAP - BACK_H
 
 const TABLE_FILL: Record<string, string> = {
   free: '#fde8c8',
@@ -67,8 +69,8 @@ export function RoomMap({ tables, seats, currentSeatId }: Props) {
             const opacity = seat.status === 'out_of_service' ? 0.55 : 1
             return (
               <Group key={seat.id} x={seat.position_x} y={seat.position_y} rotation={seat.rotation} opacity={opacity}>
-                <Arc x={0} y={BACK_Y + 5} innerRadius={11} outerRadius={19} angle={160} rotation={-80} fill={fill} stroke="#1e3a5f" strokeWidth={1.5} listening={false} />
-                <Rect x={-SEAT_W / 2} y={-SEAT_H / 2} width={SEAT_W} height={SEAT_H} fill={fill} stroke="#1e3a5f" strokeWidth={1.5} cornerRadius={4} />
+                <Rect x={-SEAT_W / 2} y={BACK_Y} width={SEAT_W} height={BACK_H} fill={fill} stroke="#1e3a5f" strokeWidth={1.5} cornerRadius={[4, 4, 1, 1]} listening={false} />
+                <Rect x={-SEAT_W / 2} y={-SEAT_H / 2} width={SEAT_W} height={SEAT_H} fill={fill} stroke="#1e3a5f" strokeWidth={1.5} cornerRadius={[1, 1, 4, 4]} />
                 <Text x={-SEAT_W / 2} y={-SEAT_H / 2} text={seat.label} fontSize={seat.label.length > 2 ? 9 : 11} fontStyle="bold" fill="#ffffff" align="center" verticalAlign="middle" width={SEAT_W} height={SEAT_H} listening={false} />
               </Group>
             )
