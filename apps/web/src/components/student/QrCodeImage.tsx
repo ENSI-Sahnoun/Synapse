@@ -21,12 +21,14 @@ export function QrCodeImage({ token, size = 280 }: QrCodeImageProps) {
         dark: '#000000',
         light: '#ffffff',
       },
-    })
+    }).catch(console.error)
   }, [token, size])
 
   return (
     <canvas
       ref={canvasRef}
+      width={size}
+      height={size}
       className="rounded-xl shadow-md"
       aria-label="Code QR Synapse"
     />
