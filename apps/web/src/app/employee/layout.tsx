@@ -1,7 +1,7 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { signOutAction } from '@/data/auth/sign-out'
+import { SidebarNavLink } from '@/components/ui/sidebar-nav-link'
 import {
   ChartBar,
   Users,
@@ -52,15 +52,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {navItems.map(({ href, label, Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors duration-150 cursor-pointer"
-              style={{ color: 'var(--sidebar-foreground)' }}
-            >
-              <Icon size={18} weight="regular" />
-              {label}
-            </Link>
+            <SidebarNavLink key={href} href={href} label={label} Icon={Icon} />
           ))}
         </nav>
 
@@ -84,11 +76,6 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
           </form>
         </div>
 
-        <style>{`
-          nav a:hover {
-            background-color: var(--sidebar-accent);
-          }
-        `}</style>
       </aside>
 
       <main className="flex-1 p-6" style={{ backgroundColor: 'var(--background)' }}>

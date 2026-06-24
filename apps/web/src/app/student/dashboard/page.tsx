@@ -3,6 +3,7 @@ import { differenceInDays, parseISO, format, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { WarningCircle } from '@phosphor-icons/react/dist/ssr'
 
 export default async function StudentDashboardPage() {
   const [profile, activeSubscription, loyaltyBalance] = await Promise.all([
@@ -43,8 +44,9 @@ export default async function StudentDashboardPage() {
             </div>
           </div>
           {daysRemaining <= 3 && (
-            <p className="mt-2 text-xs opacity-90">
-              ⚠️ Votre abonnement expire bientôt — contactez l'accueil pour renouveler
+            <p className="mt-2 text-xs opacity-90 flex items-center gap-1">
+              <WarningCircle size={14} weight="bold" />
+              Votre abonnement expire bientôt — contactez l&apos;accueil pour renouveler
             </p>
           )}
         </div>
