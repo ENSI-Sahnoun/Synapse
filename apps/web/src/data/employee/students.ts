@@ -8,6 +8,7 @@ export async function listStudents(search?: string) {
     .from('profiles')
     .select('id, full_name, phone, university, study_level, created_at')
     .eq('role', 'student')
+    .eq('is_archived', false)
     .order('created_at', { ascending: false })
 
   if (search) {
@@ -33,6 +34,7 @@ export async function getStudentById(id: string) {
     `)
     .eq('id', id)
     .eq('role', 'student')
+    .eq('is_archived', false)
     .order('created_at', { ascending: false, foreignTable: 'subscriptions' })
     .single()
 
