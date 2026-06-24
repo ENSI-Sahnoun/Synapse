@@ -7,17 +7,12 @@ export type SeatTokenData = {
   localId: string           // stable client-side key, always set
   id: string | undefined    // DB id, undefined for unsaved seats
   room_id: string
+  table_id: string | null   // null = independent chair
   label: string
   position_x: number
   position_y: number
+  rotation: number          // 0–345, multiples of 15
   status: 'free' | 'occupied' | 'reserved' | 'out_of_service'
-}
-
-const STATUS_FILL: Record<SeatTokenData['status'], string> = {
-  free: '#3b82f6',
-  occupied: '#3b82f6',
-  reserved: '#3b82f6',
-  out_of_service: '#9ca3af',
 }
 
 const RADIUS = 24
@@ -30,7 +25,8 @@ type Props = {
 }
 
 export function SeatToken({ seat, isSelected, onDragEnd, onClick }: Props) {
-  const fill = seat.status === 'out_of_service' ? STATUS_FILL.out_of_service : STATUS_FILL.free
+  const isOutOfService = seat.status === 'out_of_service'
+  const fill = isOutOfService ? '#9ca3af' : '#3b82f6'
   const strokeColor = isSelected ? '#f59e0b' : '#1e3a5f'
 
   function handleDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
@@ -41,6 +37,7 @@ export function SeatToken({ seat, isSelected, onDragEnd, onClick }: Props) {
     <Group
       x={seat.position_x}
       y={seat.position_y}
+      rotation={seat.rotation}
       draggable
       onDragEnd={handleDragEnd}
       onClick={() => onClick(seat.localId)}
@@ -53,7 +50,7 @@ export function SeatToken({ seat, isSelected, onDragEnd, onClick }: Props) {
         strokeWidth={isSelected ? 3 : 1.5}
         shadowBlur={isSelected ? 8 : 0}
         shadowColor="#f59e0b"
-        opacity={seat.status === 'out_of_service' ? 0.5 : 1}
+        opacity={isOutOfService ? 0.5 : 1}
       />
       <Text
         text={seat.label}
