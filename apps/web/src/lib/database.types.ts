@@ -139,6 +139,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          is_archived: boolean
           phone: string | null
           qr_token: string | null
           role: string
@@ -152,6 +153,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id: string
+          is_archived?: boolean
           phone?: string | null
           qr_token?: string | null
           role?: string
@@ -165,6 +167,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          is_archived?: boolean
           phone?: string | null
           qr_token?: string | null
           role?: string
