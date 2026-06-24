@@ -34,9 +34,13 @@ export const studentSignupAction = actionClient
     // handle_new_user trigger creates the profile automatically
     // role defaults to 'student'
 
-    // Assign HMAC QR token immediately after user creation
+    // Assign HMAC QR token — non-fatal: student can still log in, backfill recovers
     if (data.user) {
-      await assignQrToken(data.user.id)
+      try {
+        await assignQrToken(data.user.id)
+      } catch (e) {
+        console.error('assignQrToken failed for', data.user.id, e)
+      }
     }
 
     return {
