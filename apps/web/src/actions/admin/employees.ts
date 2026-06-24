@@ -2,6 +2,7 @@
 
 import { adminActionClient } from '@/lib/safe-action'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
+import { createSupabaseClient } from '@/supabase-clients/server'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 
@@ -38,4 +39,25 @@ export const createEmployeeAction = adminActionClient
 
     revalidatePath('/admin/employees')
     return { employeeId: authData.user.id }
+  })
+
+const updateEmployeeSchema = z.object({
+  id: z.string().uuid(),
+  full_name: z.string().min(2, 'Nom requis').optional(),
+  phone: z.string().optional(),
+})
+
+export const updateEmployeeAction = adminActionClient
+  .schema(updateEmployeeSchema)
+  .action(async ({ parsedInput }) => {
+    const { id, ...updates } = parsedInput
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', id)
+    if (error) throw new Error(error.message)
+    revalidatePath('/admin/employees')
+    revalidatePath(`/admin/employees/${id}/edit`)
+    return { success: true }
   })
