@@ -4,6 +4,7 @@ import { employeeActionClient } from '@/lib/safe-action'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { createStudentSchema } from '@/utils/zod-schemas/student'
 import { revalidatePath } from 'next/cache'
+import { assignQrToken } from '@/actions/student/assign-qr-token'
 
 export const createStudentAction = employeeActionClient
   .schema(createStudentSchema)
@@ -33,6 +34,9 @@ export const createStudentAction = employeeActionClient
       .eq('id', userId)
 
     if (profileError) throw new Error(`Erreur profil: ${profileError.message}`)
+
+    // Assign HMAC QR token after profile is set up
+    await assignQrToken(userId)
 
     revalidatePath('/employee/students')
     revalidatePath('/admin/students')

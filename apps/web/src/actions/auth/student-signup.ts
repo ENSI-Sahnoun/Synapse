@@ -3,6 +3,7 @@
 import { actionClient } from '@/lib/safe-action'
 import { studentSignupSchema } from '@/utils/zod-schemas/auth'
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { assignQrToken } from '@/actions/student/assign-qr-token'
 
 export const studentSignupAction = actionClient
   .schema(studentSignupSchema)
@@ -32,6 +33,11 @@ export const studentSignupAction = actionClient
 
     // handle_new_user trigger creates the profile automatically
     // role defaults to 'student'
+
+    // Assign HMAC QR token immediately after user creation
+    if (data.user) {
+      await assignQrToken(data.user.id)
+    }
 
     return {
       userId: data.user?.id,
