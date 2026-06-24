@@ -2,6 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { FullscreenButton } from '@/components/student/FullscreenButton'
+import { SecretCodeReveal } from '@/components/student/SecretCodeReveal'
 
 export const metadata = {
   title: 'Mon QR Code — Synapse',
@@ -50,6 +51,8 @@ export default async function StudentQrPage() {
       <p className="text-xs text-muted-foreground text-center max-w-xs">
         Présentez ce code à l&apos;employé ou devant le kiosque à l&apos;entrée.
       </p>
+
+      <SecretCodeReveal token={profile.qr_token} />
 
       <FullscreenButton />
     </div>

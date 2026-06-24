@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { QrScanner } from '@/components/checkin/QrScanner'
 import { CheckinResult } from '@/components/checkin/CheckinResult'
@@ -20,18 +20,25 @@ interface CheckinClientProps {
   initialOpenAttendance: OpenAttendance[]
 }
 
+const PREFIX = 'SYNAPSE-'
+
 export function CheckinClient({ initialOpenAttendance }: CheckinClientProps) {
   const [scannerReady, setScannerReady] = useState(true)
   const [lastResult, setLastResult] = useState<CheckinResultType | null>(null)
   const [openAttendance, setOpenAttendance] = useState(initialOpenAttendance)
+  const [mode, setMode] = useState<'scan' | 'manual'>('scan')
+  const [manualCode, setManualCode] = useState(PREFIX)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const { execute: executeCheckin } = useAction(checkinAction, {
+  const { execute: executeCheckin, isPending } = useAction(checkinAction, {
     onSuccess: ({ data }) => {
       if (!data) return
       setLastResult(data)
+      setManualCode(PREFIX)
     },
     onError: () => {
       setLastResult({ status: 'DENIED_UNKNOWN' })
+      setManualCode(PREFIX)
     },
   })
 
@@ -43,28 +50,100 @@ export function CheckinClient({ initialOpenAttendance }: CheckinClientProps) {
     },
   })
 
-  const handleScan = useCallback(
+  const submitToken = useCallback(
     (token: string) => {
-      if (!scannerReady) return
       setScannerReady(false)
       executeCheckin({ qrToken: token })
     },
-    [scannerReady, executeCheckin]
+    [executeCheckin]
+  )
+
+  const handleScan = useCallback(
+    (token: string) => {
+      if (!scannerReady) return
+      submitToken(token)
+    },
+    [scannerReady, submitToken]
+  )
+
+  const handleManualSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault()
+      const token = manualCode.trim()
+      if (!token || token === PREFIX) return
+      submitToken(token)
+    },
+    [manualCode, submitToken]
   )
 
   const handleReset = useCallback(() => {
     setLastResult(null)
     setScannerReady(true)
+    if (mode === 'manual') {
+      setTimeout(() => inputRef.current?.focus(), 50)
+    }
+  }, [mode])
+
+  const handleManualCodeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    if (!val.startsWith(PREFIX)) {
+      setManualCode(PREFIX)
+    } else {
+      setManualCode(val)
+    }
   }, [])
 
   return (
     <div className="flex flex-col gap-8">
       <section>
-        <h2 className="text-base font-semibold mb-3">Scanner un QR Code</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold">Contrôle d&apos;accès</h2>
+          <div className="flex rounded-lg border overflow-hidden text-xs">
+            <button
+              onClick={() => setMode('scan')}
+              className={`px-3 py-1.5 ${mode === 'scan' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+            >
+              Scanner
+            </button>
+            <button
+              onClick={() => { setMode('manual'); setTimeout(() => inputRef.current?.focus(), 50) }}
+              className={`px-3 py-1.5 ${mode === 'manual' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+            >
+              Code manuel
+            </button>
+          </div>
+        </div>
+
         {lastResult ? (
           <CheckinResult result={lastResult} onReset={handleReset} />
-        ) : (
+        ) : mode === 'scan' ? (
           <QrScanner onScan={handleScan} ready={scannerReady} />
+        ) : (
+          <form
+            onSubmit={handleManualSubmit}
+            className="w-full max-w-sm mx-auto flex flex-col gap-3"
+          >
+            <label className="text-sm text-muted-foreground">
+              Code secret de l&apos;étudiant
+            </label>
+            <input
+              ref={inputRef}
+              type="text"
+              value={manualCode}
+              onChange={handleManualCodeChange}
+              placeholder={`${PREFIX}…`}
+              spellCheck={false}
+              autoCapitalize="characters"
+              className="w-full rounded-lg border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <button
+              type="submit"
+              disabled={isPending || manualCode.trim() === PREFIX}
+              className="w-full rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium disabled:opacity-50"
+            >
+              {isPending ? 'Vérification…' : 'Valider'}
+            </button>
+          </form>
         )}
       </section>
 
