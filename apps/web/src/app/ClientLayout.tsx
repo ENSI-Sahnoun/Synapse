@@ -1,13 +1,6 @@
-'use client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { type ReactNode } from 'react';
+// apps/web/src/app/ClientLayout.tsx
+'use client'
 
-const queryClient = new QueryClient();
-
-export const ClientLayout = ({ children }: { children: ReactNode }) => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
-};
+export function ClientLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
+}

@@ -1,7 +1,7 @@
-import '@/styles/globals.css';
-import localFont from 'next/font/local';
-import { DynamicLayoutProviders } from './DynamicLayoutProviders';
-import { ClientLayout } from './ClientLayout';
+// apps/web/src/app/layout.tsx
+import '@/styles/globals.css'
+import localFont from 'next/font/local'
+import { DynamicLayoutProviders } from './DynamicLayoutProviders'
 
 const inter = localFont({
   src: [
@@ -12,33 +12,22 @@ const inter = localFont({
   ],
   variable: '--font-inter',
   display: 'swap',
-});
-
-const robotoMono = localFont({
-  src: [
-    { path: '../../node_modules/@fontsource/roboto-mono/files/roboto-mono-latin-400-normal.woff2', weight: '400', style: 'normal' },
-    { path: '../../node_modules/@fontsource/roboto-mono/files/roboto-mono-latin-700-normal.woff2', weight: '700', style: 'normal' },
-  ],
-  variable: '--font-roboto-mono',
-  display: 'swap',
-});
+})
 
 export const metadata = {
-  title: 'Nextbase Open source starter',
-  description: 'Built with Next.js, Supabase, and Tailwind CSS',
-};
+  title: 'Synapse Management Platform',
+  description: 'Gestion de l\'espace de coworking Synapse',
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${robotoMono.variable}`}>
+    <html lang="fr" suppressHydrationWarning className={inter.variable}>
       <head />
       <body>
         <DynamicLayoutProviders>
-          <ClientLayout>
-            {children}
-          </ClientLayout>
+          {children}
         </DynamicLayoutProviders>
       </body>
     </html>
-  );
+  )
 }
