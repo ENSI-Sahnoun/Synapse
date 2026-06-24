@@ -125,26 +125,27 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
   )
 
   // --- Table handlers ---
+  // dx/dy come directly from Konva's drag delta (captured via onDragStart ref in TableToken)
+  // so they reflect the actual pixel movement, not a state-derived diff that can go stale.
   const handleTableDragEnd = useCallback(
-    (localId: string, x: number, y: number) => {
+    (localId: string, x: number, y: number, dx: number, dy: number) => {
       const snappedX = snap(x)
       const snappedY = snap(y)
-      setTables((prev) => {
-        const table = prev.find((t) => t.localId === localId)
-        if (!table) return prev
-        const dx = snappedX - table.position_x
-        const dy = snappedY - table.position_y
-        setSeats((prevSeats) =>
-          prevSeats.map((s) =>
-            s.table_id === localId
-              ? { ...s, position_x: s.position_x + dx, position_y: s.position_y + dy }
-              : s,
-          ),
-        )
-        return prev.map((t) =>
+      // Apply snap correction to the delta so chairs land on grid too
+      const snappedDx = snappedX - snap(x - dx)
+      const snappedDy = snappedY - snap(y - dy)
+      setTables((prev) =>
+        prev.map((t) =>
           t.localId === localId ? { ...t, position_x: snappedX, position_y: snappedY } : t,
-        )
-      })
+        ),
+      )
+      setSeats((prev) =>
+        prev.map((s) =>
+          s.table_id === localId
+            ? { ...s, position_x: s.position_x + snappedDx, position_y: s.position_y + snappedDy }
+            : s,
+        ),
+      )
     },
     [snap],
   )

@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef } from 'react'
 import { Group, Rect, Text } from 'react-konva'
 import type Konva from 'konva'
 
@@ -19,13 +20,30 @@ type Props = {
   table: TableData
   isSelected: boolean
   onSelect: (localId: string) => void
-  onDragEnd: (localId: string, x: number, y: number) => void
+  // x, y = new center position; dx, dy = actual drag delta from Konva (not state-derived)
+  onDragEnd: (localId: string, x: number, y: number, dx: number, dy: number) => void
 }
 
 export function TableToken({ table, isSelected, onSelect, onDragEnd }: Props) {
-  function handleDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
-    onDragEnd(table.localId, e.target.x(), e.target.y())
+  const dragStart = useRef({ x: 0, y: 0 })
+
+  function handleDragStart(e: Konva.KonvaEventObject<DragEvent>) {
+    dragStart.current = { x: e.target.x(), y: e.target.y() }
   }
+
+  function handleDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
+    const nx = e.target.x()
+    const ny = e.target.y()
+    onDragEnd(table.localId, nx, ny, nx - dragStart.current.x, ny - dragStart.current.y)
+  }
+
+  const w = table.width
+  const h = table.height
+  // table top-left corner in local space (group origin = center)
+  const lx = -w / 2
+  const ly = -h / 2
+  const LEG = 8
+  const legColor = isSelected ? '#b45309' : '#6b7280'
 
   return (
     <Group
@@ -33,33 +51,56 @@ export function TableToken({ table, isSelected, onSelect, onDragEnd }: Props) {
       y={table.position_y}
       rotation={table.rotation}
       draggable
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={() => onSelect(table.localId)}
       onTap={() => onSelect(table.localId)}
-      offsetX={table.width / 2}
-      offsetY={table.height / 2}
     >
+      {/* Table surface — warm wood tone */}
       <Rect
-        x={0}
-        y={0}
-        width={table.width}
-        height={table.height}
-        fill="#f1f5f9"
-        stroke={isSelected ? '#f59e0b' : '#94a3b8'}
+        x={lx}
+        y={ly}
+        width={w}
+        height={h}
+        fill={isSelected ? '#fef3c7' : '#fde8c8'}
+        stroke={isSelected ? '#f59e0b' : '#a16207'}
         strokeWidth={isSelected ? 2.5 : 1.5}
-        cornerRadius={6}
-        shadowBlur={isSelected ? 8 : 0}
-        shadowColor="#f59e0b"
+        cornerRadius={4}
+        shadowBlur={isSelected ? 10 : 3}
+        shadowColor={isSelected ? '#f59e0b' : '#00000033'}
+        shadowOffsetY={isSelected ? 0 : 1}
       />
+      {/* Inner frame / table inlay */}
+      <Rect
+        x={lx + 6}
+        y={ly + 6}
+        width={w - 12}
+        height={h - 12}
+        fill="transparent"
+        stroke="#c2855a"
+        strokeWidth={0.8}
+        cornerRadius={2}
+        listening={false}
+      />
+      {/* Legs — small squares at corners */}
+      <Rect x={lx} y={ly} width={LEG} height={LEG} fill={legColor} cornerRadius={2} listening={false} />
+      <Rect x={lx + w - LEG} y={ly} width={LEG} height={LEG} fill={legColor} cornerRadius={2} listening={false} />
+      <Rect x={lx} y={ly + h - LEG} width={LEG} height={LEG} fill={legColor} cornerRadius={2} listening={false} />
+      <Rect x={lx + w - LEG} y={ly + h - LEG} width={LEG} height={LEG} fill={legColor} cornerRadius={2} listening={false} />
+      {/* Label */}
       {table.label ? (
         <Text
+          x={lx}
+          y={ly}
           text={table.label}
-          fontSize={11}
-          fill="#475569"
+          fontSize={12}
+          fontStyle="bold"
+          fill="#78350f"
           align="center"
           verticalAlign="middle"
-          width={table.width}
-          height={table.height}
+          width={w}
+          height={h}
+          listening={false}
         />
       ) : null}
     </Group>
