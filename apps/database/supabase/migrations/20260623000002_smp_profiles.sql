@@ -9,7 +9,7 @@ CREATE TABLE public.profiles (
   university    text,
   study_level   text,
   -- qr_token used for check-in (Phase 2 replaces value with HMAC; column defined here)
-  qr_token      text        UNIQUE DEFAULT ('SYNAPSE-' || encode(extensions.gen_random_bytes(16), 'hex')),
+  qr_token      text        NOT NULL UNIQUE DEFAULT ('SYNAPSE-' || encode(extensions.gen_random_bytes(16), 'hex')),
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
@@ -61,9 +61,16 @@ CREATE POLICY "profiles_insert" ON public.profiles
   );
 
 -- Update: own profile (students); employees update students only; admin updates all
+-- WITH CHECK prevents students from self-escalating their role
 CREATE POLICY "profiles_update" ON public.profiles
-  FOR UPDATE USING (
+  FOR UPDATE
+  USING (
     auth.uid() = id
+    OR current_user_role() = 'admin'
+    OR (current_user_role() = 'employee' AND role = 'student')
+  )
+  WITH CHECK (
+    (auth.uid() = id AND current_user_role() = 'student' AND role = 'student')
     OR current_user_role() = 'admin'
     OR (current_user_role() = 'employee' AND role = 'student')
   );
