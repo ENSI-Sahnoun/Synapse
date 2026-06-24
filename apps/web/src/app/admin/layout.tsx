@@ -2,13 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { signOutAction } from '@/data/auth/sign-out'
 import { SidebarNavLink } from '@/components/ui/sidebar-nav-link'
-import {
-  ChartBar,
-  Users,
-  UserCircle,
-  CreditCard,
-  SignOut,
-} from '@phosphor-icons/react/dist/ssr'
+import { SignOut } from '@phosphor-icons/react/dist/ssr'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseClient()
@@ -24,10 +18,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (profile?.role !== 'admin') redirect('/login')
 
   const navItems = [
-    { href: '/admin/dashboard', label: 'Tableau de bord', Icon: ChartBar },
-    { href: '/admin/students', label: 'Étudiants', Icon: Users },
-    { href: '/admin/employees', label: 'Employés', Icon: UserCircle },
-    { href: '/admin/subscription-plans', label: 'Formules', Icon: CreditCard },
+    { href: '/admin/dashboard', label: 'Tableau de bord', icon: 'ChartBar' },
+    { href: '/admin/students', label: 'Étudiants', icon: 'Users' },
+    { href: '/admin/employees', label: 'Employés', icon: 'UserCircle' },
+    { href: '/admin/subscription-plans', label: 'Formules', icon: 'CreditCard' },
+    { href: '/admin/rooms', label: 'Salles', icon: 'Buildings' },
   ]
 
   return (
@@ -51,8 +46,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {navItems.map(({ href, label, Icon }) => (
-            <SidebarNavLink key={href} href={href} label={label} Icon={Icon} />
+          {navItems.map(({ href, label, icon }) => (
+            <SidebarNavLink key={href} href={href} label={label} icon={icon} />
           ))}
         </nav>
 
