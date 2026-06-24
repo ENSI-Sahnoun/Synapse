@@ -61,87 +61,13 @@ export type Database = {
         }
         Relationships: []
       }
-      content_blog_post_comments: {
-        Row: {
-          author_id: string
-          blog_post_id: string
-          body: string
-          created_at: string
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          author_id: string
-          blog_post_id: string
-          body: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          author_id?: string
-          blog_post_id?: string
-          body?: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "content_blog_post_comments_blog_post_id_fkey"
-            columns: ["blog_post_id"]
-            isOneToOne: false
-            referencedRelation: "content_blog_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      content_blog_posts: {
-        Row: {
-          author_id: string
-          body: string
-          created_at: string
-          excerpt: string | null
-          id: string
-          is_published: boolean
-          published_at: string | null
-          slug: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          author_id: string
-          body: string
-          created_at?: string
-          excerpt?: string | null
-          id?: string
-          is_published?: boolean
-          published_at?: string | null
-          slug: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          author_id?: string
-          body?: string
-          created_at?: string
-          excerpt?: string | null
-          id?: string
-          is_published?: boolean
-          published_at?: string | null
-          slug?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
           full_name: string
           id: string
           phone: string | null
-          qr_token: string | null
+          qr_token: string
           role: string
           study_level: string | null
           university: string | null
@@ -152,7 +78,7 @@ export type Database = {
           full_name?: string
           id: string
           phone?: string | null
-          qr_token?: string | null
+          qr_token?: string
           role?: string
           study_level?: string | null
           university?: string | null
@@ -163,7 +89,7 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
-          qr_token?: string | null
+          qr_token?: string
           role?: string
           study_level?: string | null
           university?: string | null
@@ -229,7 +155,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          end_date: string
+          end_date?: string
           id?: string
           paid_amount: number
           plan_id: string
