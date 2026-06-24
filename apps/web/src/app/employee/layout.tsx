@@ -2,13 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { signOutAction } from '@/data/auth/sign-out'
 import { SidebarNavLink } from '@/components/ui/sidebar-nav-link'
-import {
-  ChartBar,
-  Users,
-  ShoppingCart,
-  QrCode,
-  SignOut,
-} from '@phosphor-icons/react/dist/ssr'
+import { SignOut } from '@phosphor-icons/react/dist/ssr'
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseClient()
@@ -24,10 +18,11 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
   if (!profile || !['admin', 'employee'].includes(profile.role)) redirect('/login')
 
   const navItems = [
-    { href: '/employee/dashboard', label: 'Tableau de bord', Icon: ChartBar },
-    { href: '/employee/students', label: 'Étudiants', Icon: Users },
-    { href: '/employee/pos', label: 'Caisse', Icon: ShoppingCart },
-    { href: '/employee/checkin', label: 'Contrôle accès', Icon: QrCode },
+    { href: '/employee/dashboard', label: 'Tableau de bord', icon: 'ChartBar' },
+    { href: '/employee/students', label: 'Étudiants', icon: 'Users' },
+    { href: '/employee/rooms', label: 'Salles', icon: 'Buildings' },
+    { href: '/employee/pos', label: 'Caisse', icon: 'ShoppingCart' },
+    { href: '/employee/checkin', label: 'Contrôle accès', icon: 'QrCode' },
   ]
 
   return (
@@ -51,8 +46,8 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {navItems.map(({ href, label, Icon }) => (
-            <SidebarNavLink key={href} href={href} label={label} Icon={Icon} />
+          {navItems.map(({ href, label, icon }) => (
+            <SidebarNavLink key={href} href={href} label={label} icon={icon} />
           ))}
         </nav>
 
