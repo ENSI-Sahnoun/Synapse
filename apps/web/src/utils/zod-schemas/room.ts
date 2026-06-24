@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const createRoomSchema = z.object({
   name: z.string().min(1, 'Nom de la salle requis'),
   capacity: z
-    .number({ invalid_type_error: 'La capacité doit être un nombre' })
+    .number({ message: 'La capacité doit être un nombre' })
     .int('La capacité doit être un entier')
     .min(1, 'La capacité doit être au moins 1'),
 })
@@ -14,7 +14,7 @@ export const updateRoomSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, 'Nom de la salle requis').optional(),
   capacity: z
-    .number({ invalid_type_error: 'La capacité doit être un nombre' })
+    .number({ message: 'La capacité doit être un nombre' })
     .int()
     .min(1)
     .optional(),

@@ -30,13 +30,12 @@ export const updateRoomAction = adminActionClient
   .schema(updateRoomSchema)
   .action(async ({ parsedInput }) => {
     const supabase = await createSupabaseClient()
-    const updates: Record<string, unknown> = {}
-    if (parsedInput.name !== undefined) updates.name = parsedInput.name
-    if (parsedInput.capacity !== undefined) updates.capacity = parsedInput.capacity
-
     const { data, error } = await supabase
       .from('rooms')
-      .update(updates)
+      .update({
+        ...(parsedInput.name !== undefined && { name: parsedInput.name }),
+        ...(parsedInput.capacity !== undefined && { capacity: parsedInput.capacity }),
+      })
       .eq('id', parsedInput.id)
       .select()
       .single()
