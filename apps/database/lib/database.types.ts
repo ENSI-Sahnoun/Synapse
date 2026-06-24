@@ -217,7 +217,9 @@ export type Database = {
           position_x: number
           position_y: number
           room_id: string
+          rotation: number
           status: string
+          table_id: string | null
         }
         Insert: {
           created_at?: string
@@ -226,7 +228,9 @@ export type Database = {
           position_x?: number
           position_y?: number
           room_id: string
+          rotation?: number
           status?: string
+          table_id?: string | null
         }
         Update: {
           created_at?: string
@@ -235,7 +239,9 @@ export type Database = {
           position_x?: number
           position_y?: number
           room_id?: string
+          rotation?: number
           status?: string
+          table_id?: string | null
         }
         Relationships: [
           {
@@ -243,6 +249,13 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seats_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
             referencedColumns: ["id"]
           },
         ]
@@ -343,6 +356,53 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tables: {
+        Row: {
+          created_at: string
+          height: number
+          id: string
+          label: string
+          position_x: number
+          position_y: number
+          room_id: string
+          rotation: number
+          status: string
+          width: number
+        }
+        Insert: {
+          created_at?: string
+          height?: number
+          id?: string
+          label?: string
+          position_x?: number
+          position_y?: number
+          room_id: string
+          rotation?: number
+          status?: string
+          width?: number
+        }
+        Update: {
+          created_at?: string
+          height?: number
+          id?: string
+          label?: string
+          position_x?: number
+          position_y?: number
+          room_id?: string
+          rotation?: number
+          status?: string
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tables_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
         ]
