@@ -20,7 +20,12 @@ export default async function StudentLayout({ children }: { children: React.Reac
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b px-4 py-3 flex items-center justify-between">
         <span className="font-semibold text-sm">Synapse</span>
-        <span className="text-xs text-muted-foreground">{profile.full_name}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{profile.full_name}</span>
+          <form action={signOutAction}>
+            <button type="submit" className="text-xs text-destructive">Déconnexion</button>
+          </form>
+        </div>
       </header>
       <main className="flex-1 p-4 pb-20">{children}</main>
       {/* Bottom nav — mobile-first */}

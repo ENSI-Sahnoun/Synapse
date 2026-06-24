@@ -28,3 +28,5 @@ playwright/.auth/
 
 # Legacy ascii/one CLI ignore file
 .oneignore
+
+nextbase-nextjs-supabase-starter/

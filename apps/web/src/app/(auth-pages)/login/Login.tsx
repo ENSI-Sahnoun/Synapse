@@ -39,7 +39,7 @@ export function Login({
 
   function redirectToDashboard() {
     if (next) {
-      router.push(`/auth/callback?next=${next}`)
+      router.push(`/auth/callback?next=${encodeURIComponent(next)}`)
     } else {
       // Middleware will redirect to correct role home after session is set
       router.push('/auth/callback')
