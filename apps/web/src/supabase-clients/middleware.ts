@@ -1,78 +1,108 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
-import { match } from 'path-to-regexp';
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+
+type UserRole = 'admin' | 'employee' | 'student'
+
+const ROLE_HOME: Record<UserRole, string> = {
+  admin: '/admin/dashboard',
+  employee: '/employee/dashboard',
+  student: '/student/dashboard',
+}
+
+async function getUserRole(
+  supabase: ReturnType<typeof createServerClient>,
+  userId: string
+): Promise<UserRole | null> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single()
+  return (data?.role as UserRole) ?? null
+}
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll();
+          return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+          )
+          supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
-          );
+          )
         },
       },
     }
-  );
+  )
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
-  const protectedPages = [
-    '/dashboard',
-    '/private-item',
-    '/private-items',
-    '/items',
-    '/item',
-  ];
-
+  // IMPORTANT: do not add logic between createServerClient and getUser()
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser()
 
-  // if user doesn't exist and the page is protected, redirect to login
-  if (
-    !user &&
-    protectedPages.some((page) => {
-      // eslint-disable-next-line no-unexpected-multiline
-      const matcher = match(page);
-      return matcher(request.nextUrl.pathname);
-    })
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
+  const { pathname } = request.nextUrl
+
+  const isPublicPath =
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/sign-up') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/update-password')
+
+  // Redirect logged-in users away from auth pages
+  if (isPublicPath && user) {
+    const role = await getUserRole(supabase, user.id)
+    if (role) {
+      const url = request.nextUrl.clone()
+      url.pathname = ROLE_HOME[role]
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
   }
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
-  // creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  // Unauthenticated user on protected route
+  if (!isPublicPath && !user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
 
-  return supabaseResponse;
+  if (!user) return supabaseResponse
+
+  const role = await getUserRole(supabase, user.id)
+
+  // Role-based access enforcement
+  if (pathname.startsWith('/admin') && role !== 'admin') {
+    const url = request.nextUrl.clone()
+    url.pathname = role ? ROLE_HOME[role] : '/login'
+    return NextResponse.redirect(url)
+  }
+
+  if (
+    pathname.startsWith('/employee') &&
+    role !== 'admin' &&
+    role !== 'employee'
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = role ? ROLE_HOME[role] : '/login'
+    return NextResponse.redirect(url)
+  }
+
+  if (pathname.startsWith('/student') && role !== 'student') {
+    const url = request.nextUrl.clone()
+    url.pathname = role ? ROLE_HOME[role] : '/login'
+    return NextResponse.redirect(url)
+  }
+
+  return supabaseResponse
 }
