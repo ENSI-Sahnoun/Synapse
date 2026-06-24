@@ -19,8 +19,26 @@ describe('createStudentSchema', () => {
     expect(result.error?.issues[0].message).toBe('Nom requis (min 2 caractères)')
   })
 
-  it('allows empty optional fields', () => {
-    const result = createStudentSchema.safeParse({ full_name: 'Ali Trabelsi' })
+  it('allows email only (no phone)', () => {
+    const result = createStudentSchema.safeParse({
+      full_name: 'Ali Trabelsi',
+      email: 'ali@example.com',
+    })
     expect(result.success).toBe(true)
+  })
+
+  it('allows phone only (no email)', () => {
+    const result = createStudentSchema.safeParse({
+      full_name: 'Ali Trabelsi',
+      phone: '22334455',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('fails when both email and phone are empty', () => {
+    const result = createStudentSchema.safeParse({ full_name: 'Ali Trabelsi' })
+    expect(result.success).toBe(false)
+    const messages = result.error?.issues.map((i) => i.message) ?? []
+    expect(messages).toContain('Un email ou un numéro de téléphone est requis')
   })
 })

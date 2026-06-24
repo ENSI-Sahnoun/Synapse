@@ -13,11 +13,13 @@ export default async function StudentDetailPage({
   let student
   try {
     student = await getStudentById(studentId)
-  } catch {
-    notFound()
+  } catch (error) {
+    const pgError = error as { code?: string }
+    if (pgError?.code === 'PGRST116') {
+      notFound()
+    }
+    throw error
   }
-
-  if (!student) notFound()
 
   const today = new Date().toISOString().split('T')[0]
   const activeSubscription = student.subscriptions?.find((s) => s.end_date >= today)

@@ -11,7 +11,8 @@ export async function listStudents(search?: string) {
     .order('created_at', { ascending: false })
 
   if (search) {
-    query = query.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%`)
+    const safe = search.replace(/[%,]/g, '')
+    query = query.or(`full_name.ilike.%${safe}%,phone.ilike.%${safe}%`)
   }
 
   const { data, error } = await query
