@@ -17,6 +17,7 @@ const inter = localFont({
 export const metadata = {
   title: 'Synapse Management Platform',
   description: 'Gestion de l\'espace de coworking Synapse',
+  manifest: '/manifest.json',
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
