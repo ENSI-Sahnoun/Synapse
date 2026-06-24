@@ -61,56 +61,43 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      attendance: {
         Row: {
-          created_at: string
-          full_name: string
+          checked_in_at: string
+          checked_out_at: string | null
+          entry_method: string
           id: string
-          phone: string | null
-          qr_token: string
-          role: string
-          study_level: string | null
-          university: string | null
-          updated_at: string
+          room_id: string | null
+          seat_id: string | null
+          student_id: string
         }
         Insert: {
-          created_at?: string
-          full_name?: string
-          id: string
-          phone?: string | null
-          qr_token?: string
-          role?: string
-          study_level?: string | null
-          university?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          full_name?: string
+          checked_in_at?: string
+          checked_out_at?: string | null
+          entry_method: string
           id?: string
-          phone?: string | null
-          qr_token?: string
-          role?: string
-          study_level?: string | null
-          university?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      settings: {
-        Row: {
-          key: string
-          value: string
-        }
-        Insert: {
-          key: string
-          value: string
+          room_id?: string | null
+          seat_id?: string | null
+          student_id: string
         }
         Update: {
-          key?: string
-          value?: string
+          checked_in_at?: string
+          checked_out_at?: string | null
+          entry_method?: string
+          id?: string
+          room_id?: string | null
+          seat_id?: string | null
+          student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       loyalty_ledger: {
         Row: {
@@ -146,6 +133,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          phone: string | null
+          qr_token: string | null
+          role: string
+          study_level: string | null
+          university: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string
+          id: string
+          phone?: string | null
+          qr_token?: string | null
+          role?: string
+          study_level?: string | null
+          university?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          qr_token?: string | null
+          role?: string
+          study_level?: string | null
+          university?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          key: string
+          value: string
+        }
+        Insert: {
+          key: string
+          value: string
+        }
+        Update: {
+          key?: string
+          value?: string
+        }
+        Relationships: []
       }
       subscription_plans: {
         Row: {
