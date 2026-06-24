@@ -17,8 +17,14 @@ CREATE POLICY "settings_select" ON public.settings
   FOR SELECT USING (auth.uid() IS NOT NULL);
 
 -- Admin only: write
-CREATE POLICY "settings_write" ON public.settings
-  FOR ALL USING (current_user_role() = 'admin');
+CREATE POLICY "settings_insert" ON public.settings
+  FOR INSERT WITH CHECK (current_user_role() = 'admin');
+
+CREATE POLICY "settings_update" ON public.settings
+  FOR UPDATE USING (current_user_role() = 'admin');
+
+CREATE POLICY "settings_delete" ON public.settings
+  FOR DELETE USING (current_user_role() = 'admin');
 
 -- Account categories (income / expense)
 CREATE TABLE public.account_categories (
@@ -50,5 +56,11 @@ ALTER TABLE public.account_categories ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "account_categories_select" ON public.account_categories
   FOR SELECT USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "account_categories_write" ON public.account_categories
-  FOR ALL USING (current_user_role() = 'admin');
+CREATE POLICY "account_categories_insert" ON public.account_categories
+  FOR INSERT WITH CHECK (current_user_role() = 'admin');
+
+CREATE POLICY "account_categories_update" ON public.account_categories
+  FOR UPDATE USING (current_user_role() = 'admin');
+
+CREATE POLICY "account_categories_delete" ON public.account_categories
+  FOR DELETE USING (current_user_role() = 'admin');

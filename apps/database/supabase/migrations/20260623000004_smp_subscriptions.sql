@@ -5,12 +5,28 @@ CREATE TABLE public.subscriptions (
   student_id    uuid        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   plan_id       uuid        NOT NULL REFERENCES public.subscription_plans(id),
   start_date    date        NOT NULL DEFAULT CURRENT_DATE,
-  -- end_date always computed by application: start_date + plan.duration_days
-  end_date      date        NOT NULL,
+  -- end_date computed by trigger: start_date + plan.duration_days
+  end_date      date        NOT NULL DEFAULT CURRENT_DATE,
   paid_amount   numeric     NOT NULL CHECK (paid_amount >= 0),
   sold_by       uuid        NOT NULL REFERENCES public.profiles(id),
   created_at    timestamptz NOT NULL DEFAULT now()
 );
+
+-- Compute end_date from plan.duration_days before insert
+CREATE OR REPLACE FUNCTION public.compute_subscription_end_date()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  SELECT NEW.start_date + duration_days INTO NEW.end_date
+  FROM public.subscription_plans WHERE id = NEW.plan_id;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER set_subscription_end_date
+  BEFORE INSERT ON public.subscriptions
+  FOR EACH ROW EXECUTE FUNCTION public.compute_subscription_end_date();
 
 -- Index for fast active-subscription lookups
 CREATE INDEX subscriptions_student_end_date_idx
