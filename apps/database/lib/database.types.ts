@@ -183,6 +183,7 @@ export type Database = {
         Row: {
           expires_at: string
           id: string
+          is_priority: boolean
           queue_position: number | null
           reserved_at: string
           seat_id: string
@@ -192,6 +193,7 @@ export type Database = {
         Insert: {
           expires_at: string
           id?: string
+          is_priority?: boolean
           queue_position?: number | null
           reserved_at?: string
           seat_id: string
@@ -201,6 +203,7 @@ export type Database = {
         Update: {
           expires_at?: string
           id?: string
+          is_priority?: boolean
           queue_position?: number | null
           reserved_at?: string
           seat_id?: string

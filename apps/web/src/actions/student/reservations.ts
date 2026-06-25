@@ -90,16 +90,15 @@ export const createReservation = studentActionClient
 
       if (isPriority) {
         // Priority students go ahead of the first non-priority active reservation
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: firstNonPriority } = await (supabase
+        const { data: firstNonPriority } = await supabase
           .from('reservations')
           .select('queue_position')
           .eq('status', 'active')
-          .eq('is_priority' as any, false)
+          .eq('is_priority', false)
           .not('queue_position', 'is', null)
           .order('queue_position', { ascending: true })
           .limit(1)
-          .maybeSingle())
+          .maybeSingle()
 
         if (firstNonPriority?.queue_position != null) {
           const { error: shiftError } = await supabase.rpc('shift_queue_positions_down', {
@@ -138,8 +137,7 @@ export const createReservation = studentActionClient
     // 4. Insert reservation — DB partial unique index rejects a duplicate active reservation
     const expiresAt = new Date(Date.now() + holdMinutes * 60 * 1000).toISOString()
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: reservation, error: insertError } = await (supabase
+    const { data: reservation, error: insertError } = await supabase
       .from('reservations')
       .insert({
         student_id: userId,
@@ -148,7 +146,7 @@ export const createReservation = studentActionClient
         status: 'active',
         queue_position: queuePosition,
         is_priority: isPriority,
-      } as any))
+      })
       .select('id')
       .single()
 
