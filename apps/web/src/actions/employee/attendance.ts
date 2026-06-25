@@ -12,14 +12,19 @@ export const assignSeatAction = employeeActionClient
   .action(async ({ parsedInput }) => {
     const supabase = await createSupabaseClient()
 
-    // Mark seat occupied
-    const { error: seatError } = await supabase
+    // Mark seat occupied — only if it is still free (prevents double-booking)
+    const { data: updatedSeats, error: seatError } = await supabase
       .from('seats')
       .update({ status: 'occupied' })
       .eq('id', parsedInput.seat_id)
       .eq('room_id', parsedInput.room_id)
+      .eq('status', 'free')
+      .select('id')
 
     if (seatError) throw new Error(seatError.message)
+    if (!updatedSeats || updatedSeats.length === 0) {
+      throw new Error('Cette place n\'est plus disponible.')
+    }
 
     // Create attendance record (check-out handled in Phase 4 / kiosk checkout)
     const { data, error: attendanceError } = await supabase

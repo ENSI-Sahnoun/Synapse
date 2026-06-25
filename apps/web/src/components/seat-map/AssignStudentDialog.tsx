@@ -49,11 +49,12 @@ export function AssignStudentDialog({ seat, open, onOpenChange }: Props) {
     const timeout = setTimeout(async () => {
       setIsSearching(true)
       const supabase = createClient()
+      const safe = query.replace(/[%,)]/g, '')
       const { data } = await supabase
         .from('profiles')
         .select('id, full_name, phone')
         .eq('role', 'student')
-        .or(`full_name.ilike.%${query}%,phone.ilike.%${query}%`)
+        .or(`full_name.ilike.%${safe}%,phone.ilike.%${safe}%`)
         .limit(8)
 
       setResults((data as StudentResult[]) ?? [])
