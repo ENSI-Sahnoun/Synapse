@@ -26,10 +26,19 @@ export default async function ReservationPage() {
   // Check existing active reservation
   const { data: activeReservation } = await supabase
     .from('reservations')
-    .select('id, seat_id, expires_at, seats(label)')
+    .select('id, seat_id, expires_at, queue_position, seats(label)')
     .eq('student_id', user.id)
     .eq('status', 'active')
     .maybeSingle()
+
+  // Fetch exam_mode setting
+  const { data: examModeSetting } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', 'exam_mode')
+    .maybeSingle()
+
+  const examMode = examModeSetting?.value === 'true'
 
   // Fetch rooms + tables + seats for map
   const { data: rooms } = await supabase
@@ -43,6 +52,7 @@ export default async function ReservationPage() {
     id: string
     seat_id: string
     expires_at: string
+    queue_position: number | null
     seats: { label: string } | null
   } | null
 
@@ -56,7 +66,14 @@ export default async function ReservationPage() {
         </div>
       )}
 
-      {typedReservation && <ActiveReservationBanner reservation={typedReservation} />}
+      {typedReservation && <ActiveReservationBanner reservation={typedReservation} examMode={examMode} />}
+
+      {subscription && !typedReservation && examMode && (
+        <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-blue-800 text-sm">
+          <strong>Mode examen activé</strong> — une réservation est obligatoire pour accéder à l'espace.
+          Choisissez une place ci-dessous.
+        </div>
+      )}
 
       {subscription && !typedReservation && <ReservationSeatMap rooms={rooms ?? []} />}
     </div>

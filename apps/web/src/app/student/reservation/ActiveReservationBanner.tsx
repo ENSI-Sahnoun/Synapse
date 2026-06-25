@@ -6,10 +6,17 @@ type Reservation = {
   id: string
   seat_id: string
   expires_at: string
+  queue_position: number | null
   seats: { label: string } | null
 }
 
-export function ActiveReservationBanner({ reservation }: { reservation: Reservation }) {
+export function ActiveReservationBanner({
+  reservation,
+  examMode,
+}: {
+  reservation: Reservation
+  examMode: boolean
+}) {
   const [timeLeft, setTimeLeft] = useState('')
 
   useEffect(() => {
@@ -39,9 +46,17 @@ export function ActiveReservationBanner({ reservation }: { reservation: Reservat
           </p>
         </div>
       </div>
+      {examMode && reservation.queue_position != null && (
+        <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-800 mt-2">
+          Position dans la file d'attente :{' '}
+          <strong className="text-blue-900 text-base">#{reservation.queue_position}</strong>
+        </div>
+      )}
       <p className="text-xs text-orange-600 mt-2">
-        Présentez-vous et scannez votre QR code pour confirmer votre place.
-        Les réservations ne peuvent pas être annulées manuellement.
+        {examMode
+          ? "Mode examen — présentez-vous dans l'ordre de la file pour valider votre entrée."
+          : 'Présentez-vous et scannez votre QR code pour confirmer votre place.'}
+        {' '}Les réservations ne peuvent pas être annulées manuellement.
       </p>
     </div>
   )
