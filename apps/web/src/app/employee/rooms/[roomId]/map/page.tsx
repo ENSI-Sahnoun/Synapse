@@ -1,6 +1,6 @@
 import { getRoomById } from '@/data/admin/rooms'
 import { getSeatMap } from '@/data/admin/seat-map'
-import { RoomMap } from './RoomMap'
+import { EmployeeMapClient } from './EmployeeMapClient'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { CaretLeft } from '@phosphor-icons/react/dist/ssr'
@@ -17,9 +17,6 @@ export default async function RoomMapPage({ params }: Props) {
 
   if (!room) notFound()
 
-  const freeCount = seats.filter((s) => s.status === 'free').length
-  const placesLabel = freeCount !== 1 ? `${freeCount} places disponibles` : `${freeCount} place disponible`
-
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-4">
@@ -29,32 +26,10 @@ export default async function RoomMapPage({ params }: Props) {
             Salles
           </Link>
         </Button>
-        <div>
-          <h1 className="text-2xl font-semibold">{room.name}</h1>
-          <p className="text-muted-foreground text-sm">{placesLabel}</p>
-        </div>
+        <h1 className="text-2xl font-semibold">{room.name}</h1>
       </div>
 
-      <RoomMap tables={tables} seats={seats} />
-
-      <div className="flex gap-3 text-sm text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-blue-500" />
-          Libre
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-red-500" />
-          Occupée
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-green-500" />
-          Ma place
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-gray-400" />
-          Hors service
-        </span>
-      </div>
+      <EmployeeMapClient room={room} initialTables={tables} initialSeats={seats} />
     </div>
   )
 }
