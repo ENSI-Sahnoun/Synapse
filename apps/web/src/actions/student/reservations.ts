@@ -53,6 +53,85 @@ export const createReservation = studentActionClient
 
     const holdMinutes = parseInt(settingRow?.value ?? '30', 10)
 
+    // --- Exam mode: queue assignment ---
+    const { data: examModeSetting } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'exam_mode')
+      .maybeSingle()
+
+    const examMode = examModeSetting?.value === 'true'
+
+    let queuePosition: number | null = null
+
+    if (examMode) {
+      const { data: prioritySetting } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'priority_min_duration_days')
+        .maybeSingle()
+
+      const priorityMinDays = parseInt(prioritySetting?.value ?? '30', 10)
+
+      // Check if this student qualifies as priority
+      const { data: subWithPlan } = await supabase
+        .from('subscriptions')
+        .select('subscription_plans(duration_days)')
+        .eq('student_id', userId)
+        .gte('end_date', today)
+        .order('end_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      const planDuration = (subWithPlan?.subscription_plans as { duration_days: number } | null)
+        ?.duration_days ?? 0
+      const isPriority = planDuration >= priorityMinDays
+
+      if (isPriority) {
+        // Priority students go ahead of the first non-priority active reservation
+        const { data: firstNonPriority } = await supabase
+          .from('reservations')
+          .select('queue_position')
+          .eq('status', 'active')
+          .not('queue_position', 'is', null)
+          .order('queue_position', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+
+        if (firstNonPriority?.queue_position != null) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.rpc as any)('shift_queue_positions_down', {
+            from_position: firstNonPriority.queue_position,
+          })
+          queuePosition = firstNonPriority.queue_position
+        } else {
+          const { data: maxRow } = await supabase
+            .from('reservations')
+            .select('queue_position')
+            .eq('status', 'active')
+            .not('queue_position', 'is', null)
+            .order('queue_position', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+          queuePosition = (maxRow?.queue_position ?? 0) + 1
+        }
+      } else {
+        // Non-priority: join at the end of the queue
+        const { data: maxRow } = await supabase
+          .from('reservations')
+          .select('queue_position')
+          .eq('status', 'active')
+          .not('queue_position', 'is', null)
+          .order('queue_position', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        queuePosition = (maxRow?.queue_position ?? 0) + 1
+      }
+    }
+    // --- End exam mode queue assignment ---
+
     // 4. Insert reservation — DB partial unique index rejects a duplicate active reservation
     const expiresAt = new Date(Date.now() + holdMinutes * 60 * 1000).toISOString()
 
@@ -63,6 +142,7 @@ export const createReservation = studentActionClient
         seat_id: seat_id,
         expires_at: expiresAt,
         status: 'active',
+        queue_position: queuePosition,
       })
       .select('id')
       .single()
@@ -95,5 +175,7 @@ export const createReservation = studentActionClient
       reservationId: reservation.id,
       expiresAt,
       holdMinutes,
+      examMode,
+      queuePosition,
     }
   })
