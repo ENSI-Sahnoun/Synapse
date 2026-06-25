@@ -14,3 +14,5 @@ BEGIN
     AND queue_position >= from_position;
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.shift_queue_positions_down(int) TO authenticated;
