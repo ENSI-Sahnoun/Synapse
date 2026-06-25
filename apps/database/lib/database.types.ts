@@ -179,6 +179,51 @@ export type Database = {
         }
         Relationships: []
       }
+      reservations: {
+        Row: {
+          expires_at: string
+          id: string
+          queue_position: number | null
+          reserved_at: string
+          seat_id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          expires_at: string
+          id?: string
+          queue_position?: number | null
+          reserved_at?: string
+          seat_id: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          queue_position?: number | null
+          reserved_at?: string
+          seat_id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_seat_id_fkey"
+            columns: ["seat_id"]
+            isOneToOne: false
+            referencedRelation: "seats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           capacity: number
@@ -305,48 +350,6 @@ export type Database = {
         }
         Relationships: []
       }
-      reservations: {
-        Row: {
-          created_at: string
-          expires_at: string
-          id: string
-          seat_id: string
-          status: string
-          student_id: string
-        }
-        Insert: {
-          created_at?: string
-          expires_at: string
-          id?: string
-          seat_id: string
-          status?: string
-          student_id: string
-        }
-        Update: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          seat_id?: string
-          status?: string
-          student_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reservations_seat_id_fkey"
-            columns: ["seat_id"]
-            isOneToOne: false
-            referencedRelation: "seats"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reservations_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       subscriptions: {
         Row: {
           created_at: string
@@ -455,6 +458,7 @@ export type Database = {
     }
     Functions: {
       current_user_role: { Args: never; Returns: string }
+      expire_stale_reservations: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

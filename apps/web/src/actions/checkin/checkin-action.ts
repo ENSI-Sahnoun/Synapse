@@ -100,6 +100,7 @@ export const checkinAction = employeeActionClient
         .from('seats')
         .update({ status: 'occupied' })
         .eq('id', activeReservation.seat_id)
+        .eq('status', 'reserved')
     }
 
     const { error: insertError } = await admin
