@@ -10,12 +10,15 @@ import type { Room } from '@/data/admin/rooms'
 
 type PartialTable = {
   id: string
+  room_id: string
   position_x: number
   position_y: number
   width: number
   height: number
   rotation: number
   label: string
+  status: string
+  created_at: string
 }
 
 type PartialSeat = {
@@ -26,6 +29,7 @@ type PartialSeat = {
   rotation: number
   status: string
   table_id: string | null
+  room_id: string
 }
 
 type RoomWithData = {
@@ -88,8 +92,8 @@ export function ReservationSeatMap({ rooms }: { rooms: RoomWithData[] }) {
           <div key={room.id} className="border rounded-xl p-4">
             <LiveSeatMap
               room={roomData}
-              initialTables={room.tables as unknown as import('@/data/admin/seat-map').RoomTable[]}
-              initialSeats={room.seats as unknown as Seat[]}
+              initialTables={room.tables as import('@/data/admin/seat-map').RoomTable[]}
+              initialSeats={room.seats as Seat[]}
               mode="student"
               onSeatClick={handleSeatClick}
             />

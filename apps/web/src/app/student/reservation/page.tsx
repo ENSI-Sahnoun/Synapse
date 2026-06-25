@@ -35,7 +35,7 @@ export default async function ReservationPage() {
   const { data: rooms } = await supabase
     .from('rooms')
     .select(
-      'id, name, status, status_note, tables(id, position_x, position_y, width, height, rotation, label), seats(id, label, position_x, position_y, rotation, status, table_id)',
+      'id, name, status, status_note, tables(id, room_id, position_x, position_y, width, height, rotation, label, status, created_at), seats(id, label, position_x, position_y, rotation, status, table_id, room_id)',
     )
     .eq('status', 'open')
 
