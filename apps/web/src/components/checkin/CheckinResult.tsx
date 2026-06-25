@@ -41,7 +41,13 @@ const STATUS_CONFIG = {
     badge: 'bg-yellow-100 text-yellow-800',
     label: 'DÉJÀ PRÉSENT',
   },
-} as const
+  DENIED_NO_RESERVATION: {
+    bg: 'bg-red-50 border-red-200',
+    heading: 'text-red-800',
+    badge: 'bg-red-100 text-red-800',
+    label: 'REFUSÉ — PAS DE RÉSERVATION',
+  },
+} satisfies Record<CheckinResultType['status'], { bg: string; heading: string; badge: string; label: string }>
 
 function formatDate(dateStr: string): string {
   try {
@@ -107,6 +113,15 @@ export function CheckinResult({ result, onReset }: CheckinResultProps) {
           <p className={`text-2xl font-bold ${config.heading}`}>{result.studentName}</p>
           <p className="text-sm">
             Entrée enregistrée à : <span className="font-medium">{format(parseISO(result.checkedInAt), 'HH:mm', { locale: fr })}</span>
+          </p>
+        </>
+      )}
+
+      {result.status === 'DENIED_NO_RESERVATION' && (
+        <>
+          <p className={`text-2xl font-bold ${config.heading}`}>{result.studentName}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Mode examen actif — une réservation préalable est obligatoire.
           </p>
         </>
       )}

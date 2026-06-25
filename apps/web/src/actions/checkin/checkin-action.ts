@@ -82,6 +82,29 @@ export const checkinAction = employeeActionClient
       }
     }
 
+    // Exam mode: mandatory reservation check
+    const { data: examModeRow } = await admin
+      .from('settings')
+      .select('value')
+      .eq('key', 'exam_mode')
+      .maybeSingle()
+
+    if (examModeRow?.value === 'true') {
+      const { data: mandatoryReservation } = await admin
+        .from('reservations')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (!mandatoryReservation) {
+        return {
+          status: 'DENIED_NO_RESERVATION' as const,
+          studentName: profile.full_name,
+        }
+      }
+    }
+
     // Look for active reservation
     const { data: activeReservation } = await admin
       .from('reservations')
