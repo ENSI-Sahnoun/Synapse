@@ -70,6 +70,11 @@ export function CheckinResult({ result, onReset }: CheckinResultProps) {
           <div>
             <p className={`text-2xl font-bold ${config.heading}`}>{result.studentName}</p>
             <p className="text-sm text-muted-foreground mt-1">{result.planName}</p>
+            {result.reservationFulfilled && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 mt-1">
+                Réservation confirmée
+              </span>
+            )}
           </div>
           <div className="text-sm space-y-1">
             <p>Expire le : <span className="font-medium">{formatDate(result.endDate)}</span></p>

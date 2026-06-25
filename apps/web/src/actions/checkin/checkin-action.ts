@@ -82,11 +82,31 @@ export const checkinAction = employeeActionClient
       }
     }
 
+    // Look for active reservation
+    const { data: activeReservation } = await admin
+      .from('reservations')
+      .select('id, seat_id')
+      .eq('student_id', studentId)
+      .eq('status', 'active')
+      .maybeSingle()
+
+    if (activeReservation) {
+      await admin
+        .from('reservations')
+        .update({ status: 'fulfilled' })
+        .eq('id', activeReservation.id)
+
+      await admin
+        .from('seats')
+        .update({ status: 'occupied' })
+        .eq('id', activeReservation.seat_id)
+    }
+
     const { error: insertError } = await admin
       .from('attendance')
       .insert({
         student_id: studentId,
-        seat_id: null,
+        seat_id: activeReservation?.seat_id ?? null,
         room_id: null,
         entry_method: 'qr_scan',
       })
@@ -108,5 +128,6 @@ export const checkinAction = employeeActionClient
       planName,
       endDate: subscription.end_date,
       daysRemaining,
+      reservationFulfilled: !!activeReservation,
     }
   })
