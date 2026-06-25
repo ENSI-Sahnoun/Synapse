@@ -122,7 +122,7 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <h2 className="font-semibold">{room.name}</h2>
-        <CapacityBadge occupiedCount={occupiedCount} totalSeats={seats.length} />
+        {!isRoomClosed && <CapacityBadge occupiedCount={occupiedCount} totalSeats={seats.length} />}
       </div>
 
       {isRoomClosed && (

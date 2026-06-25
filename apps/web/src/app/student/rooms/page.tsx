@@ -35,11 +35,13 @@ export default async function StudentRoomsPage() {
                 <p className="font-medium">{room.name}</p>
                 <div className="flex items-center gap-2">
                   <RoomStatusIndicator status={room.status ?? 'closed'} />
-                  <CapacityBadge
-                    occupiedCount={room.occupied_count}
-                    totalSeats={room.seat_count}
-                    showCount
-                  />
+                  {room.status === 'open' && (
+                    <CapacityBadge
+                      occupiedCount={room.occupied_count}
+                      totalSeats={room.seat_count}
+                      showCount
+                    />
+                  )}
                 </div>
                 {room.status_note && (
                   <p className="text-muted-foreground text-xs">{room.status_note}</p>
