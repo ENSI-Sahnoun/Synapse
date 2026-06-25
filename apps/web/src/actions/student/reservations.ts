@@ -63,6 +63,7 @@ export const createReservation = studentActionClient
     const examMode = examModeSetting?.value === 'true'
 
     let queuePosition: number | null = null
+    let isPriority = false
 
     if (examMode) {
       const { data: prioritySetting } = await supabase
@@ -85,24 +86,27 @@ export const createReservation = studentActionClient
 
       const planDuration = (subWithPlan?.subscription_plans as { duration_days: number } | null)
         ?.duration_days ?? 0
-      const isPriority = planDuration >= priorityMinDays
+      isPriority = planDuration >= priorityMinDays
 
       if (isPriority) {
         // Priority students go ahead of the first non-priority active reservation
-        const { data: firstNonPriority } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: firstNonPriority } = await (supabase
           .from('reservations')
           .select('queue_position')
           .eq('status', 'active')
+          .eq('is_priority' as any, false)
           .not('queue_position', 'is', null)
           .order('queue_position', { ascending: true })
           .limit(1)
-          .maybeSingle()
+          .maybeSingle())
 
         if (firstNonPriority?.queue_position != null) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.rpc as any)('shift_queue_positions_down', {
+          const { error: shiftError } = await (supabase.rpc as any)('shift_queue_positions_down', {
             from_position: firstNonPriority.queue_position,
           })
+          if (shiftError) throw new Error("Impossible de réorganiser la file d'attente.")
           queuePosition = firstNonPriority.queue_position
         } else {
           const { data: maxRow } = await supabase
@@ -135,7 +139,8 @@ export const createReservation = studentActionClient
     // 4. Insert reservation — DB partial unique index rejects a duplicate active reservation
     const expiresAt = new Date(Date.now() + holdMinutes * 60 * 1000).toISOString()
 
-    const { data: reservation, error: insertError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: reservation, error: insertError } = await (supabase
       .from('reservations')
       .insert({
         student_id: userId,
@@ -143,7 +148,8 @@ export const createReservation = studentActionClient
         expires_at: expiresAt,
         status: 'active',
         queue_position: queuePosition,
-      })
+        is_priority: isPriority,
+      } as any))
       .select('id')
       .single()
 
