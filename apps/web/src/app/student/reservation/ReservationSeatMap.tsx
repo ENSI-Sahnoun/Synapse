@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAction } from 'next-safe-action/hooks'
+import { createClient } from '@/supabase-clients/client'
 import { createReservation } from '@/actions/student/reservations'
 import { LiveSeatMap } from '@/components/seat-map/LiveSeatMap'
 import { toast } from 'sonner'
@@ -43,6 +44,26 @@ type RoomWithData = {
 
 export function ReservationSeatMap({ rooms }: { rooms: RoomWithData[] }) {
   const [pendingSeat, setPendingSeat] = useState<PartialSeat | null>(null)
+  const [liveRooms, setLiveRooms] = useState(rooms)
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel('reservation-page-seats')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'seats' }, (payload) => {
+        const updated = payload.new as { id: string; status: string }
+        setLiveRooms((prev) =>
+          prev.map((room) => ({
+            ...room,
+            seats: room.seats.map((s) => s.id === updated.id ? { ...s, status: updated.status } : s),
+          }))
+        )
+        // If the pending seat was just taken, clear it
+        setPendingSeat((prev) => (prev?.id === updated.id && updated.status !== 'free' ? null : prev))
+      })
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [])
 
   const { execute, status } = useAction(createReservation, {
     onSuccess: ({ data }) => {
@@ -80,7 +101,7 @@ export function ReservationSeatMap({ rooms }: { rooms: RoomWithData[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {rooms.map((room) => {
+      {liveRooms.map((room) => {
         const roomData: Room = {
           id: room.id,
           name: room.name,
