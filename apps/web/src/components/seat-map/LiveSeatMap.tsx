@@ -163,9 +163,10 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
             })}
 
             {seats.map((seat) => {
-              const clickable = isSeatClickable(seat)
-              const fill = SEAT_FILL[seat.status] ?? '#3b82f6'
-              const opacity = seat.status === 'out_of_service' ? 0.55 : 1
+              const isClickable = isSeatClickable(seat)
+              const effectiveStatus = isRoomClosed && mode === 'student' ? 'out_of_service' : seat.status
+              const fill = SEAT_FILL[effectiveStatus] ?? SEAT_FILL.free
+              const opacity = effectiveStatus === 'out_of_service' ? 0.55 : 1
               return (
                 <Group
                   key={seat.id}
@@ -175,7 +176,12 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
                   opacity={opacity}
                   onClick={() => handleSeatClick(seat)}
                   onTap={() => handleSeatClick(seat)}
-                  style={{ cursor: clickable ? 'pointer' : 'default' }}
+                  onMouseEnter={(e) => {
+                    if (isClickable) e.target.getStage()!.container().style.cursor = 'pointer'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.getStage()!.container().style.cursor = 'default'
+                  }}
                 >
                   <Rect x={-SEAT_W / 2} y={BACK_Y} width={SEAT_W} height={BACK_H} fill={fill} stroke="#1e3a5f" strokeWidth={1.5} cornerRadius={[4, 4, 1, 1]} listening={false} />
                   <Rect x={-SEAT_W / 2} y={-SEAT_H / 2} width={SEAT_W} height={SEAT_H} fill={fill} stroke="#1e3a5f" strokeWidth={1.5} cornerRadius={[1, 1, 4, 4]} />
