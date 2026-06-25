@@ -102,8 +102,7 @@ export const createReservation = studentActionClient
           .maybeSingle())
 
         if (firstNonPriority?.queue_position != null) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error: shiftError } = await (supabase.rpc as any)('shift_queue_positions_down', {
+          const { error: shiftError } = await supabase.rpc('shift_queue_positions_down', {
             from_position: firstNonPriority.queue_position,
           })
           if (shiftError) throw new Error("Impossible de réorganiser la file d'attente.")

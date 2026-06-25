@@ -459,6 +459,10 @@ export type Database = {
     Functions: {
       current_user_role: { Args: never; Returns: string }
       expire_stale_reservations: { Args: never; Returns: undefined }
+      shift_queue_positions_down: {
+        Args: { from_position: number }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
