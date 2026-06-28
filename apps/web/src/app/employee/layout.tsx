@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { signOutAction } from '@/data/auth/sign-out'
 import { SidebarNavLink } from '@/components/ui/sidebar-nav-link'
 import { SignOut } from '@phosphor-icons/react/dist/ssr'
+import { getMyNotifications, getMyUnreadCount } from '@/data/notifications/list'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseClient()
@@ -16,6 +18,14 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
     .single()
 
   if (!profile || !['admin', 'employee'].includes(profile.role)) redirect('/login')
+
+  let notifications: Awaited<ReturnType<typeof getMyNotifications>> = []
+  let unreadCount = 0
+  try {
+    ;[notifications, unreadCount] = await Promise.all([getMyNotifications(20), getMyUnreadCount()])
+  } catch {
+    // non-fatal — bell renders empty
+  }
 
   const navItems = [
     { href: '/employee/dashboard', label: 'Tableau de bord', icon: 'ChartBar' },
@@ -33,16 +43,19 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
         style={{ backgroundColor: 'var(--sidebar)' }}
       >
         {/* Logo */}
-        <div className="px-5 py-5 border-b" style={{ borderColor: 'var(--sidebar-border)' }}>
-          <p
-            className="text-lg tracking-tight"
-            style={{ fontFamily: "'DM Serif Display', serif", color: 'var(--sidebar-foreground)' }}
-          >
-            Synapse
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--sidebar-muted)' }}>
-            Accueil
-          </p>
+        <div className="px-5 py-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--sidebar-border)' }}>
+          <div>
+            <p
+              className="text-lg tracking-tight"
+              style={{ fontFamily: "'DM Serif Display', serif", color: 'var(--sidebar-foreground)' }}
+            >
+              Synapse
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--sidebar-muted)' }}>
+              Accueil
+            </p>
+          </div>
+          <NotificationBell initialNotifications={notifications} initialUnreadCount={unreadCount} />
         </div>
 
         {/* Nav */}
