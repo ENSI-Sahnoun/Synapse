@@ -42,6 +42,7 @@ export async function dispatch(
         if (!target.phone) throw new Error('No phone number for target')
         await sendWhatsApp({ to: target.phone, body: message.whatsappBody })
       }
+      // 'inapp' is a no-op here — in-app notifications are written to the DB by the scheduled processor directly
       results.push({ channel, error: null })
     } catch (err) {
       results.push({
