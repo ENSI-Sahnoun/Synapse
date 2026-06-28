@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createSupabaseBrowserClient } from '@/supabase-clients/client'
+import { createClient } from '@/supabase-clients/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { LiveSnapshot } from '@/data/admin/dashboard'
@@ -14,7 +14,7 @@ export function LiveIndicators({ initial }: Props) {
   const [snapshot, setSnapshot] = useState<LiveSnapshot>(initial)
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient()
+    const supabase = createClient()
 
     // Re-fetch live snapshot on any relevant change
     async function refresh() {

@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '@/supabase-clients/server'
+import { createSupabaseClient } from '@/supabase-clients/server'
 
 export type LiveSnapshot = {
   studentsInside: number
@@ -30,7 +30,7 @@ export type CustomMetricRow = {
 const today = () => new Date().toISOString().slice(0, 10)
 
 export async function getLiveSnapshot(): Promise<LiveSnapshot> {
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createSupabaseClient()
 
   const todayStr = today()
 
@@ -96,7 +96,7 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
 }
 
 export async function getDailySummary(): Promise<DailySummary> {
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createSupabaseClient()
   const todayStr = today()
   const start = todayStr + 'T00:00:00'
   const end = todayStr + 'T23:59:59'
@@ -141,7 +141,7 @@ export async function getDailySummary(): Promise<DailySummary> {
 }
 
 export async function getRevenueOverTime(days = 30): Promise<RevenuePoint[]> {
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createSupabaseClient()
   const since = new Date()
   since.setDate(since.getDate() - days)
   const sinceStr = since.toISOString().slice(0, 10)
@@ -179,7 +179,7 @@ export async function getRevenueOverTime(days = 30): Promise<RevenuePoint[]> {
 }
 
 export async function getStudentTypeSeries(days = 30): Promise<StudentTypePoint[]> {
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createSupabaseClient()
   const since = new Date()
   since.setDate(since.getDate() - days)
   const sinceStr = since.toISOString().slice(0, 10)
@@ -222,7 +222,7 @@ export async function getStudentTypeSeries(days = 30): Promise<StudentTypePoint[
 }
 
 export async function getPlanPopularity(): Promise<PlanPopularity[]> {
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createSupabaseClient()
   const { data } = await supabase
     .from('subscriptions')
     .select('plan_id, subscription_plans!inner(name)')
@@ -236,7 +236,7 @@ export async function getPlanPopularity(): Promise<PlanPopularity[]> {
 }
 
 export async function getCustomMetrics(): Promise<CustomMetricRow[]> {
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createSupabaseClient()
   const { data: metrics } = await supabase
     .from('custom_metrics')
     .select('*')

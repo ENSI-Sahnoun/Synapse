@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getLiveSnapshot } from '@/data/admin/dashboard'
-import { createSupabaseServerClient } from '@/supabase-clients/server'
+import { createSupabaseClient } from '@/supabase-clients/server'
 
 export async function GET() {
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createSupabaseClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
