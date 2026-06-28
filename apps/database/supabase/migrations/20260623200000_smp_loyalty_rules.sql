@@ -19,3 +19,19 @@ FROM (VALUES
   ('Réduction 10%',     'discount_pct',  50, 10)
 ) AS defaults(name, reward_type, points_threshold, reward_value)
 WHERE NOT EXISTS (SELECT 1 FROM public.loyalty_rules LIMIT 1);
+
+ALTER TABLE public.loyalty_rules ENABLE ROW LEVEL SECURITY;
+
+-- All authenticated users can read active rules (students need this for UI)
+CREATE POLICY "loyalty_rules_select" ON public.loyalty_rules
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Only admins can insert/update/delete
+CREATE POLICY "loyalty_rules_insert" ON public.loyalty_rules
+  FOR INSERT WITH CHECK (public.current_user_role() = 'admin');
+
+CREATE POLICY "loyalty_rules_update" ON public.loyalty_rules
+  FOR UPDATE USING (public.current_user_role() = 'admin');
+
+CREATE POLICY "loyalty_rules_delete" ON public.loyalty_rules
+  FOR DELETE USING (public.current_user_role() = 'admin');

@@ -30,3 +30,9 @@ playwright/.auth/
 .oneignore
 
 nextbase-nextjs-supabase-starter/
+
+# Turbo build cache
+.turbo/
+
+# Next.js generated types (auto-generated)
+apps/web/next-env.d.ts
