@@ -1,24 +1,18 @@
-# Task 4: Admin Loyalty Data Layer — Report
+# Task 4 Report — Notifications Migration + In-App Helper
 
-## Status
-✅ COMPLETE
+## Status: COMPLETE
 
-## Changes Implemented
+## Commits
+- `3c13b83` feat(notifications): add notifications table migration and in-app helper
 
-**File:** `apps/web/src/data/admin/loyalty-rules.ts`
+## Files Created
+- `apps/database/supabase/migrations/20260623400002_notifications.sql` — notifications table with RLS (student read own, admin read all)
+- `apps/web/src/data/notifications/inapp.ts` — `insertInAppNotification`, `buildExpiryWarningMessage`, `buildExpiredMessage`, `buildRenewalReminderMessage`
 
-### Step 1: Data Layer Implementation
-- Created server-side data layer for loyalty rules management
-- Implemented `listLoyaltyRules()`: fetches all loyalty rules ordered by points_threshold ascending
-- Implemented `getLoyaltyRuleById(id: string)`: fetches single loyalty rule by id
-- Uses `createSupabaseClient` from `@/supabase-clients/server`
-- Marked as 'use server' for server action context
-- Error handling: throws errors from Supabase queries, returns empty array fallback for list queries
+## Tests
+N/A — not required for this task.
 
-### Step 2: Commit
-```
-50166d4 — feat(loyalty): add admin loyalty rules data layer
-```
-
-## Summary
-Loyalty rules data layer created with listLoyaltyRules and getLoyaltyRuleById functions; server-side integration ready for admin dashboard.
+## Concerns
+- The `as never` cast strategy for untyped tables caused the insert object to also be typed as `never`, rejecting known properties. Used `(supabase.from as any)('notifications')` instead — works cleanly.
+- `expiry-queries.ts` has a pre-existing TS error (`Property 'id' does not exist on type 'never'` at line 50) unrelated to this task.
+- Migration applied cleanly via `db reset` — all 9 migrations applied, seed ran, containers restarted.
