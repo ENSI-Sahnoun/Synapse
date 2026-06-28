@@ -1,7 +1,7 @@
 'use client';
 
 import { useAction } from 'next-safe-action/hooks';
-import { setReservationHoldMinutes } from './actions';
+import { setReservationHoldMinutes } from '@/actions/admin/settings';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
