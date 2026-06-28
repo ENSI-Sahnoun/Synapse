@@ -99,6 +99,78 @@ export type Database = {
           },
         ]
       }
+      custom_metrics: {
+        Row: {
+          created_at: string
+          id: string
+          is_dashboard_visible: boolean
+          name: string
+          target_value: number | null
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_dashboard_visible?: boolean
+          name: string
+          target_value?: number | null
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_dashboard_visible?: boolean
+          name?: string
+          target_value?: number | null
+          unit?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          account_category_id: string
+          amount_dt: number
+          created_at: string
+          created_by: string
+          date: string
+          description: string
+          id: string
+        }
+        Insert: {
+          account_category_id: string
+          amount_dt: number
+          created_at?: string
+          created_by: string
+          date?: string
+          description?: string
+          id?: string
+        }
+        Update: {
+          account_category_id?: string
+          amount_dt?: number
+          created_at?: string
+          created_by?: string
+          date?: string
+          description?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_account_category_id_fkey"
+            columns: ["account_category_id"]
+            isOneToOne: false
+            referencedRelation: "account_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_ledger: {
         Row: {
           created_at: string
@@ -222,6 +294,87 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_channel_config: {
+        Row: {
+          channel: string
+          id: string
+          is_enabled: boolean
+          notification_type: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          id?: string
+          is_enabled?: boolean
+          notification_type: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          id?: string
+          is_enabled?: boolean
+          notification_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price_dt: number
+          stock_quantity: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price_dt: number
+          stock_quantity?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_dt?: number
+          stock_quantity?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -266,6 +419,87 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      purchase_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          purchase_id: string
+          quantity: number
+          unit_price_dt: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          purchase_id: string
+          quantity: number
+          unit_price_dt: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          purchase_id?: string
+          quantity?: number
+          unit_price_dt?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_items_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchases: {
+        Row: {
+          created_at: string
+          id: string
+          sold_by: string
+          student_id: string | null
+          total_dt: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sold_by: string
+          student_id?: string | null
+          total_dt: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sold_by?: string
+          student_id?: string | null
+          total_dt?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_sold_by_fkey"
+            columns: ["sold_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reservations: {
         Row: {
