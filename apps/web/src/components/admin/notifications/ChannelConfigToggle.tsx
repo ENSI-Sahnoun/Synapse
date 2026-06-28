@@ -30,6 +30,7 @@ export function ChannelConfigToggle({
       })
       if (result?.serverError) {
         toast.error('Échec de la mise à jour. Veuillez réessayer.')
+        throw new Error(result.serverError)
       }
     })
   }
