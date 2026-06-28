@@ -37,10 +37,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default async function StudentLoyaltyPage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const studentId = user.id
+  const { data, error: authError } = await supabase.auth.getUser()
+  if (authError || !data?.user) redirect('/login')
+  const studentId = data.user.id
 
   const [balance, ledger, rules, pendingRuleIds, requests] = await Promise.all([
     getStudentLoyaltyBalance(studentId),

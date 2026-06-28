@@ -58,7 +58,7 @@ export const requestRedemptionAction = studentActionClient
         points_used: rule.points_threshold,
       })
 
-    if (insertError) throw new Error(`Erreur lors de la demande: ${insertError.message}`)
+    if (insertError) throw new Error('Erreur lors de la demande. Veuillez réessayer.')
 
     revalidatePath('/student/loyalty')
     return { ruleName: rule.name, pointsUsed: rule.points_threshold }
