@@ -45,8 +45,9 @@ export async function getSubscriptionsByExpiryOffset(
   // Fetch emails from auth.users via admin API
   const studentIds = rows.map((r: any) => r.student_id)
   const { data: usersData } = await supabase.auth.admin.listUsers()
+  const users = (usersData?.users ?? []) as Array<{ id: string; email?: string }>
   const emailMap = new Map<string, string>(
-    (usersData?.users ?? [])
+    users
       .filter((u) => studentIds.includes(u.id))
       .map((u) => [u.id, u.email ?? '']),
   )
