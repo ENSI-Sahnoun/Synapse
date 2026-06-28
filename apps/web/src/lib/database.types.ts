@@ -1,6 +1,3 @@
-npm error config prefix cannot be changed from project config: /home/sah/Synapse/apps/database/.npmrc.
-npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-Connecting to db 5432
 export type Json =
   | string
   | number
@@ -96,6 +93,78 @@ export type Database = {
           {
             foreignKeyName: "attendance_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_metrics: {
+        Row: {
+          created_at: string
+          id: string
+          is_dashboard_visible: boolean
+          name: string
+          target_value: number | null
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_dashboard_visible?: boolean
+          name: string
+          target_value?: number | null
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_dashboard_visible?: boolean
+          name?: string
+          target_value?: number | null
+          unit?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          account_category_id: string
+          amount_dt: number
+          created_at: string
+          created_by: string
+          date: string
+          description: string
+          id: string
+        }
+        Insert: {
+          account_category_id: string
+          amount_dt: number
+          created_at?: string
+          created_by: string
+          date?: string
+          description?: string
+          id?: string
+        }
+        Update: {
+          account_category_id?: string
+          amount_dt?: number
+          created_at?: string
+          created_by?: string
+          date?: string
+          description?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_account_category_id_fkey"
+            columns: ["account_category_id"]
+            isOneToOne: false
+            referencedRelation: "account_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1405,6 +1474,3 @@ export const Constants = {
   },
 } as const
 
-<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />
-A new version of Supabase CLI is available: v2.108.0 (currently installed v2.98.2)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
