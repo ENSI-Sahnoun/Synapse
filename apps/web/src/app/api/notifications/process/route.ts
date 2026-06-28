@@ -104,7 +104,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
               studentName: student.student_name,
               planName: student.plan_name,
               expiryDate: formattedDate,
-              daysSinceExpiry: 3,
+              daysSinceExpiry: Math.abs(daysOffset),
             }).body
             inAppMessage = buildRenewalReminderMessage({
               planName: student.plan_name,

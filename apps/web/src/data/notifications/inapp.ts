@@ -22,11 +22,12 @@ export async function insertInAppNotification({
 }: InsertInAppNotificationOpts): Promise<void> {
   const supabase = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from as any)('notifications').insert({
+  const { error } = await (supabase.from as any)('notifications').insert({
     user_id: userId,
     type,
     message,
   })
+  if (error) throw error
 }
 
 export function buildExpiryWarningMessage(opts: {
