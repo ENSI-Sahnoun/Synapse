@@ -1,3 +1,6 @@
+npm error config prefix cannot be changed from project config: /home/sah/Synapse/apps/database/.npmrc.
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+Connecting to db 5432
 export type Json =
   | string
   | number
@@ -219,6 +222,57 @@ export type Database = {
           reward_type?: string
           reward_value?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_channel_config: {
+        Row: {
+          channel: string
+          id: string
+          is_enabled: boolean
+          notification_type: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          id?: string
+          is_enabled?: boolean
+          notification_type: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          id?: string
+          is_enabled?: boolean
+          notification_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1240,3 +1294,6 @@ export const Constants = {
   },
 } as const
 
+<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />
+A new version of Supabase CLI is available: v2.108.0 (currently installed v2.98.2)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

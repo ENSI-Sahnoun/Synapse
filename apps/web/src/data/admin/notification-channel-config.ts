@@ -17,18 +17,18 @@ export async function getEnabledChannels(
 ): Promise<NotificationChannel[]> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
-    .from('notification_channel_config' as never)
+    .from('notification_channel_config')
     .select('channel')
     .eq('notification_type', notificationType)
     .eq('is_enabled', true)
   if (error) throw error
-  return ((data ?? []) as { channel: NotificationChannel }[]).map((r) => r.channel)
+  return (data ?? []).map((r) => r.channel as NotificationChannel)
 }
 
 export async function getAllChannelConfigs(): Promise<ChannelConfigRow[]> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
-    .from('notification_channel_config' as never)
+    .from('notification_channel_config')
     .select('*')
     .order('notification_type')
     .order('channel')
@@ -43,14 +43,14 @@ export async function upsertChannelConfig(
 ): Promise<void> {
   const supabase = await createSupabaseClient()
   const { error } = await supabase
-    .from('notification_channel_config' as never)
+    .from('notification_channel_config')
     .upsert(
       {
         notification_type: notificationType,
         channel,
         is_enabled: isEnabled,
         updated_at: new Date().toISOString(),
-      } as never,
+      },
       { onConflict: 'notification_type,channel' },
     )
   if (error) throw error

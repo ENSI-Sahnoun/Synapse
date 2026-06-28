@@ -12,7 +12,8 @@ export interface NotificationRow {
 
 export async function getMyNotifications(limit = 20): Promise<NotificationRow[]> {
   const supabase = await createSupabaseClient()
-  const { data, error } = await (supabase.from('notifications' as never) as any)
+  const { data, error } = await supabase
+    .from('notifications')
     .select('id, type, message, is_read, created_at')
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -22,7 +23,8 @@ export async function getMyNotifications(limit = 20): Promise<NotificationRow[]>
 
 export async function getMyUnreadCount(): Promise<number> {
   const supabase = await createSupabaseClient()
-  const { count, error } = await (supabase.from('notifications' as never) as any)
+  const { count, error } = await supabase
+    .from('notifications')
     .select('id', { count: 'exact', head: true })
     .eq('is_read', false)
   if (error) throw error
@@ -34,7 +36,8 @@ export async function getNotificationsForUser(
   limit = 20,
 ): Promise<NotificationRow[]> {
   const supabase = await createSupabaseClient()
-  const { data, error } = await (supabase.from('notifications' as never) as any)
+  const { data, error } = await supabase
+    .from('notifications')
     .select('id, type, message, is_read, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })

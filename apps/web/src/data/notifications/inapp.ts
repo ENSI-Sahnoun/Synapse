@@ -14,8 +14,7 @@ export async function insertInAppNotification({
   message,
 }: InsertInAppNotificationOpts): Promise<void> {
   const supabase = createSupabaseAdminClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from as any)('notifications').insert({
+  const { error } = await supabase.from('notifications').insert({
     user_id: userId,
     type,
     message,

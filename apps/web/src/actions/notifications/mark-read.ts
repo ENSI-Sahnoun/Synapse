@@ -14,7 +14,8 @@ export const markNotificationRead = authActionClient
   .schema(markOneReadSchema)
   .action(async ({ parsedInput: { notificationId }, ctx: { userId } }) => {
     const supabase = await createSupabaseClient()
-    const { error } = await (supabase.from('notifications' as never) as any)
+    const { error } = await supabase
+      .from('notifications')
       .update({ is_read: true })
       .eq('id', notificationId)
       .eq('user_id', userId)
@@ -27,7 +28,8 @@ export const markAllNotificationsRead = authActionClient
   .schema(markAllReadSchema)
   .action(async ({ ctx: { userId } }) => {
     const supabase = await createSupabaseClient()
-    const { error } = await (supabase.from('notifications' as never) as any)
+    const { error } = await supabase
+      .from('notifications')
       .update({ is_read: true })
       .eq('user_id', userId)
       .eq('is_read', false)
