@@ -8,6 +8,8 @@ export type NotificationType =
   | 'expiry_1d'
   | 'expired'
   | 'renewal_reminder'
+  | 'reservation_confirmed'
+  | 'points_earned'
 
 export interface InsertInAppNotificationOpts {
   userId: string

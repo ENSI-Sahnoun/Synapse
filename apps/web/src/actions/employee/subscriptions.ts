@@ -5,6 +5,7 @@ import { createSubscriptionSchema } from '@/utils/zod-schemas/subscription'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { addDays, format, parseISO } from 'date-fns'
 import { revalidatePath } from 'next/cache'
+import { insertInAppNotification } from '@/data/notifications/inapp'
 
 export const createSubscriptionAction = employeeActionClient
   .schema(createSubscriptionSchema)
@@ -66,6 +67,16 @@ export const createSubscriptionAction = employeeActionClient
         reason: 'subscription',
         ref_id: subscription.id,
       })
+
+      try {
+        await insertInAppNotification({
+          userId: student_id,
+          type: 'points_earned',
+          message: `Vous avez gagné ${points} point(s) Synapse pour votre abonnement ${plan.name}.`,
+        })
+      } catch {
+        // ignore notification errors
+      }
     }
 
     revalidatePath(`/employee/students/${student_id}`)

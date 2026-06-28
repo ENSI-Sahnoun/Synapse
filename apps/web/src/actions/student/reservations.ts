@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { studentActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
+import { insertInAppNotification } from '@/data/notifications/inapp'
 
 const createReservationSchema = z.object({
   seat_id: z.string({ message: 'seat_id est requis' }).uuid({ message: 'seat_id doit être un UUID valide' }),
@@ -170,6 +171,17 @@ export const createReservation = studentActionClient
       // Rollback reservation insert — seat was taken between checks
       await supabase.from('reservations').delete().eq('id', reservation.id)
       return { error: 'Impossible de réserver la place. Veuillez en choisir une autre.' }
+    }
+
+    // non-fatal — notification failure must not abort the reservation
+    try {
+      await insertInAppNotification({
+        userId,
+        type: 'reservation_confirmed',
+        message: `Votre réservation pour la place ${seat.label} est confirmée. Elle expire dans ${holdMinutes} minutes.`,
+      })
+    } catch {
+      // ignore notification errors
     }
 
     revalidatePath('/student/reservation')
