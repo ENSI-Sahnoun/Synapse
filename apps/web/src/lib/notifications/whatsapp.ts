@@ -24,9 +24,9 @@ export async function sendWhatsApp(payload: WhatsAppTextPayload): Promise<void> 
     }),
   })
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`WhatsApp API error ${response.status}: ${errorBody}`)
+  const json = await response.json() as { error?: { message: string; code: number } }
+  if (!response.ok || json.error) {
+    throw new Error(`WhatsApp API error ${response.status}: ${json.error?.message ?? JSON.stringify(json)}`)
   }
 }
 
@@ -59,9 +59,10 @@ export function buildRenewalReminderWhatsApp(opts: {
   studentName: string
   planName: string
   expiryDate: string
+  daysSinceExpiry: number
 }): WhatsAppTextPayload {
   return {
     to: '',
-    body: `🎓 *Synapse Sfax*\n\nBonjour ${opts.studentName},\n\nCela fait 3 jours que votre abonnement *${opts.planName}* a expiré (le ${opts.expiryDate}).\n\nRevenez nous voir — votre place vous attend ! 📚`,
+    body: `🎓 *Synapse Sfax*\n\nBonjour ${opts.studentName},\n\nCela fait ${opts.daysSinceExpiry} jour(s) que votre abonnement *${opts.planName}* a expiré (le ${opts.expiryDate}).\n\nRevenez nous voir — votre place vous attend ! 📚`,
   }
 }

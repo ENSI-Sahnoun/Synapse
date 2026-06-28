@@ -27,12 +27,13 @@ describe('whatsapp templates', () => {
     expect(msg.body).toContain('20/06/2026')
   })
 
-  it('renewal reminder mentions 3 days', () => {
+  it('renewal reminder mentions days since expiry', () => {
     const msg = buildRenewalReminderWhatsApp({
       studentName: 'Bilel',
       planName: 'Mensuel',
       expiryDate: '17/06/2026',
+      daysSinceExpiry: 3,
     })
-    expect(msg.body).toContain('3 jours')
+    expect(msg.body).toContain('3 jour')
   })
 })
