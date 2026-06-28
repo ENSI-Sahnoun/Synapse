@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { BrowserQRCodeReader, IScannerControls } from '@zxing/library'
+import { BrowserQRCodeReader } from '@zxing/library'
 
 export interface QRScanResult {
   text: string
@@ -9,9 +9,15 @@ export interface QRScanResult {
 
 export function useQRScanner(onResult: (result: QRScanResult) => void) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const controlsRef = useRef<IScannerControls | null>(null)
+  const readerRef = useRef<BrowserQRCodeReader | null>(null)
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const stopScan = useCallback(() => {
+    readerRef.current?.stopContinuousDecode()
+    readerRef.current = null
+    setScanning(false)
+  }, [])
 
   const startScan = useCallback(async () => {
     if (!videoRef.current) return
@@ -19,8 +25,9 @@ export function useQRScanner(onResult: (result: QRScanResult) => void) {
     setScanning(true)
     try {
       const reader = new BrowserQRCodeReader()
-      controlsRef.current = await reader.decodeFromVideoDevice(
-        undefined,
+      readerRef.current = reader
+      await reader.decodeFromVideoDevice(
+        null,
         videoRef.current,
         (result) => {
           if (result) {
@@ -29,21 +36,15 @@ export function useQRScanner(onResult: (result: QRScanResult) => void) {
           }
         }
       )
-    } catch (err) {
-      setError('Impossible d\'accéder à la caméra')
+    } catch {
+      setError("Impossible d'accéder à la caméra")
       setScanning(false)
     }
-  }, [onResult])
-
-  const stopScan = useCallback(() => {
-    controlsRef.current?.stop()
-    controlsRef.current = null
-    setScanning(false)
-  }, [])
+  }, [onResult, stopScan])
 
   useEffect(() => {
     return () => {
-      controlsRef.current?.stop()
+      readerRef.current?.stopContinuousDecode()
     }
   }, [])
 

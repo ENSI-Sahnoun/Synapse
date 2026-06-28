@@ -68,7 +68,9 @@ export function PosClient({ products }: { products: Product[] }) {
     setCart((prev) =>
       prev
         .map((i) =>
-          i.product.id === productId ? { ...i, quantity: i.quantity + delta } : i
+          i.product.id === productId
+            ? { ...i, quantity: Math.min(i.quantity + delta, delta > 0 ? i.product.stock_quantity : Infinity) }
+            : i
         )
         .filter((i) => i.quantity > 0)
     )
