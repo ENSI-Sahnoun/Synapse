@@ -29,37 +29,18 @@ export async function insertInAppNotification({
   })
 }
 
-export interface ExpiryWarningOpts {
-  studentName: string
+export function buildExpiryWarningMessage(opts: {
   planName: string
-  daysRemaining: number
+  daysLeft: number
+  expiryDate: string
+}): string {
+  return `Votre abonnement "${opts.planName}" expire dans ${opts.daysLeft} jour(s) (le ${opts.expiryDate}).`
 }
 
-export function buildExpiryWarningMessage({
-  studentName,
-  planName,
-  daysRemaining,
-}: ExpiryWarningOpts): string {
-  return `Bonjour ${studentName}, votre abonnement "${planName}" expire dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}. Pensez à le renouveler pour continuer à profiter de nos services.`
+export function buildExpiredMessage(opts: { planName: string; expiryDate: string }): string {
+  return `Votre abonnement "${opts.planName}" a expiré le ${opts.expiryDate}. Rendez-vous à Synapse pour le renouveler.`
 }
 
-export interface ExpiredOpts {
-  studentName: string
-  planName: string
-}
-
-export function buildExpiredMessage({ studentName, planName }: ExpiredOpts): string {
-  return `Bonjour ${studentName}, votre abonnement "${planName}" a expiré. Veuillez contacter l'administration pour le renouveler.`
-}
-
-export interface RenewalReminderOpts {
-  studentName: string
-  planName: string
-}
-
-export function buildRenewalReminderMessage({
-  studentName,
-  planName,
-}: RenewalReminderOpts): string {
-  return `Bonjour ${studentName}, nous vous rappelons que votre abonnement "${planName}" est expiré depuis quelques jours. N'hésitez pas à nous contacter pour le renouveler.`
+export function buildRenewalReminderMessage(opts: { planName: string; expiryDate: string }): string {
+  return `Rappel : votre abonnement "${opts.planName}" a expiré le ${opts.expiryDate}. Revenez nous voir !`
 }
