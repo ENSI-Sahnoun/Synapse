@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
+import Link from 'next/link'
 import {
   getLiveSnapshot,
   getDailySummary,
@@ -33,6 +34,20 @@ export default async function AdminDashboardPage() {
   return (
     <div className="space-y-6 p-6">
       <h1 className="text-2xl font-bold">Tableau de bord</h1>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Actions rapides
+        </h2>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/employee/pos"
+            className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent"
+          >
+            🛒 Caisse (POS)
+          </Link>
+        </div>
+      </section>
 
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
