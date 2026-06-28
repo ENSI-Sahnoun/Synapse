@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createSupabaseClient as createSupabaseServerClient } from '@/supabase-clients/server';
 import { ExamModeCard } from './ExamModeCard';
 import { ReservationHoldCard } from './ReservationHoldCard';
@@ -45,6 +46,20 @@ export default async function AdminSettingsPage() {
         <ReservationHoldCard initialMinutes={holdMinutes} />
         <ExamModeCard initialEnabled={examMode} />
         <PriorityThresholdCard initialDays={priorityDays} />
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Notifications</h2>
+        <Link
+          href="/admin/settings/notifications"
+          className="rounded-lg border p-4 hover:bg-muted/50 transition-colors flex items-center justify-between"
+        >
+          <div>
+            <p className="font-medium">Canaux de notification</p>
+            <p className="text-sm text-muted-foreground">Configurer les canaux actifs par type de notification</p>
+          </div>
+          <span className="text-muted-foreground">→</span>
+        </Link>
       </section>
     </div>
   );
