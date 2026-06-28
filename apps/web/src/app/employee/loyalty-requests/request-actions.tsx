@@ -1,19 +1,27 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useAction } from 'next-safe-action/hooks'
 import { fulfilRedemptionAction, rejectRedemptionAction } from '@/actions/employee/loyalty-requests'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
 export function RequestActions({ requestId }: { requestId: string }) {
+  const router = useRouter()
+
   const { execute: fulfil, status: fulfilStatus } = useAction(fulfilRedemptionAction, {
-    onSuccess: ({ data }) =>
-      toast.success(`Récompense accordée — ${data?.pointsDeducted} pts déduits`),
+    onSuccess: ({ data }) => {
+      toast.success(`Récompense accordée — ${data?.pointsDeducted} pts déduits`)
+      router.refresh()
+    },
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
   })
 
   const { execute: reject, status: rejectStatus } = useAction(rejectRedemptionAction, {
-    onSuccess: () => toast.success('Demande refusée'),
+    onSuccess: () => {
+      toast.success('Demande refusée')
+      router.refresh()
+    },
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
   })
 
