@@ -5,7 +5,7 @@ export type RewardType = typeof REWARD_TYPES[number]
 
 export const createLoyaltyRuleSchema = z.object({
   name: z.string().min(2, 'Nom requis'),
-  reward_type: z.enum(REWARD_TYPES, { errorMap: () => ({ message: 'Type de récompense invalide' }) }),
+  reward_type: z.enum(REWARD_TYPES, { error: 'Type de récompense invalide' }),
   points_threshold: z.coerce.number().int().min(1, 'Seuil minimum 1 point'),
   reward_value: z.coerce.number().min(0, 'Valeur invalide').default(0),
 })

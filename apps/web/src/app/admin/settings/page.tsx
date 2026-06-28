@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '@/supabase-clients/server';
+import { createSupabaseClient as createSupabaseServerClient } from '@/supabase-clients/server';
 import { ExamModeCard } from './ExamModeCard';
 import { ReservationHoldCard } from './ReservationHoldCard';
 import { PriorityThresholdCard } from './PriorityThresholdCard';
