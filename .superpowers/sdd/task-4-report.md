@@ -1,18 +1,22 @@
-# Task 4 Report — Notifications Migration + In-App Helper
+# Task 4 Report: Student Notification Sheet
 
-## Status: COMPLETE
+## Status: DONE
 
-## Commits
-- `3c13b83` feat(notifications): add notifications table migration and in-app helper
+## Commit
+`3024d66` — feat(notifications): add StudentNotificationSheet in student header bell slot
 
-## Files Created
-- `apps/database/supabase/migrations/20260623400002_notifications.sql` — notifications table with RLS (student read own, admin read all)
-- `apps/web/src/data/notifications/inapp.ts` — `insertInAppNotification`, `buildExpiryWarningMessage`, `buildExpiredMessage`, `buildRenewalReminderMessage`
+## TypeScript
+`pnpm tsc --noEmit` — 0 errors
 
-## Tests
-N/A — not required for this task.
+## What was done
 
-## Concerns
-- The `as never` cast strategy for untyped tables caused the insert object to also be typed as `never`, rejecting known properties. Used `(supabase.from as any)('notifications')` instead — works cleanly.
-- `expiry-queries.ts` has a pre-existing TS error (`Property 'id' does not exist on type 'never'` at line 50) unrelated to this task.
-- Migration applied cleanly via `db reset` — all 9 migrations applied, seed ran, containers restarted.
+1. **Created** `apps/web/src/components/notifications/StudentNotificationSheet.tsx`
+   - Client component, Phosphor Bell trigger with red badge, bottom sheet (80vh)
+   - Correct schema: `is_read: boolean`, optimistic `{ ...n, is_read: true }`
+   - Actions from `@/actions/notifications/mark-read`
+   - Reuses `NotificationItem`
+
+2. **Modified** `apps/web/src/app/student/layout.tsx`
+   - Replaced bell placeholder with `<StudentNotificationSheet>`
+   - Added try/catch non-fatal notification fetch
+   - Removed unused Bell import

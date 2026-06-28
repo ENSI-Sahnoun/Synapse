@@ -18,7 +18,6 @@ import {
   signInWithProviderAction,
 } from '@/data/auth/auth';
 import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -35,14 +34,14 @@ export function Login({
   const [redirectInProgress, setRedirectInProgress] = useState(false);
   const toastRef = useRef<string | number | undefined>(undefined);
 
-  const router = useRouter();
-
   function redirectToDashboard() {
+    // Full-page navigation so middleware role-redirect fires correctly.
+    // router.push() to a route handler that returns a redirect is unreliable
+    // in Next.js App Router (RSC fetch doesn't always follow redirects).
     if (next) {
-      router.push(`/auth/callback?next=${encodeURIComponent(next)}`)
+      window.location.href = `/auth/callback?next=${encodeURIComponent(next)}`
     } else {
-      // Middleware will redirect to correct role home after session is set
-      router.push('/auth/callback')
+      window.location.href = '/auth/callback'
     }
   }
 
