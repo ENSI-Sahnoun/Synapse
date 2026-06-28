@@ -1,15 +1,9 @@
 'use server'
 
 import { createSupabaseClient } from '@/supabase-clients/server'
+import type { NotificationType, NotificationChannel } from '@/lib/notification-types'
 
-export type NotificationType =
-  | 'expiry_7d'
-  | 'expiry_3d'
-  | 'expiry_1d'
-  | 'expired'
-  | 'renewal_reminder'
-
-export type NotificationChannel = 'email' | 'sms' | 'whatsapp' | 'inapp'
+export type { NotificationType, NotificationChannel }
 
 export interface ChannelConfigRow {
   id: string

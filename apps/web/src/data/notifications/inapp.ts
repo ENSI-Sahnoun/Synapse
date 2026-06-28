@@ -1,13 +1,6 @@
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 
-export type NotificationType =
-  | 'expiry_7d'
-  | 'expiry_3d'
-  | 'expiry_1d'
-  | 'expired'
-  | 'renewal_reminder'
-  | 'reservation_confirmed'
-  | 'points_earned'
+export type { NotificationType } from '@/lib/notification-types'
 
 export interface InsertInAppNotificationOpts {
   userId: string
