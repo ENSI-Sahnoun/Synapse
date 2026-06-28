@@ -140,7 +140,7 @@ export const checkinAction = employeeActionClient
     }
 
     const planName =
-      (subscription as any).subscription_plans?.name ?? 'Abonnement'
+      (subscription.subscription_plans as { name: string } | null)?.name ?? 'Abonnement'
     const daysRemaining = differenceInDays(
       parseISO(subscription.end_date),
       startOfDay(new Date())
