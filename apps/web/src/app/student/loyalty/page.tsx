@@ -1,5 +1,4 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
-import { redirect } from 'next/navigation'
 import {
   getStudentLoyaltyBalance,
   getStudentLoyaltyLedger,
@@ -37,9 +36,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default async function StudentLoyaltyPage() {
   const supabase = await createSupabaseClient()
-  const { data, error: authError } = await supabase.auth.getUser()
-  if (authError || !data?.user) redirect('/login')
-  const studentId = data.user.id
+  const { data: { user } } = await supabase.auth.getUser()
+  const studentId = user!.id
 
   const [balance, ledger, rules, pendingRuleIds, requests] = await Promise.all([
     getStudentLoyaltyBalance(studentId),
