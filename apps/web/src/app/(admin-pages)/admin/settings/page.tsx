@@ -1,0 +1,51 @@
+import { createSupabaseServerClient } from '@/supabase-clients/server';
+import { ExamModeCard } from './ExamModeCard';
+import { ReservationHoldCard } from './ReservationHoldCard';
+import { PriorityThresholdCard } from './PriorityThresholdCard';
+
+export const dynamic = 'force-dynamic';
+
+async function getSetting(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  key: string,
+  fallback: string
+): Promise<string> {
+  const { data } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', key)
+    .single();
+  return data?.value ?? fallback;
+}
+
+export default async function AdminSettingsPage() {
+  const supabase = await createSupabaseServerClient();
+
+  const [examModeValue, holdMinutesValue, priorityDaysValue] = await Promise.all([
+    getSetting(supabase, 'exam_mode', 'false'),
+    getSetting(supabase, 'reservation_hold_minutes', '30'),
+    getSetting(supabase, 'priority_min_duration_days', '30'),
+  ]);
+
+  const examMode = examModeValue === 'true';
+  const holdMinutes = parseInt(holdMinutesValue, 10);
+  const priorityDays = parseInt(priorityDaysValue, 10);
+
+  return (
+    <div className="flex flex-col gap-6 p-6 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-bold">Paramètres</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Configuration globale de l'espace Synapse.
+        </p>
+      </div>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Réservations</h2>
+        <ReservationHoldCard initialMinutes={holdMinutes} />
+        <ExamModeCard initialEnabled={examMode} />
+        <PriorityThresholdCard initialDays={priorityDays} />
+      </section>
+    </div>
+  );
+}
