@@ -35,6 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/admin/rooms', label: 'Salles', icon: 'Buildings' },
     { href: '/admin/checkin', label: 'Contrôle accès', icon: 'QrCode' },
     { href: '/admin/loyalty', label: 'Fidélité', icon: 'Star' },
+    { href: '/admin/notifications/trigger', label: 'Notifications', icon: 'Bell' },
     { href: '/admin/settings', label: 'Paramètres', icon: 'Gear' },
   ]
 
