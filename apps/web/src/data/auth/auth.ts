@@ -78,13 +78,14 @@ export const signInWithPasswordAction = actionClient
     // Use admin client — same-request session cookies aren't readable via the
     // regular client after signInWithPassword (getAll() returns pre-request cookies)
     const admin = createAdminClient()
-    const { data: profile } = await admin
+    const { data: profile, error: profileErr } = await admin
       .from('profiles')
       .select('role')
       .eq('id', data.user.id)
       .single()
 
-    return { redirectTo: ROLE_HOME[profile?.role ?? ''] ?? '/login' }
+    const redirectTo = ROLE_HOME[profile?.role ?? ''] ?? '/login'
+    return { redirectTo }
   });
 
 const signInWithMagicLinkSchema = z.object({
