@@ -3,15 +3,29 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { ChartBar, Users, UserCircle, CreditCard, Buildings, Armchair, ShoppingCart, QrCode, Gear } from '@phosphor-icons/react'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
+
+const ICON_MAP: Record<string, PhosphorIcon> = {
+  ChartBar,
+  Users,
+  UserCircle,
+  CreditCard,
+  Buildings,
+  Armchair,
+  ShoppingCart,
+  QrCode,
+  Gear,
+}
 
 interface SidebarNavLinkProps {
   href: string
   label: string
-  Icon: PhosphorIcon
+  icon: string
 }
 
-export function SidebarNavLink({ href, label, Icon }: SidebarNavLinkProps) {
+export function SidebarNavLink({ href, label, icon }: SidebarNavLinkProps) {
+  const Icon = ICON_MAP[icon] ?? ChartBar
   const [hovered, setHovered] = useState(false)
   const pathname = usePathname()
   const active = pathname === href || pathname.startsWith(href + '/')
