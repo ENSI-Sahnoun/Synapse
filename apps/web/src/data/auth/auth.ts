@@ -1,6 +1,6 @@
 'use server';
 import { actionClient } from '@/lib/safe-action';
-import { createSupabaseClient } from '@/supabase-clients/server';
+import { createAdminClient, createSupabaseClient } from '@/supabase-clients/server';
 import { toSiteURL } from '@/utils/helpers';
 import { z } from 'zod';
 
@@ -75,7 +75,10 @@ export const signInWithPasswordAction = actionClient
       student: '/student/dashboard',
     }
 
-    const { data: profile } = await supabase
+    // Use admin client — same-request session cookies aren't readable via the
+    // regular client after signInWithPassword (getAll() returns pre-request cookies)
+    const admin = createAdminClient()
+    const { data: profile } = await admin
       .from('profiles')
       .select('role')
       .eq('id', data.user.id)
