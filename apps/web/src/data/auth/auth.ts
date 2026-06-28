@@ -4,39 +4,6 @@ import { createAdminClient, createSupabaseClient } from '@/supabase-clients/serv
 import { toSiteURL } from '@/utils/helpers';
 import { z } from 'zod';
 
-const signUpSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(3),
-});
-
-/**
- * Signs up a new user with email and password.
- * @param {Object} params - The parameters for sign up.
- * @param {string} params.email - The user's email address.
- * @param {string} params.password - The user's password (minimum 8 characters).
- * @returns {Promise<Object>} The data returned from the sign-up process.
- * @throws {Error} If there's an error during sign up.
- */
-export const signUpAction = actionClient
-  .schema(signUpSchema)
-  .action(async ({ parsedInput: { email, password } }) => {
-    const supabase = await createSupabaseClient();
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: toSiteURL('/auth/callback'),
-      },
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data;
-  });
-
 const signInSchema = z.object({
   email: z.string().email(),
   password: z.string(),
