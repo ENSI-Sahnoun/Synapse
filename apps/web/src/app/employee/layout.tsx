@@ -23,6 +23,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
     { href: '/employee/rooms', label: 'Salles', icon: 'Buildings' },
     { href: '/employee/pos', label: 'Caisse', icon: 'ShoppingCart' },
     { href: '/employee/checkin', label: 'Contrôle accès', icon: 'QrCode' },
+    { href: '/employee/loyalty-requests', label: 'Récompenses', icon: 'Gift' },
   ]
 
   return (
