@@ -16,6 +16,8 @@ declare global {
       TWILIO_FROM_NUMBER: string;
       WHATSAPP_API_TOKEN: string;
       WHATSAPP_PHONE_NUMBER_ID: string;
+      SUPABASE_SERVICE_ROLE_KEY: string;
+      CRON_SECRET: string;
     }
   }
 }
