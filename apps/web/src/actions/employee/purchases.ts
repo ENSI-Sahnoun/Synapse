@@ -13,11 +13,10 @@ export const createPurchaseAction = employeeActionClient
 
     // Fetch current product prices + stock to validate
     const productIds = items.map((i) => i.product_id)
-    const { data: productsRaw, error: productsError } = await supabase
-      .from('products' as never)
+    const { data: products, error: productsError } = await supabase
+      .from('products')
       .select('id, price_dt, stock_quantity, name, is_active')
       .in('id', productIds)
-    const products = productsRaw as unknown as Array<{ id: string; price_dt: number; stock_quantity: number; name: string; is_active: boolean }> | null
 
     if (productsError) throw new Error('Erreur de lecture des produits')
 
@@ -42,18 +41,17 @@ export const createPurchaseAction = employeeActionClient
     }, 0)
 
     // Insert purchase
-    const { data: purchaseRaw, error: purchaseError } = await supabase
-      .from('purchases' as never)
+    const { data: purchase, error: purchaseError } = await supabase
+      .from('purchases')
       .insert({
         student_id: student_id ?? null,
         sold_by: ctx.userId,
         total_dt,
-      } as never)
+      })
       .select('id')
       .single()
 
     if (purchaseError) throw new Error('Erreur lors de la création de la vente')
-    const purchase = purchaseRaw as unknown as { id: string }
 
     // Insert purchase items (using server-side prices)
     const purchaseItems = items.map((item) => ({
@@ -63,15 +61,15 @@ export const createPurchaseAction = employeeActionClient
       unit_price_dt: productMap.get(item.product_id)!.price_dt,
     }))
 
-    const { error: itemsError } = await supabase.from('purchase_items' as never).insert(purchaseItems as never)
+    const { error: itemsError } = await supabase.from('purchase_items').insert(purchaseItems)
     if (itemsError) throw new Error('Erreur lors de la création des articles')
 
     // Decrement stock per product
     for (const item of items) {
       const product = productMap.get(item.product_id)!
       const { error: stockError } = await supabase
-        .from('products' as never)
-        .update({ stock_quantity: product.stock_quantity - item.quantity } as never)
+        .from('products')
+        .update({ stock_quantity: product.stock_quantity - item.quantity })
         .eq('id', item.product_id)
       if (stockError) throw new Error('Erreur lors de la mise à jour du stock')
     }

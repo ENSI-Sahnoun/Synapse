@@ -13,11 +13,11 @@ export interface Product {
 export async function listActiveProducts(): Promise<Product[]> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
-    .from('products' as never)
+    .from('products')
     .select('id, name, category, price_dt, stock_quantity')
     .eq('is_active', true)
     .order('category', { ascending: true })
     .order('name', { ascending: true })
   if (error) throw new Error('Erreur de chargement des produits')
-  return (data ?? []) as unknown as Product[]
+  return data ?? []
 }
