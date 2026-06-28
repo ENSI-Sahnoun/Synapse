@@ -1,8 +1,10 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
-import { Bell, SignOut } from '@phosphor-icons/react/dist/ssr'
+import { SignOut } from '@phosphor-icons/react/dist/ssr'
 import { StudentBottomNav } from '@/components/student/StudentBottomNav'
 import { signOutAction } from '@/data/auth/sign-out'
+import { getMyNotifications, getMyUnreadCount } from '@/data/notifications/list'
+import { StudentNotificationSheet } from '@/components/notifications/StudentNotificationSheet'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseClient()
@@ -16,6 +18,14 @@ export default async function StudentLayout({ children }: { children: React.Reac
     .single()
 
   if (profile?.role !== 'student') redirect('/login')
+
+  let notifications: Awaited<ReturnType<typeof getMyNotifications>> = []
+  let unreadCount = 0
+  try {
+    ;[notifications, unreadCount] = await Promise.all([getMyNotifications(20), getMyUnreadCount()])
+  } catch {
+    // non-fatal
+  }
 
   const initials = profile.full_name
     ?.split(' ')
@@ -43,15 +53,11 @@ export default async function StudentLayout({ children }: { children: React.Reac
         </span>
 
         <div className="flex items-center gap-3">
-          {/* Notification bell — slot for Phase 6 */}
-          <button
-            type="button"
-            className="cursor-pointer transition-colors duration-150"
-            aria-label="Notifications"
-            style={{ color: 'var(--muted-foreground)' }}
-          >
-            <Bell size={20} weight="regular" />
-          </button>
+          {/* Notification bell */}
+          <StudentNotificationSheet
+            initialNotifications={notifications}
+            initialUnreadCount={unreadCount}
+          />
 
           {/* Avatar */}
           <div
