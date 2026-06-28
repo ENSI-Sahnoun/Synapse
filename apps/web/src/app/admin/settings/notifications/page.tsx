@@ -1,6 +1,7 @@
 import { getAllChannelConfigs } from '@/data/admin/notification-channel-config'
 import { ChannelConfigToggle } from '@/components/admin/notifications/ChannelConfigToggle'
-import type { NotificationType, NotificationChannel, ChannelConfigRow } from '@/data/admin/notification-channel-config'
+import type { ChannelConfigRow } from '@/data/admin/notification-channel-config'
+import type { NotificationType, NotificationChannel } from '@/lib/notification-types'
 
 const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   expiry_7d: 'Expiration dans 7 jours',
@@ -8,6 +9,8 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   expiry_1d: 'Expiration dans 1 jour',
   expired: 'Abonnement expiré (J-0)',
   renewal_reminder: 'Rappel de renouvellement (J+3)',
+  reservation_confirmed: 'Réservation confirmée',
+  points_earned: 'Points de fidélité gagnés',
 }
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {
@@ -23,6 +26,8 @@ const ORDERED_TYPES: NotificationType[] = [
   'expiry_1d',
   'expired',
   'renewal_reminder',
+  'reservation_confirmed',
+  'points_earned',
 ]
 
 const CONFIGURABLE_CHANNELS: NotificationChannel[] = ['email', 'sms', 'whatsapp']

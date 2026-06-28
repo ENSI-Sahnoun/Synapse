@@ -6,9 +6,11 @@ export const notificationTypeSchema = z.enum([
   'expiry_1d',
   'expired',
   'renewal_reminder',
+  'reservation_confirmed',
+  'points_earned',
 ])
 
-export const notificationChannelSchema = z.enum(['email', 'sms', 'whatsapp'])
+export const notificationChannelSchema = z.enum(['email', 'sms', 'whatsapp', 'inapp'])
 
 export const upsertChannelConfigSchema = z.object({
   notification_type: notificationTypeSchema,

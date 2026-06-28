@@ -1,7 +1,7 @@
 import { sendEmail } from './email'
 import { sendSms } from './sms'
 import { sendWhatsApp } from './whatsapp'
-import type { NotificationChannel } from '@/data/admin/notification-channel-config'
+import type { NotificationChannel } from '@/lib/notification-types'
 
 export interface DispatchTarget {
   email?: string

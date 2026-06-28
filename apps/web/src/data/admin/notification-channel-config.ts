@@ -3,8 +3,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import type { NotificationType, NotificationChannel } from '@/lib/notification-types'
 
-export type { NotificationType, NotificationChannel }
-
 export interface ChannelConfigRow {
   id: string
   notification_type: NotificationType

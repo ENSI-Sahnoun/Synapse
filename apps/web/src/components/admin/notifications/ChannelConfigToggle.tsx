@@ -4,7 +4,7 @@ import { useOptimistic, useTransition } from 'react'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { toggleNotificationChannel } from '@/actions/admin/notification-channel-config'
-import type { NotificationType, NotificationChannel } from '@/data/admin/notification-channel-config'
+import type { NotificationType, NotificationChannel } from '@/lib/notification-types'
 
 interface ChannelConfigToggleProps {
   notificationType: NotificationType

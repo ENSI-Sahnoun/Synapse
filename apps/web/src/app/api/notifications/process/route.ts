@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSubscriptionsByExpiryOffset } from '@/data/notifications/expiry-queries'
-import { getEnabledChannels, type NotificationType } from '@/data/admin/notification-channel-config'
+import { getEnabledChannels } from '@/data/admin/notification-channel-config'
+import type { NotificationType } from '@/lib/notification-types'
 import { dispatch } from '@/lib/notifications/dispatcher'
 import {
   insertInAppNotification,
