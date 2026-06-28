@@ -18,6 +18,6 @@ export async function listActiveProducts(): Promise<Product[]> {
     .eq('is_active', true)
     .order('category', { ascending: true })
     .order('name', { ascending: true })
-  if (error) throw error
+  if (error) throw new Error('Erreur de chargement des produits')
   return (data ?? []) as unknown as Product[]
 }
