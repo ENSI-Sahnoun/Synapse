@@ -27,7 +27,15 @@ export type CustomMetricRow = {
   current_value: number
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Africa/Tunis' }).format(new Date())
+}
+
+const startOfTomorrow = () => {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Africa/Tunis' }).format(d) + 'T00:00:00'
+}
 
 export async function getLiveSnapshot(): Promise<LiveSnapshot> {
   const supabase = await createSupabaseClient()
@@ -56,13 +64,13 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
     .from('subscriptions')
     .select('paid_amount')
     .gte('created_at', todayStr + 'T00:00:00')
-    .lt('created_at', todayStr + 'T23:59:59')
+    .lt('created_at', startOfTomorrow())
 
   const { data: purchaseRevenue } = await supabase
     .from('purchases')
     .select('total_dt')
     .gte('created_at', todayStr + 'T00:00:00')
-    .lt('created_at', todayStr + 'T23:59:59')
+    .lt('created_at', startOfTomorrow())
 
   const todayRevenue =
     (subRevenue?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0) +
@@ -99,20 +107,20 @@ export async function getDailySummary(): Promise<DailySummary> {
   const supabase = await createSupabaseClient()
   const todayStr = today()
   const start = todayStr + 'T00:00:00'
-  const end = todayStr + 'T23:59:59'
+  const end = startOfTomorrow()
 
   const { count: newStudents } = await supabase
     .from('profiles')
     .select('*', { count: 'exact', head: true })
     .eq('role', 'student')
     .gte('created_at', start)
-    .lte('created_at', end)
+    .lt('created_at', end)
 
   const { data: subs } = await supabase
     .from('subscriptions')
     .select('paid_amount')
     .gte('created_at', start)
-    .lte('created_at', end)
+    .lt('created_at', end)
 
   const subscriptionsSold = subs?.length ?? 0
   const subscriptionsRevenue = subs?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0
@@ -121,7 +129,7 @@ export async function getDailySummary(): Promise<DailySummary> {
     .from('purchases')
     .select('total_dt')
     .gte('created_at', start)
-    .lte('created_at', end)
+    .lt('created_at', end)
 
   const inStoreSales = purchases?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0
 
@@ -129,7 +137,7 @@ export async function getDailySummary(): Promise<DailySummary> {
     .from('attendance')
     .select('*', { count: 'exact', head: true })
     .gte('checked_in_at', start)
-    .lte('checked_in_at', end)
+    .lt('checked_in_at', end)
 
   return {
     newStudents: newStudents ?? 0,

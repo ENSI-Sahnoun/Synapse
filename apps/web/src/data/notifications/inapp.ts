@@ -1,8 +1,6 @@
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import type { NotificationType } from '@/lib/notification-types'
 
-export type { NotificationType } from '@/lib/notification-types'
-
 export interface InsertInAppNotificationOpts {
   userId: string
   type: NotificationType
