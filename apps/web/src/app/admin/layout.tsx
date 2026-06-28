@@ -24,6 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/admin/subscription-plans', label: 'Formules', icon: 'CreditCard' },
     { href: '/admin/rooms', label: 'Salles', icon: 'Buildings' },
     { href: '/admin/checkin', label: 'Contrôle accès', icon: 'QrCode' },
+    { href: '/admin/loyalty', label: 'Fidélité', icon: 'Star' },
     { href: '/admin/settings', label: 'Paramètres', icon: 'Gear' },
   ]
 

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChartBar, Users, UserCircle, CreditCard, Buildings, Armchair, ShoppingCart, QrCode, Gear } from '@phosphor-icons/react'
+import { ChartBar, Users, UserCircle, CreditCard, Buildings, Armchair, ShoppingCart, QrCode, Gear, Star } from '@phosphor-icons/react'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 const ICON_MAP: Record<string, PhosphorIcon> = {
@@ -16,6 +16,7 @@ const ICON_MAP: Record<string, PhosphorIcon> = {
   ShoppingCart,
   QrCode,
   Gear,
+  Star,
 }
 
 interface SidebarNavLinkProps {
