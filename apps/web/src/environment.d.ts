@@ -10,6 +10,12 @@ declare global {
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: string;
       NODE_ENV: 'development' | 'production';
       SUPABASE_PROJECT_REF: string;
+      RESEND_API_KEY: string;
+      TWILIO_ACCOUNT_SID: string;
+      TWILIO_AUTH_TOKEN: string;
+      TWILIO_FROM_NUMBER: string;
+      WHATSAPP_API_TOKEN: string;
+      WHATSAPP_PHONE_NUMBER_ID: string;
     }
   }
 }
