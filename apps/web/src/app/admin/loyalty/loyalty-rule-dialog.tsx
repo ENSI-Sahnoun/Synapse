@@ -139,7 +139,7 @@ export function LoyaltyRuleDialog({ mode, rule }: Props) {
           </div>
           <div className="space-y-1">
             <Label>Seuil de points *</Label>
-            <Input type="number" {...form.register('points_threshold')} />
+            <Input type="number" {...form.register('points_threshold', { valueAsNumber: true })} />
             {form.formState.errors.points_threshold && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.points_threshold.message}
@@ -149,7 +149,10 @@ export function LoyaltyRuleDialog({ mode, rule }: Props) {
           {watchedType === 'discount_pct' && (
             <div className="space-y-1">
               <Label>Valeur de la réduction (%) *</Label>
-              <Input type="number" step="1" {...form.register('reward_value')} />
+              <Input type="number" step="1" {...form.register('reward_value', { valueAsNumber: true })} />
+              {form.formState.errors.reward_value && (
+                <p className="text-sm text-destructive">{form.formState.errors.reward_value.message}</p>
+              )}
             </div>
           )}
           <Button type="submit" disabled={isExecuting} className="w-full">

@@ -60,7 +60,7 @@ export const signInWithPasswordAction = actionClient
     });
 
     if (error) {
-      if (error.message.includes('Invalid login credentials')) {
+if (error.message.includes('Invalid login credentials')) {
         throw new Error('Email ou mot de passe incorrect.')
       }
       if (error.message.includes('Email not confirmed')) {

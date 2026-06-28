@@ -6,15 +6,17 @@ import { RestoreButton } from '@/components/admin/RestoreButton'
 import { HardDeleteButton } from '@/components/admin/HardDeleteButton'
 import { ArchivedToggle } from './ArchivedToggle'
 import { Suspense } from 'react'
+import { SearchInput } from './SearchInput'
 
 export default async function AdminStudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ archived?: string }>
+  searchParams: Promise<{ archived?: string; q?: string }>
 }) {
   const params = await searchParams
   const showArchived = params.archived === '1'
-  const students = await listAllProfiles('student', showArchived)
+  const search = params.q?.trim() || undefined
+  const students = await listAllProfiles('student', showArchived, search)
 
   return (
     <div className="space-y-4">
@@ -31,6 +33,9 @@ export default async function AdminStudentsPage({
           )}
         </div>
       </div>
+
+      {!showArchived && <SearchInput defaultValue={params.q ?? ''} />}
+
       <p className="text-muted-foreground text-sm">{students.length} étudiant(s)</p>
       <div className="border rounded-md">
         <table className="w-full text-sm">
@@ -46,7 +51,7 @@ export default async function AdminStudentsPage({
             {students.length === 0 && (
               <tr>
                 <td colSpan={4} className="text-center py-8 text-muted-foreground">
-                  {showArchived ? 'Aucun étudiant archivé' : 'Aucun étudiant'}
+                  {showArchived ? 'Aucun étudiant archivé' : search ? 'Aucun résultat' : 'Aucun étudiant'}
                 </td>
               </tr>
             )}
@@ -72,7 +77,10 @@ export default async function AdminStudentsPage({
                           <Link href={`/admin/students/${s.id}/edit`}>Modifier</Link>
                         </Button>
                         <Button asChild variant="outline" size="sm">
-                          <Link href={`/admin/students/${s.id}`}>Abonnement</Link>
+                          <Link href={`/admin/students/${s.id}/print-qr`}>QR</Link>
+                        </Button>
+                        <Button asChild size="sm">
+                          <Link href={`/admin/students/${s.id}`}>Gérer</Link>
                         </Button>
                         <ArchiveButton id={s.id} />
                       </>
