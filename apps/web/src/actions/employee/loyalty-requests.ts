@@ -13,7 +13,7 @@ export const fulfilRedemptionAction = employeeActionClient
 
     const { data: request, error: fetchError } = await supabase
       .from('loyalty_redemption_requests')
-      .select('id, student_id, points_used, status, rule_id')
+      .select('id, student_id, points_used, status')
       .eq('id', request_id)
       .single()
 
@@ -33,6 +33,7 @@ export const fulfilRedemptionAction = employeeActionClient
       throw new Error('Une erreur est survenue lors de la déduction des points')
     }
 
+    // Known: if this update fails after ledger insert, request stays pending but points are deducted — re-fulfil is blocked by the pending guard above, minimising double-deduction risk
     const { error: updateError } = await supabase
       .from('loyalty_redemption_requests')
       .update({
