@@ -1,6 +1,6 @@
 'use server'
 
-import { createAdminClient } from '@/supabase-clients/server'
+import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 
 export interface StudentSubscriptionRow {
   subscription_id: string
@@ -20,7 +20,7 @@ export interface StudentSubscriptionRow {
 export async function getSubscriptionsByExpiryOffset(
   daysFromToday: number,
 ): Promise<StudentSubscriptionRow[]> {
-  const supabase = createAdminClient()
+  const supabase = createSupabaseAdminClient()
 
   const targetDate = new Date()
   targetDate.setDate(targetDate.getDate() + daysFromToday)

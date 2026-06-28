@@ -1,6 +1,4 @@
-'use server'
-
-import { createAdminClient } from '@/supabase-clients/server'
+import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 
 export type NotificationType =
   | 'expiry_7d'
@@ -22,7 +20,7 @@ export async function insertInAppNotification({
   type,
   message,
 }: InsertInAppNotificationOpts): Promise<void> {
-  const supabase = createAdminClient()
+  const supabase = createSupabaseAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from as any)('notifications').insert({
     user_id: userId,

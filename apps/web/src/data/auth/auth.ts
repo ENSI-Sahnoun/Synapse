@@ -1,6 +1,7 @@
 'use server';
 import { actionClient } from '@/lib/safe-action';
-import { createAdminClient, createSupabaseClient } from '@/supabase-clients/server';
+import { createSupabaseClient } from '@/supabase-clients/server';
+import { createSupabaseAdminClient } from '@/supabase-clients/admin';
 import { toSiteURL } from '@/utils/helpers';
 import { z } from 'zod';
 
@@ -44,7 +45,7 @@ export const signInWithPasswordAction = actionClient
 
     // Use admin client — same-request session cookies aren't readable via the
     // regular client after signInWithPassword (getAll() returns pre-request cookies)
-    const admin = createAdminClient()
+    const admin = createSupabaseAdminClient()
     const { data: profile, error: profileErr } = await admin
       .from('profiles')
       .select('role')
