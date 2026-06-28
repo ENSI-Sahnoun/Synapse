@@ -54,13 +54,13 @@ export const signInWithPasswordAction = actionClient
   .action(async ({ parsedInput: { email, password } }) => {
     const supabase = await createSupabaseClient();
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
-if (error.message.includes('Invalid login credentials')) {
+      if (error.message.includes('Invalid login credentials')) {
         throw new Error('Email ou mot de passe incorrect.')
       }
       if (error.message.includes('Email not confirmed')) {
@@ -69,7 +69,19 @@ if (error.message.includes('Invalid login credentials')) {
       throw new Error('Erreur lors de la connexion.')
     }
 
-    // No need to return anything if the operation is successful
+    const ROLE_HOME: Record<string, string> = {
+      admin: '/admin/dashboard',
+      employee: '/employee/dashboard',
+      student: '/student/dashboard',
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single()
+
+    return { redirectTo: ROLE_HOME[profile?.role ?? ''] ?? '/login' }
   });
 
 const signInWithMagicLinkSchema = z.object({

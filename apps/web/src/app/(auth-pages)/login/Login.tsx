@@ -34,17 +34,6 @@ export function Login({
   const [redirectInProgress, setRedirectInProgress] = useState(false);
   const toastRef = useRef<string | number | undefined>(undefined);
 
-  function redirectToDashboard() {
-    // Full-page navigation so middleware role-redirect fires correctly.
-    // router.push() to a route handler that returns a redirect is unreliable
-    // in Next.js App Router (RSC fetch doesn't always follow redirects).
-    if (next) {
-      window.location.href = `/auth/callback?next=${encodeURIComponent(next)}`
-    } else {
-      window.location.href = '/auth/callback'
-    }
-  }
-
   const { execute: executeMagicLink, status: magicLinkStatus } = useAction(
     signInWithMagicLinkAction,
     {
@@ -77,13 +66,15 @@ export function Login({
       onExecute: () => {
         toastRef.current = toast.loading('Logging in...');
       },
-      onSuccess: () => {
+      onSuccess: (payload) => {
         toast.success('Logged in!', {
           id: toastRef.current,
         });
         toastRef.current = undefined;
-        redirectToDashboard();
         setRedirectInProgress(true);
+        window.location.href = next
+          ? decodeURIComponent(next)
+          : (payload.data?.redirectTo ?? '/login')
       },
       onError: (error) => {
         const errorMessage =
