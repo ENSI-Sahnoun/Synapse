@@ -59,7 +59,7 @@ export const deleteAccountCategoryAction = adminActionClient
     const { count: productCount } = await supabase
       .from('products')
       .select('*', { count: 'exact', head: true })
-      .eq('account_category_id', parsedInput.id)
+      .eq('account_category_id' as any, parsedInput.id)
 
     if ((expenseCount ?? 0) > 0 || (productCount ?? 0) > 0) {
       throw new Error(

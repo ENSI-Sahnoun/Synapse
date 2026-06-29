@@ -29,12 +29,12 @@ export async function GET(req: NextRequest) {
 
   const pnl = await getPnl({ from, to })
   const buffer = await renderToBuffer(
-    React.createElement(PnlPdfDocument, { pnl, from, to }),
+    React.createElement(PnlPdfDocument, { pnl, from, to }) as any,
   )
 
   const filename = `synapse-pnl-${from}-${to}.pdf`
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',

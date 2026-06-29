@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const createAccountCategorySchema = z.object({
-  type: z.enum(['income', 'expense'], { required_error: 'Type requis' }),
+  type: z.enum(['income', 'expense'], { error: 'Type requis' }),
   name: z.string().min(2, 'Nom requis (2 caractères minimum)').max(100),
   description: z.string().max(255).optional(),
 })
