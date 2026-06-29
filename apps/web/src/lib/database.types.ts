@@ -345,11 +345,30 @@ export type Database = {
         }
         Relationships: []
       }
+      product_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string
           created_at: string
           id: string
+          image_url: string | null
           is_active: boolean
           name: string
           price_dt: number
@@ -359,6 +378,7 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name: string
           price_dt: number
@@ -368,6 +388,7 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name?: string
           price_dt?: number

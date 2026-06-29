@@ -21,6 +21,7 @@ export default async function AdminProductsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
+              <th className="px-4 py-2 w-12"></th>
               <th className="text-left px-4 py-2">Nom</th>
               <th className="text-left px-4 py-2">Catégorie</th>
               <th className="text-left px-4 py-2">Prix (DT)</th>
@@ -32,6 +33,14 @@ export default async function AdminProductsPage() {
           <tbody>
             {products.map((p) => (
               <tr key={p.id} className="border-b last:border-0">
+                <td className="px-4 py-2">
+                  {p.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.image_url} alt={p.name} className="h-9 w-9 rounded object-cover" />
+                  ) : (
+                    <div className="h-9 w-9 rounded bg-muted flex items-center justify-center text-muted-foreground text-xs">—</div>
+                  )}
+                </td>
                 <td className="px-4 py-2 font-medium">{p.name}</td>
                 <td className="px-4 py-2 text-muted-foreground">{p.category}</td>
                 <td className="px-4 py-2">{Number(p.price_dt).toFixed(2)}</td>

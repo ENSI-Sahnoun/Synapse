@@ -1,22 +1,16 @@
-# Task 4 Report: Student Notification Sheet
+# Task 4: KPI summary cards - Implementation Report
 
-## Status: DONE
+## Status
+DONE
 
-## Commit
-`3024d66` — feat(notifications): add StudentNotificationSheet in student header bell slot
+## Commits
+- 3bece6f: feat(admin): daily summary KPI cards
 
-## TypeScript
-`pnpm tsc --noEmit` — 0 errors
+## Test Summary
+Component created with correct props, imports, and layout structure matching design brief; no runtime tests applicable for static component.
 
-## What was done
-
-1. **Created** `apps/web/src/components/notifications/StudentNotificationSheet.tsx`
-   - Client component, Phosphor Bell trigger with red badge, bottom sheet (80vh)
-   - Correct schema: `is_read: boolean`, optimistic `{ ...n, is_read: true }`
-   - Actions from `@/actions/notifications/mark-read`
-   - Reuses `NotificationItem`
-
-2. **Modified** `apps/web/src/app/student/layout.tsx`
-   - Replaced bell placeholder with `<StudentNotificationSheet>`
-   - Added try/catch non-fatal notification fetch
-   - Removed unused Bell import
+## Implementation Details
+- Created `apps/web/src/components/admin/dashboard/daily-summary.tsx`
+- Component displays 4 KPI cards in responsive grid (2 cols on md, 4 cols on lg)
+- Cards show: new students, subscriptions sold with revenue, in-store sales, and footfall
+- Uses shadcn/ui Card components with proper styling (text-sm labels, text-2xl bold values)
