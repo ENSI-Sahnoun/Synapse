@@ -9,6 +9,7 @@ import { PnlTable } from '@/components/admin/accounting/pnl-table'
 import { DateRangeFilter } from '@/components/admin/accounting/date-range-filter'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ExportButtons } from '@/components/admin/accounting/export-buttons'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -41,9 +42,12 @@ export default async function AccountingPage({ searchParams }: PageProps) {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Comptabilité</h1>
-        <Button variant="outline" asChild>
-          <Link href="/admin/accounting/categories">Gérer les catégories</Link>
-        </Button>
+        <div className="flex gap-2">
+          <ExportButtons from={from} to={to} />
+          <Button variant="outline" asChild>
+            <Link href="/admin/accounting/categories">Gérer les catégories</Link>
+          </Button>
+        </div>
       </div>
 
       <DateRangeFilter from={from} to={to} />
