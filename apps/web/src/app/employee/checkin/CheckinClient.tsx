@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { QrScanner } from '@/components/checkin/QrScanner'
-import { CheckinResult } from '@/components/checkin/CheckinResult'
 import { checkinAction } from '@/actions/checkin/checkin-action'
 import { checkoutAction } from '@/actions/checkin/checkout-action'
 import type { CheckinResult as CheckinResultType } from '@/utils/zod-schemas/checkin'
@@ -18,15 +17,31 @@ interface OpenAttendance {
 
 interface CheckinClientProps {
   initialOpenAttendance: OpenAttendance[]
+  todayTotal: number
+  currentlyIn: number
+  checkedOut: number
 }
 
 const PREFIX = 'SYNAPSE-'
 
-export function CheckinClient({ initialOpenAttendance }: CheckinClientProps) {
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((p) => p[0] ?? '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+export function CheckinClient({
+  initialOpenAttendance,
+  todayTotal,
+  currentlyIn,
+  checkedOut,
+}: CheckinClientProps) {
   const [scannerReady, setScannerReady] = useState(true)
   const [lastResult, setLastResult] = useState<CheckinResultType | null>(null)
   const [openAttendance, setOpenAttendance] = useState(initialOpenAttendance)
-  const [mode, setMode] = useState<'scan' | 'manual'>('scan')
   const [manualCode, setManualCode] = useState(PREFIX)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -44,9 +59,7 @@ export function CheckinClient({ initialOpenAttendance }: CheckinClientProps) {
 
   const { execute: executeCheckout } = useAction(checkoutAction, {
     onSuccess: ({ input }) => {
-      setOpenAttendance((prev) =>
-        prev.filter((a) => a.id !== input?.attendanceId)
-      )
+      setOpenAttendance((prev) => prev.filter((a) => a.id !== input?.attendanceId))
     },
   })
 
@@ -79,10 +92,7 @@ export function CheckinClient({ initialOpenAttendance }: CheckinClientProps) {
   const handleReset = useCallback(() => {
     setLastResult(null)
     setScannerReady(true)
-    if (mode === 'manual') {
-      setTimeout(() => inputRef.current?.focus(), 50)
-    }
-  }, [mode])
+  }, [])
 
   const handleManualCodeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -93,39 +103,237 @@ export function CheckinClient({ initialOpenAttendance }: CheckinClientProps) {
     }
   }, [])
 
+  const isAuthorized = lastResult?.status === 'AUTHORIZED'
+  const isDenied =
+    lastResult?.status === 'DENIED_EXPIRED' ||
+    lastResult?.status === 'DENIED_NO_SUB' ||
+    lastResult?.status === 'DENIED_UNKNOWN' ||
+    lastResult?.status === 'DENIED_NO_RESERVATION'
+  const isAlreadyIn = lastResult?.status === 'ALREADY_IN'
+
+  function getOverlayMessage(): string {
+    if (!lastResult) return ''
+    if (lastResult.status === 'AUTHORIZED') return 'Accès autorisé'
+    if (lastResult.status === 'ALREADY_IN') return 'Déjà présent'
+    if (lastResult.status === 'DENIED_EXPIRED') return 'Abonnement expiré'
+    if (lastResult.status === 'DENIED_NO_SUB') return 'Aucun abonnement'
+    if (lastResult.status === 'DENIED_NO_RESERVATION') return 'Aucune réservation'
+    return 'Accès refusé'
+  }
+
+  const showOverlay = !!lastResult
+  const overlayBg = isAuthorized
+    ? 'rgba(22,163,74,0.88)'
+    : isDenied || isAlreadyIn
+    ? 'rgba(220,38,38,0.85)'
+    : 'transparent'
+
+  const buttonLabel = isPending
+    ? 'Valider…'
+    : lastResult
+    ? 'Scanner un autre'
+    : 'Appuyer pour scanner'
+
   return (
-    <div className="flex flex-col gap-8">
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold">Contrôle d&apos;accès</h2>
-          <div className="flex rounded-lg border overflow-hidden text-xs">
-            <button
-              onClick={() => setMode('scan')}
-              className={`px-3 py-1.5 ${mode === 'scan' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <style>{`
+        @keyframes scan-line {
+          0%, 100% { top: 12%; }
+          50% { top: 78%; }
+        }
+        @keyframes slide-up {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      {/* Summary strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        {[
+          { label: "Aujourd'hui", value: todayTotal, color: 'var(--accent-brand)' },
+          { label: 'Présents', value: currentlyIn, color: 'var(--synapse-green-500)' },
+          { label: 'Sortis', value: checkedOut, color: 'var(--muted-foreground)' },
+        ].map(({ label, value, color }) => (
+          <div
+            key={label}
+            style={{
+              background: 'white',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '12px 10px',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                fontFamily: 'var(--font-display)',
+                color,
+              }}
             >
-              Scanner
-            </button>
-            <button
-              onClick={() => { setMode('manual'); setTimeout(() => inputRef.current?.focus(), 50) }}
-              className={`px-3 py-1.5 ${mode === 'manual' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+              {value}
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--text-tertiary)',
+                marginTop: 2,
+              }}
             >
-              Code manuel
-            </button>
+              {label}
+            </div>
           </div>
+        ))}
+      </div>
+
+      {/* Scanner card */}
+      <div
+        style={{
+          background: 'white',
+          borderRadius: 'var(--radius-xl)',
+          padding: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 14,
+        }}
+      >
+        <div style={{ width: '100%' }}>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: 'var(--text-tertiary)',
+            }}
+          >
+            QR Scanner
+          </span>
         </div>
 
-        {lastResult ? (
-          <CheckinResult result={lastResult} onReset={handleReset} />
-        ) : mode === 'scan' ? (
+        {/* Viewport */}
+        <div
+          style={{
+            background: '#111',
+            borderRadius: 'var(--radius-xl)',
+            width: '100%',
+            maxWidth: 260,
+            aspectRatio: '1',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
           <QrScanner onScan={handleScan} ready={scannerReady} />
-        ) : (
-          <form
-            onSubmit={handleManualSubmit}
-            className="w-full max-w-sm mx-auto flex flex-col gap-3"
+
+          {/* Corner brackets */}
+          {(['tl', 'tr', 'bl', 'br'] as const).map((pos) => (
+            <div
+              key={pos}
+              style={{
+                position: 'absolute',
+                width: 28,
+                height: 28,
+                top: pos.startsWith('t') ? 14 : undefined,
+                bottom: pos.startsWith('b') ? 14 : undefined,
+                left: pos.endsWith('l') ? 14 : undefined,
+                right: pos.endsWith('r') ? 14 : undefined,
+                borderTop: pos.startsWith('t') ? '3px solid var(--accent-brand)' : undefined,
+                borderBottom: pos.startsWith('b') ? '3px solid var(--accent-brand)' : undefined,
+                borderLeft: pos.endsWith('l') ? '3px solid var(--accent-brand)' : undefined,
+                borderRight: pos.endsWith('r') ? '3px solid var(--accent-brand)' : undefined,
+              }}
+            />
+          ))}
+
+          {/* Scan line */}
+          {isPending && (
+            <div
+              style={{
+                position: 'absolute',
+                left: 16,
+                right: 16,
+                height: 2,
+                background: 'var(--accent-brand)',
+                animation: 'scan-line 1.1s ease-in-out infinite',
+              }}
+            />
+          )}
+
+          {/* Result overlay */}
+          {showOverlay && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: overlayBg,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                animation: 'slide-up 0.25s ease',
+              }}
+            >
+              {isAuthorized ? (
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              )}
+              <span style={{ color: 'white', fontWeight: 600, fontSize: 15, textAlign: 'center', padding: '0 12px' }}>
+                {getOverlayMessage()}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Primary button */}
+        <button
+          onClick={lastResult ? handleReset : undefined}
+          disabled={isPending}
+          style={{
+            width: '100%',
+            maxWidth: 260,
+            padding: '10px 0',
+            borderRadius: 'var(--radius-lg)',
+            background: 'var(--accent-brand)',
+            color: 'white',
+            fontWeight: 600,
+            fontSize: 14,
+            border: 'none',
+            cursor: isPending ? 'default' : 'pointer',
+            opacity: isPending ? 0.7 : 1,
+          }}
+        >
+          {buttonLabel}
+        </button>
+
+        {/* Manual entry */}
+        <div
+          style={{
+            width: '100%',
+            borderTop: '1px solid var(--border-subtle)',
+            paddingTop: 14,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: 'var(--text-tertiary)',
+              marginBottom: 8,
+            }}
           >
-            <label className="text-sm text-muted-foreground">
-              Code secret de l&apos;étudiant
-            </label>
+            Entrée manuelle
+          </div>
+          <form onSubmit={handleManualSubmit} style={{ display: 'flex', gap: 8 }}>
             <input
               ref={inputRef}
               type="text"
@@ -134,50 +342,203 @@ export function CheckinClient({ initialOpenAttendance }: CheckinClientProps) {
               placeholder={`${PREFIX}…`}
               spellCheck={false}
               autoCapitalize="characters"
-              className="w-full rounded-lg border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+              style={{
+                flex: 1,
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '8px 10px',
+                fontSize: 13,
+                fontFamily: 'monospace',
+                background: 'transparent',
+                outline: 'none',
+                minWidth: 0,
+              }}
             />
             <button
               type="submit"
               disabled={isPending || manualCode.trim() === PREFIX}
-              className="w-full rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium disabled:opacity-50"
+              style={{
+                padding: '8px 14px',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--accent-brand)',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: 13,
+                border: 'none',
+                cursor: 'pointer',
+                opacity: isPending || manualCode.trim() === PREFIX ? 0.5 : 1,
+                whiteSpace: 'nowrap',
+              }}
             >
-              {isPending ? 'Vérification…' : 'Valider'}
+              Valider
             </button>
           </form>
-        )}
-      </section>
+        </div>
+      </div>
 
-      <section>
-        <h2 className="text-base font-semibold mb-3">
-          Présents ({openAttendance.length})
-        </h2>
-        {openAttendance.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun étudiant présent pour le moment.</p>
-        ) : (
-          <ul className="space-y-2">
-            {openAttendance.map((a) => (
-              <li
-                key={a.id}
-                className="flex items-center justify-between border rounded-lg px-4 py-3 text-sm"
-              >
-                <div>
-                  <p className="font-medium">{a.studentName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Entrée à{' '}
-                    {format(parseISO(a.checkedInAt), 'HH:mm', { locale: fr })}
-                  </p>
+      {/* Result card — shown only when AUTHORIZED */}
+      {lastResult?.status === 'AUTHORIZED' && (
+        <div
+          style={{
+            background: 'white',
+            border: '1px solid var(--synapse-green-500)',
+            borderRadius: 'var(--radius-xl)',
+            padding: 16,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: '50%',
+                background: 'var(--accent-brand)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: 15,
+                fontFamily: 'var(--font-display)',
+                flexShrink: 0,
+              }}
+            >
+              {getInitials(lastResult.studentName)}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 16, lineHeight: 1.2 }}>
+                {lastResult.studentName}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 2 }}>
+                {lastResult.planName}
+              </div>
+            </div>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--synapse-green-500)',
+                background: 'rgba(22,163,74,0.1)',
+                borderRadius: 99,
+                padding: '3px 9px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Présent
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '8px 16px',
+              borderTop: '1px solid var(--border-subtle)',
+              paddingTop: 12,
+            }}
+          >
+            {[
+              { label: 'Plan', value: lastResult.planName },
+              { label: 'Salle', value: '—' },
+              {
+                label: 'Validité',
+                value: format(parseISO(lastResult.endDate), 'd MMM yyyy', { locale: fr }),
+              },
+              {
+                label: 'Jours restants',
+                value: String(lastResult.daysRemaining),
+              },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 2 }}>
+                  {label}
                 </div>
-                <button
-                  onClick={() => executeCheckout({ attendanceId: a.id })}
-                  className="text-xs border rounded-md px-3 py-1.5 hover:bg-accent"
-                >
-                  Sortie
-                </button>
-              </li>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{value}</div>
+              </div>
             ))}
-          </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Open attendance list */}
+      <div
+        style={{
+          background: 'white',
+          borderRadius: 'var(--radius-xl)',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            padding: '14px 16px',
+            borderBottom: openAttendance.length > 0 ? '1px solid var(--border-subtle)' : undefined,
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          Présents ({openAttendance.length})
+        </div>
+
+        {openAttendance.length === 0 ? (
+          <div style={{ padding: '14px 16px', fontSize: 13, color: 'var(--muted-foreground)' }}>
+            Aucun étudiant présent pour le moment.
+          </div>
+        ) : (
+          openAttendance.map((a, i) => (
+            <div
+              key={a.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 16px',
+                borderBottom:
+                  i < openAttendance.length - 1 ? '1px solid var(--border-subtle)' : undefined,
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: 'var(--accent-brand)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  fontFamily: 'var(--font-display)',
+                  flexShrink: 0,
+                }}
+              >
+                {getInitials(a.studentName)}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{a.studentName}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 1 }}>
+                  Entrée à {format(parseISO(a.checkedInAt), 'HH:mm', { locale: fr })}
+                </div>
+              </div>
+              <button
+                onClick={() => executeCheckout({ attendanceId: a.id })}
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '5px 12px',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Sortie
+              </button>
+            </div>
+          ))
         )}
-      </section>
+      </div>
     </div>
   )
 }
