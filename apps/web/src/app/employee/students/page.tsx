@@ -1,71 +1,50 @@
-import { listStudents } from '@/data/employee/students'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { createSupabaseClient } from '@/supabase-clients/server'
+import { redirect } from 'next/navigation'
+import { startOfDay } from 'date-fns'
+import { LookupClient } from './LookupClient'
 
-export default async function EmployeeStudentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>
-}) {
-  const { q } = await searchParams
-  const students = await listStudents(q)
+export const dynamic = 'force-dynamic'
+
+export default async function EmployeeStudentsPage() {
+  const supabase = await createSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const todayISO = startOfDay(new Date()).toISOString()
+  void todayISO
+
+  const [studentsResult, openAttResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, phone, university, qr_token, student_number')
+      .eq('role', 'student')
+      .eq('is_archived', false)
+      .order('full_name'),
+    supabase
+      .from('attendance')
+      .select('id, student_id, room_id, profiles!attendance_student_id_fkey(full_name)')
+      .is('checked_out_at', null),
+  ])
+
+  const students = studentsResult.data ?? []
+  const openAtt = openAttResult.data ?? []
+
+  const roomIds = [...new Set(openAtt.map(a => a.room_id).filter(Boolean))] as string[]
+  const roomsResult = roomIds.length > 0
+    ? await supabase.from('rooms').select('id, name').in('id', roomIds)
+    : { data: [] }
+  const roomMap: Record<string, string> = {}
+  for (const r of roomsResult.data ?? []) roomMap[r.id] = r.name
+
+  const currentlyIn = openAtt.map(a => ({
+    studentId: a.student_id,
+    attendanceId: a.id,
+    roomName: a.room_id ? (roomMap[a.room_id] ?? '—') : '—',
+  }))
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Étudiants</h1>
-        <Button asChild>
-          <Link href="/employee/students/new">Nouvel étudiant</Link>
-        </Button>
-      </div>
-
-      <form method="GET" className="flex gap-2">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Rechercher par nom ou téléphone..."
-          className="border rounded-md px-3 py-2 text-sm w-72"
-        />
-        <Button type="submit" variant="outline">Rechercher</Button>
-      </form>
-
-      <div className="border rounded-md">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="text-left px-4 py-2">Nom</th>
-              <th className="text-left px-4 py-2">Téléphone</th>
-              <th className="text-left px-4 py-2">Université</th>
-              <th className="text-left px-4 py-2">Inscription</th>
-              <th className="px-4 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Aucun étudiant trouvé
-                </td>
-              </tr>
-            )}
-            {students.map((s) => (
-              <tr key={s.id} className="border-b last:border-0">
-                <td className="px-4 py-2 font-medium">{s.full_name}</td>
-                <td className="px-4 py-2 text-muted-foreground">{s.phone ?? '—'}</td>
-                <td className="px-4 py-2 text-muted-foreground">{s.university ?? '—'}</td>
-                <td className="px-4 py-2 text-muted-foreground">
-                  {new Date(s.created_at).toLocaleDateString('fr-FR')}
-                </td>
-                <td className="px-4 py-2">
-                  <Link href={`/employee/students/${s.id}`} className="text-primary hover:underline text-xs">
-                    Voir
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="p-4 pb-24">
+      <LookupClient students={students} currentlyIn={currentlyIn} />
     </div>
   )
 }
