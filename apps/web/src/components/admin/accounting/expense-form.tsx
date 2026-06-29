@@ -31,7 +31,7 @@ export function ExpenseForm({ categories, onSuccess }: Props) {
     reset,
     formState: { errors },
   } = useForm<CreateExpenseInput>({
-    resolver: zodResolver(createExpenseSchema),
+    resolver: zodResolver(createExpenseSchema) as any,
     defaultValues: {
       date: new Date().toISOString().slice(0, 10),
     },
