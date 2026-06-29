@@ -1,6 +1,5 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
-import { startOfDay } from 'date-fns'
 import { LookupClient } from './LookupClient'
 
 export const dynamic = 'force-dynamic'
@@ -9,9 +8,6 @@ export default async function EmployeeStudentsPage() {
   const supabase = await createSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
-
-  const todayISO = startOfDay(new Date()).toISOString()
-  void todayISO
 
   const [studentsResult, openAttResult] = await Promise.all([
     supabase
