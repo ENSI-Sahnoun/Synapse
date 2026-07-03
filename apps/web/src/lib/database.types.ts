@@ -401,7 +401,9 @@ export type Database = {
       products: {
         Row: {
           account_category_id: string
+          barcode: string | null
           category: string
+          cost_price: number | null
           created_at: string
           id: string
           image_url: string | null
@@ -409,10 +411,13 @@ export type Database = {
           name: string
           price_dt: number
           stock_quantity: number
+          supplier: string | null
         }
         Insert: {
           account_category_id?: string
+          barcode?: string | null
           category?: string
+          cost_price?: number | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -420,10 +425,13 @@ export type Database = {
           name: string
           price_dt: number
           stock_quantity?: number
+          supplier?: string | null
         }
         Update: {
           account_category_id?: string
+          barcode?: string | null
           category?: string
+          cost_price?: number | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -431,6 +439,7 @@ export type Database = {
           name?: string
           price_dt?: number
           stock_quantity?: number
+          supplier?: string | null
         }
         Relationships: [
           {
@@ -486,6 +495,54 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pos_activity_log: {
+        Row: {
+          id: string
+          action: string
+          product_id: string | null
+          actor_id: string
+          quantity: number | null
+          amount_dt: number | null
+          details: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          action: string
+          product_id?: string | null
+          actor_id: string
+          quantity?: number | null
+          amount_dt?: number | null
+          details?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          action?: string
+          product_id?: string | null
+          actor_id?: string
+          quantity?: number | null
+          amount_dt?: number | null
+          details?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_activity_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchase_items: {
         Row: {

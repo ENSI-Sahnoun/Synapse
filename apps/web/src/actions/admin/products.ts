@@ -9,20 +9,32 @@ import { revalidatePath } from 'next/cache'
 
 export const createProductAction = adminActionClient
   .schema(createProductSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     const supabase = createSupabaseAdminClient()
-    const { error } = await supabase.from('products').insert(parsedInput)
+    const { data, error } = await supabase.from('products').insert(parsedInput).select('id').single()
     if (error) throw new Error('Erreur lors de la création du produit')
+    await supabase.from('pos_activity_log').insert({
+      action: 'product_create',
+      product_id: data.id,
+      actor_id: ctx.userId,
+      details: parsedInput,
+    })
     revalidatePath('/admin/products')
     return { success: true }
   })
 
 export const updateProductAction = adminActionClient
   .schema(updateProductSchema)
-  .action(async ({ parsedInput: { id, ...updates } }) => {
+  .action(async ({ parsedInput: { id, ...updates }, ctx }) => {
     const supabase = createSupabaseAdminClient()
     const { error } = await supabase.from('products').update(updates).eq('id', id)
     if (error) throw new Error('Erreur lors de la mise à jour du produit')
+    await supabase.from('pos_activity_log').insert({
+      action: 'product_update',
+      product_id: id,
+      actor_id: ctx.userId,
+      details: updates,
+    })
     revalidatePath('/admin/products')
     return { success: true }
   })
