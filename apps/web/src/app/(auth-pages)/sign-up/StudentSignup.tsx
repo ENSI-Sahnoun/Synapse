@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { studentSignupSchema, type StudentSignupInput } from '@/utils/zod-schemas/auth'
 import Link from 'next/link'
 import { useState } from 'react'
+import { markPwaInstallTrigger } from '@/components/pwa/usePwaInstall'
 
 export function StudentSignup() {
   const router = useRouter()
@@ -36,6 +37,7 @@ export function StudentSignup() {
         setEmailConfirmPending(true)
       } else {
         toast.success('Compte créé avec succès')
+        markPwaInstallTrigger()
         router.push('/student/dashboard')
       }
     },

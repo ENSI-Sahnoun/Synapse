@@ -10,6 +10,14 @@ export const metadata = {
   title: 'Synapse Management Platform',
   description: "Gestion de l'espace de coworking Synapse",
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Synapse',
+  },
+  icons: {
+    apple: '/logos/icon-192.png',
+  },
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

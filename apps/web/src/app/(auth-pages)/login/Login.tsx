@@ -20,6 +20,7 @@ import {
 import { useAction } from 'next-safe-action/hooks';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { markPwaInstallTrigger } from '@/components/pwa/usePwaInstall';
 
 export function Login({
   next,
@@ -72,6 +73,7 @@ export function Login({
         });
         toastRef.current = undefined;
         setRedirectInProgress(true);
+        markPwaInstallTrigger();
         window.location.href = next
           ? decodeURIComponent(next)
           : (payload.data?.redirectTo ?? '/login')
