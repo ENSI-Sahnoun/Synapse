@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { usePwaInstall } from './usePwaInstall';
-import { Share, SquarePlus } from 'lucide-react';
+import { Share, SquarePlus, MoreVertical } from 'lucide-react';
 
 export function InstallPromptModal() {
   const { open, platform, install, dismiss } = usePwaInstall();
@@ -34,6 +34,15 @@ export function InstallPromptModal() {
             <p className="flex items-center gap-2">
               2. Tap <SquarePlus className="size-4" /> &quot;Add to Home Screen&quot;
             </p>
+          </div>
+        ) : null}
+
+        {platform === 'android-manual' ? (
+          <div className="text-sm space-y-2">
+            <p className="flex items-center gap-2">
+              1. Tap <MoreVertical className="size-4" /> menu in your browser
+            </p>
+            <p>2. Tap &quot;Add to Home screen&quot; or &quot;Install app&quot;</p>
           </div>
         ) : null}
 

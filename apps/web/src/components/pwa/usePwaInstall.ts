@@ -30,7 +30,7 @@ export function markPwaInstallTrigger() {
 
 export function usePwaInstall() {
   const [open, setOpen] = useState(false);
-  const [platform, setPlatform] = useState<'android' | 'ios' | null>(null);
+  const [platform, setPlatform] = useState<'android' | 'android-manual' | 'ios' | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -47,11 +47,20 @@ export function usePwaInstall() {
 
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      clearTimeout(fallbackTimer);
+      if (localStorage.getItem(DISMISSED_KEY)) return;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setPlatform('android');
       setOpen(true);
     };
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+
+    // Samsung Internet and other non-Chromium browsers don't fire
+    // beforeinstallprompt at all — fall back to manual instructions.
+    const fallbackTimer = setTimeout(() => {
+      setPlatform('android-manual');
+      setOpen(true);
+    }, 2500);
 
     const onInstalled = () => {
       localStorage.setItem(DISMISSED_KEY, '1');
@@ -62,6 +71,7 @@ export function usePwaInstall() {
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
       window.removeEventListener('appinstalled', onInstalled);
+      clearTimeout(fallbackTimer);
     };
   }, []);
 
