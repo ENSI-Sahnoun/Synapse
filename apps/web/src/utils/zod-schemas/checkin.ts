@@ -7,7 +7,7 @@ export const checkinSchema = z.object({
 export type CheckinInput = z.infer<typeof checkinSchema>
 
 export type CheckinResult =
-  | { status: 'AUTHORIZED'; studentName: string; planName: string; endDate: string; daysRemaining: number; reservationFulfilled?: boolean }
+  | { status: 'AUTHORIZED'; studentName: string; planName: string; endDate: string; daysRemaining: number; reservationFulfilled?: boolean; attendanceId: string }
   | { status: 'DENIED_EXPIRED'; studentName: string; endDate: string }
   | { status: 'DENIED_NO_SUB'; studentName: string }
   | { status: 'DENIED_UNKNOWN' }

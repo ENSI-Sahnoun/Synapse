@@ -4,6 +4,7 @@ import { employeeActionClient } from '@/lib/safe-action'
 import { createPurchaseSchema } from '@/utils/zod-schemas/purchase'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
+import { notifyAllStaff } from '@/data/notifications/inapp'
 
 export const createPurchaseAction = employeeActionClient
   .schema(createPurchaseSchema)
@@ -92,6 +93,13 @@ export const createPurchaseAction = employeeActionClient
         }
       }
     }
+
+    try {
+      await notifyAllStaff(
+        'purchase_completed',
+        `Vente enregistrée : ${total_dt.toFixed(2)} DT${student_id ? ' (étudiant lié)' : ''}.`,
+      )
+    } catch { /* non-fatal */ }
 
     revalidatePath('/employee/pos')
     return {

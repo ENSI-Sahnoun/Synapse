@@ -1,22 +1,16 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAction } from 'next-safe-action/hooks'
 import { QrScanner } from '@/components/checkin/QrScanner'
 import { checkinAction } from '@/actions/checkin/checkin-action'
-import { checkoutAction } from '@/actions/checkin/checkout-action'
+import { PostCheckinSeatDialog } from '@/components/checkin/PostCheckinSeatDialog'
 import type { CheckinResult as CheckinResultType } from '@/utils/zod-schemas/checkin'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
-interface OpenAttendance {
-  id: string
-  studentName: string
-  checkedInAt: string
-}
-
 interface CheckinClientProps {
-  initialOpenAttendance: OpenAttendance[]
   todayTotal: number
   currentlyIn: number
   checkedOut: number
@@ -34,32 +28,31 @@ function getInitials(name: string): string {
 }
 
 export function CheckinClient({
-  initialOpenAttendance,
   todayTotal,
   currentlyIn,
   checkedOut,
 }: CheckinClientProps) {
   const [scannerReady, setScannerReady] = useState(true)
   const [lastResult, setLastResult] = useState<CheckinResultType | null>(null)
-  const [openAttendance, setOpenAttendance] = useState(initialOpenAttendance)
   const [manualCode, setManualCode] = useState(PREFIX)
+  const [seatDialogOpen, setSeatDialogOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
   const { execute: executeCheckin, isPending } = useAction(checkinAction, {
     onSuccess: ({ data }) => {
       if (!data) return
       setLastResult(data)
       setManualCode(PREFIX)
+      if (data.status === 'AUTHORIZED' && !data.reservationFulfilled) {
+        setSeatDialogOpen(true)
+      }
+      // Re-run the server component so Aujourd'hui/Présents/Sortis reflect this scan
+      router.refresh()
     },
     onError: () => {
       setLastResult({ status: 'DENIED_UNKNOWN' })
       setManualCode(PREFIX)
-    },
-  })
-
-  const { execute: executeCheckout } = useAction(checkoutAction, {
-    onSuccess: ({ input }) => {
-      setOpenAttendance((prev) => prev.filter((a) => a.id !== input?.attendanceId))
     },
   })
 
@@ -460,85 +453,14 @@ export function CheckinClient({
         </div>
       )}
 
-      {/* Open attendance list */}
-      <div
-        style={{
-          background: 'white',
-          borderRadius: 'var(--radius-xl)',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            padding: '14px 16px',
-            borderBottom: openAttendance.length > 0 ? '1px solid var(--border-subtle)' : undefined,
-            fontWeight: 600,
-            fontSize: 14,
-          }}
-        >
-          Présents ({openAttendance.length})
-        </div>
-
-        {openAttendance.length === 0 ? (
-          <div style={{ padding: '14px 16px', fontSize: 13, color: 'var(--muted-foreground)' }}>
-            Aucun étudiant présent pour le moment.
-          </div>
-        ) : (
-          openAttendance.map((a, i) => (
-            <div
-              key={a.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '12px 16px',
-                borderBottom:
-                  i < openAttendance.length - 1 ? '1px solid var(--border-subtle)' : undefined,
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  background: 'var(--accent-brand)',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  fontFamily: 'var(--font-display)',
-                  flexShrink: 0,
-                }}
-              >
-                {getInitials(a.studentName)}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{a.studentName}</div>
-                <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 1 }}>
-                  Entrée à {format(parseISO(a.checkedInAt), 'HH:mm', { locale: fr })}
-                </div>
-              </div>
-              <button
-                onClick={() => executeCheckout({ attendanceId: a.id })}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  border: '1px solid var(--border-default)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '5px 12px',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Sortie
-              </button>
-            </div>
-          ))
-        )}
-      </div>
+      {lastResult?.status === 'AUTHORIZED' && (
+        <PostCheckinSeatDialog
+          open={seatDialogOpen}
+          onOpenChange={setSeatDialogOpen}
+          attendanceId={lastResult.attendanceId}
+          studentName={lastResult.studentName}
+        />
+      )}
     </div>
   )
 }

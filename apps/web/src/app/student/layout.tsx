@@ -5,6 +5,7 @@ import { StudentBottomNav } from '@/components/student/StudentBottomNav'
 import { signOutAction } from '@/data/auth/sign-out'
 import { getMyNotifications, getMyUnreadCount } from '@/data/notifications/list'
 import { StudentNotificationSheet } from '@/components/notifications/StudentNotificationSheet'
+import { PullToRefresh } from '@/components/PullToRefresh'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseClient()
@@ -47,7 +48,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
       >
         <span
           className="text-base tracking-tight"
-          style={{ fontFamily: "'DM Serif Display', serif", color: 'var(--foreground)' }}
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--accent-brand)', fontWeight: 700 }}
         >
           Synapse
         </span>
@@ -62,7 +63,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
           {/* Avatar */}
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-            style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}
+            style={{ backgroundColor: 'var(--synapse-brown-100)', color: 'var(--accent-brand)' }}
           >
             {initials}
           </div>
@@ -83,7 +84,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
       {/* Page content */}
       <main className="flex-1 px-4 pt-4 pb-24">
-        {children}
+        <PullToRefresh>{children}</PullToRefresh>
       </main>
 
       <StudentBottomNav />

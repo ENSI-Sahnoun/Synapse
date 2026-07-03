@@ -56,15 +56,15 @@ export async function GET(
     filename = 'ventes-du-mois.csv'
     const { data } = await admin
       .from('purchases')
-      .select('created_at, purchase_items(price_dt, quantity, products(name))')
+      .select('created_at, purchase_items(unit_price_dt, quantity, products(name))')
       .gte('created_at', monthISO)
       .order('created_at', { ascending: false })
 
     csv = 'Date,Produit,Qté,Prix unitaire DT\n'
     for (const purchase of data ?? []) {
-      for (const item of (purchase.purchase_items ?? []) as { price_dt: number; quantity: number; products: { name: string } | null }[]) {
+      for (const item of (purchase.purchase_items ?? []) as { unit_price_dt: number; quantity: number; products: { name: string } | null }[]) {
         const productName = item.products?.name ?? ''
-        csv += `"${purchase.created_at}","${productName}","${item.quantity}","${item.price_dt}"\n`
+        csv += `"${purchase.created_at}","${productName}","${item.quantity}","${item.unit_price_dt}"\n`
       }
     }
   } else {

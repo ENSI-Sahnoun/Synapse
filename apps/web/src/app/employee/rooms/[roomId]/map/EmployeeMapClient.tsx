@@ -10,9 +10,11 @@ type Props = {
   room: Room
   initialTables: RoomTable[]
   initialSeats: Seat[]
+  attendanceId?: string
+  fromSeatId?: string
 }
 
-export function EmployeeMapClient({ room, initialTables, initialSeats }: Props) {
+export function EmployeeMapClient({ room, initialTables, initialSeats, attendanceId, fromSeatId }: Props) {
   const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -30,11 +32,14 @@ export function EmployeeMapClient({ room, initialTables, initialSeats }: Props) 
         initialSeats={initialSeats}
         mode="employee"
         onSeatClick={handleSeatClick}
+        hideRoomName
       />
       <AssignStudentDialog
         seat={selectedSeat}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        attendanceId={attendanceId}
+        fromSeatId={fromSeatId}
       />
     </>
   )

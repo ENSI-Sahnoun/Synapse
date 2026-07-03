@@ -6,7 +6,7 @@ import { useState } from 'react'
 import {
   QrCode, ClipboardText, Users, ShoppingCart, DotsThree,
   ChartBar, Buildings, Gift, FileText, CalendarBlank,
-  Megaphone, Export, UserCircle, X,
+  Megaphone, Export, UserCircle, X, Armchair, CaretDown,
 } from '@phosphor-icons/react'
 import { signOutAction } from '@/data/auth/sign-out'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
@@ -22,6 +22,7 @@ const MOBILE_NAV = [
 ]
 
 const MORE_ITEMS = [
+  { href: '/employee/reservations',  label: 'Réservations',  Icon: Armchair },
   { href: '/employee/reports',       label: 'Rapports',     Icon: ChartBar },
   { href: '/employee/rooms',         label: 'Salles',        Icon: Buildings },
   { href: '/employee/shifts',        label: 'Mes horaires',  Icon: CalendarBlank },
@@ -30,19 +31,39 @@ const MORE_ITEMS = [
   { href: '/employee/profile',       label: 'Mon profil',    Icon: UserCircle },
 ]
 
-const DESKTOP_NAV = [
+const EMPLOYEE_NAV = [
   { href: '/employee/dashboard',        label: 'Tableau de bord',  icon: 'ChartBar' },
   { href: '/employee/checkin',          label: 'Contrôle accès',   icon: 'QrCode' },
   { href: '/employee/attendance',       label: 'Présences',        icon: 'ClipboardText' },
   { href: '/employee/students',         label: 'Étudiants',        icon: 'Users' },
   { href: '/employee/rooms',            label: 'Salles',           icon: 'Buildings' },
+  { href: '/employee/reservations',     label: 'Réservations',     icon: 'Armchair' },
   { href: '/employee/pos',              label: 'Caisse',           icon: 'ShoppingCart' },
   { href: '/employee/loyalty-requests', label: 'Récompenses',      icon: 'Gift' },
   { href: '/employee/reports',          label: 'Rapports',         icon: 'ChartBar' },
-  { href: '/employee/shifts',           label: 'Mes horaires',     icon: 'CalendarBlank' },
   { href: '/employee/announcements',    label: 'Annonces',         icon: 'Megaphone' },
   { href: '/employee/export',           label: 'Export',           icon: 'Export' },
   { href: '/employee/profile',          label: 'Mon profil',       icon: 'UserCircle' },
+]
+
+// Employees get a "Mes horaires" link; admins don't have shifts
+const EMPLOYEE_NAV_FOR_EMPLOYEE = [
+  ...EMPLOYEE_NAV.slice(0, 4),
+  { href: '/employee/shifts', label: 'Mes horaires', icon: 'CalendarBlank' },
+  ...EMPLOYEE_NAV.slice(4),
+]
+
+const ADMIN_DASHBOARD_ITEM = { href: '/admin/dashboard', label: 'Vue d\'ensemble', icon: 'ChartBar' }
+
+const ADMIN_NAV = [
+  { href: '/admin/students',               label: 'Gérer les étudiants', icon: 'Users' },
+  { href: '/admin/employees',              label: 'Employés',       icon: 'UserCircle' },
+  { href: '/admin/subscription-plans',     label: 'Formules',       icon: 'CreditCard' },
+  { href: '/admin/rooms',                  label: 'Disposition salles', icon: 'Buildings' },
+  { href: '/admin/products',               label: 'Produits (POS)', icon: 'ShoppingCart' },
+  { href: '/admin/loyalty',                label: 'Fidélité',       icon: 'Star' },
+  { href: '/admin/notifications/trigger',  label: 'Notifications',  icon: 'Bell' },
+  { href: '/admin/settings',                label: 'Paramètres',     icon: 'Gear' },
 ]
 
 interface Props {
@@ -131,6 +152,7 @@ function MoreDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 export function EmployeeMobileShell({ fullName, role, initialNotifications, initialUnreadCount, children }: Props) {
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith('/admin'))
 
   const initials = fullName
     .split(' ')
@@ -164,10 +186,44 @@ export function EmployeeMobileShell({ fullName, role, initialNotifications, init
             <NotificationBell initialNotifications={initialNotifications} initialUnreadCount={initialUnreadCount} />
           </div>
 
-          <nav className="flex-1 px-3 py-4 space-y-0.5">
-            {DESKTOP_NAV.map(({ href, label, icon }) => (
-              <SidebarNavLink key={href} href={href} label={label} icon={icon} />
-            ))}
+          <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+            {role === 'admin' ? (
+              <>
+                <p className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--sidebar-muted)' }}>
+                  Employé
+                </p>
+                {[
+                  ADMIN_DASHBOARD_ITEM,
+                  // ponytail: hide these for admins for now, add back when needed
+                  ...EMPLOYEE_NAV.slice(1).filter(
+                    (item) => !['/employee/profile', '/employee/export', '/employee/reports'].includes(item.href),
+                  ),
+                ].map(({ href, label, icon }) => (
+                  <SidebarNavLink key={href} href={href} label={label} icon={icon} />
+                ))}
+                <button
+                  onClick={() => setAdminOpen((o) => !o)}
+                  className="w-full flex items-center justify-between px-2 pt-4 pb-1 cursor-pointer"
+                  style={{ background: 'none', border: 'none' }}
+                >
+                  <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--sidebar-muted)' }}>
+                    Administration
+                  </span>
+                  <CaretDown
+                    size={12}
+                    weight="bold"
+                    style={{ color: 'var(--sidebar-muted)', transform: adminOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s ease' }}
+                  />
+                </button>
+                {adminOpen && ADMIN_NAV.map(({ href, label, icon }) => (
+                  <SidebarNavLink key={href} href={href} label={label} icon={icon} />
+                ))}
+              </>
+            ) : (
+              EMPLOYEE_NAV_FOR_EMPLOYEE.map(({ href, label, icon }) => (
+                <SidebarNavLink key={href} href={href} label={label} icon={icon} />
+              ))
+            )}
           </nav>
 
           <div className="px-5 py-4 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
@@ -186,7 +242,7 @@ export function EmployeeMobileShell({ fullName, role, initialNotifications, init
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto" style={{ backgroundColor: 'var(--background)' }}>
+        <main className="flex-1 overflow-y-auto" style={{ backgroundColor: 'var(--background)', padding: '28px 32px' }}>
           {children}
         </main>
       </div>

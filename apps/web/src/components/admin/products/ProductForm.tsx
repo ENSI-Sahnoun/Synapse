@@ -73,9 +73,9 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
   })
 
   const { execute: execDeleteCat } = useAction(deleteCategoryAction, {
-    onSuccess: (_, ctx) => {
+    onSuccess: ({ input }) => {
       toast.success('Catégorie supprimée')
-      setCategories((prev) => prev.filter((c) => c.id !== (ctx as any)))
+      setCategories((prev) => prev.filter((c) => c.id !== input.id))
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Impossible de supprimer'),
   })

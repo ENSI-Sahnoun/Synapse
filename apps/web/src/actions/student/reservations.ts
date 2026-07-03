@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { studentActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
-import { insertInAppNotification } from '@/data/notifications/inapp'
+import { insertInAppNotification, notifyAllStaff } from '@/data/notifications/inapp'
 
 const createReservationSchema = z.object({
   seat_id: z.string({ message: 'seat_id est requis' }).uuid({ message: 'seat_id doit être un UUID valide' }),
@@ -31,10 +31,47 @@ export const createReservation = studentActionClient
       return { error: 'Vous devez avoir un abonnement actif pour réserver une place.' }
     }
 
-    // 2. Verify the seat is currently free
+    // 2. Block if student already has an active seat assignment
+    const { data: activeAttendance } = await supabase
+      .from('attendance')
+      .select('id, seats(label)')
+      .eq('student_id', userId)
+      .is('checked_out_at', null)
+      .not('seat_id', 'is', null)
+      .limit(1)
+      .maybeSingle()
+
+    if (activeAttendance) {
+      const label = (activeAttendance.seats as unknown as { label: string } | null)?.label
+      return {
+        error: label
+          ? `Une place (${label}) vous a déjà été assignée par un employé.`
+          : 'Une place vous a déjà été assignée par un employé.',
+      }
+    }
+
+    // 2b. Block if student already has an active reservation
+    const { data: activeReservation } = await supabase
+      .from('reservations')
+      .select('id, seats(label)')
+      .eq('student_id', userId)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle()
+
+    if (activeReservation) {
+      const label = (activeReservation.seats as { label: string } | null)?.label
+      return {
+        error: label
+          ? `Vous avez déjà une réservation active pour la place ${label}.`
+          : 'Vous avez déjà une réservation active en cours.',
+      }
+    }
+
+    // 3. Verify the seat is currently free
     const { data: seat, error: seatError } = await supabase
       .from('seats')
-      .select('id, status, label')
+      .select('id, status, label, room_id')
       .eq('id', seat_id)
       .single()
 
@@ -45,7 +82,7 @@ export const createReservation = studentActionClient
       return { error: `La place ${seat.label} n'est plus disponible.` }
     }
 
-    // 3. Read hold duration from settings
+    // 4. Read hold duration from settings
     const { data: settingRow } = await supabase
       .from('settings')
       .select('value')
@@ -152,14 +189,20 @@ export const createReservation = studentActionClient
       .single()
 
     if (insertError) {
-      // 23505 = unique_violation → student already has an active reservation
       if (insertError.code === '23505') {
-        return { error: 'Vous avez déjà une réservation active en cours.' }
+        // Could be student unique constraint (one active reservation per student)
+        // or seat unique constraint (one active reservation per seat, added by migration)
+        const isSeatConflict = insertError.message?.includes('reservations_one_active_per_seat')
+        return {
+          error: isSeatConflict
+            ? 'Cette place vient d\'être réservée par quelqu\'un d\'autre. Veuillez en choisir une autre.'
+            : 'Vous avez déjà une réservation active en cours.',
+        }
       }
       throw new Error('Impossible de créer la réservation. Veuillez réessayer.')
     }
 
-    // 5. Mark seat as reserved (with race condition guard)
+    // 5. Mark seat as reserved (secondary guard — DB unique index is the primary)
     const { data: updatedSeats, error: seatUpdateError } = await supabase
       .from('seats')
       .update({ status: 'reserved' })
@@ -168,18 +211,37 @@ export const createReservation = studentActionClient
       .select('id')
 
     if (seatUpdateError || !updatedSeats || updatedSeats.length === 0) {
-      // Rollback reservation insert — seat was taken between checks
       await supabase.from('reservations').delete().eq('id', reservation.id)
       return { error: 'Impossible de réserver la place. Veuillez en choisir une autre.' }
     }
 
-    // non-fatal — notification failure must not abort the reservation
+    // 6. Notify student + all staff (non-fatal)
     try {
-      await insertInAppNotification({
-        userId,
-        type: 'reservation_confirmed',
-        message: `Votre réservation pour la place ${seat.label} est confirmée. Elle expire dans ${holdMinutes} minutes.`,
-      })
+      await Promise.all([
+        insertInAppNotification({
+          userId,
+          type: 'reservation_confirmed',
+          message: `Votre réservation pour la place ${seat.label} est confirmée. Elle expire dans ${holdMinutes} minutes.`,
+        }),
+        notifyAllStaff(
+          'reservation_new',
+          `Nouvelle réservation : place ${seat.label} réservée (expire dans ${holdMinutes} min).`,
+        ),
+      ])
+
+      // Room almost full check (>= 80% occupied/reserved)
+      if (seat.room_id) {
+        const [{ count: total }, { count: occupied }] = await Promise.all([
+          supabase.from('seats').select('id', { count: 'exact', head: true }).eq('room_id', seat.room_id),
+          supabase.from('seats').select('id', { count: 'exact', head: true }).eq('room_id', seat.room_id).in('status', ['occupied', 'reserved']),
+        ])
+        if (total && occupied && occupied / total >= 0.8) {
+          await notifyAllStaff(
+            'room_almost_full',
+            `Salle presque pleine : ${occupied}/${total} places occupées ou réservées (${Math.round((occupied / total) * 100)}%).`,
+          )
+        }
+      }
     } catch {
       // ignore notification errors
     }

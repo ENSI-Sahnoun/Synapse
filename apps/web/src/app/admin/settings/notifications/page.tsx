@@ -9,8 +9,20 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   expiry_1d: 'Expiration dans 1 jour',
   expired: 'Abonnement expiré (J-0)',
   renewal_reminder: 'Rappel de renouvellement (J+3)',
-  reservation_confirmed: 'Réservation confirmée',
+  reservation_confirmed: 'Réservation confirmée (étudiant)',
+  reservation_new: 'Nouvelle réservation (personnel)',
+  reservation_cancelled: 'Réservation annulée',
+  reservation_accepted: 'Réservation acceptée par le personnel',
   points_earned: 'Points de fidélité gagnés',
+  purchase_completed: 'Vente enregistrée (personnel)',
+  subscription_new: 'Nouvel abonnement créé (personnel)',
+  loyalty_request_new: 'Demande de récompense reçue (personnel)',
+  loyalty_fulfilled: 'Récompense accordée (étudiant)',
+  loyalty_rejected: 'Récompense refusée (étudiant)',
+  room_almost_full: 'Salle presque pleine (personnel)',
+  seat_swap_request_new: 'Demande de changement de place (personnel)',
+  seat_swap_accepted: 'Changement de place accepté (étudiant)',
+  seat_swap_denied: 'Changement de place refusé (étudiant)',
 }
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {
@@ -27,7 +39,16 @@ const ORDERED_TYPES: NotificationType[] = [
   'expired',
   'renewal_reminder',
   'reservation_confirmed',
+  'reservation_new',
+  'reservation_cancelled',
+  'reservation_accepted',
   'points_earned',
+  'purchase_completed',
+  'subscription_new',
+  'loyalty_request_new',
+  'loyalty_fulfilled',
+  'loyalty_rejected',
+  'room_almost_full',
 ]
 
 const CONFIGURABLE_CHANNELS: NotificationChannel[] = ['email', 'sms', 'whatsapp']

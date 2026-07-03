@@ -5,7 +5,7 @@ import { createSubscriptionSchema } from '@/utils/zod-schemas/subscription'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { addDays, format, parseISO } from 'date-fns'
 import { revalidatePath } from 'next/cache'
-import { insertInAppNotification } from '@/data/notifications/inapp'
+import { insertInAppNotification, notifyAllStaff } from '@/data/notifications/inapp'
 
 export const createSubscriptionAction = employeeActionClient
   .schema(createSubscriptionSchema)
@@ -78,6 +78,13 @@ export const createSubscriptionAction = employeeActionClient
         // ignore notification errors
       }
     }
+
+    try {
+      await notifyAllStaff(
+        'subscription_new',
+        `Nouvel abonnement créé : plan "${plan.name}" jusqu'au ${format(endDate, 'dd/MM/yyyy')}.`,
+      )
+    } catch { /* non-fatal */ }
 
     revalidatePath(`/employee/students/${student_id}`)
     revalidatePath(`/admin/students/${student_id}`)

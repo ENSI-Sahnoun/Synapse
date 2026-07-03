@@ -7,6 +7,8 @@ export const metadata = {
   title: "Contrôle d'accès — Synapse",
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function EmployeeCheckinPage() {
   const supabase = await createSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -14,28 +16,16 @@ export default async function EmployeeCheckinPage() {
 
   const todayISO = startOfDay(new Date()).toISOString()
 
-  const [{ data: openRows }, { count: todayTotal }] = await Promise.all([
-    supabase
-      .from('attendance')
-      .select('id, checked_in_at, profiles!attendance_student_id_fkey(full_name)')
-      .is('checked_out_at', null)
-      .gte('checked_in_at', todayISO)
-      .order('checked_in_at', { ascending: false }),
-    supabase
-      .from('attendance')
-      .select('*', { count: 'exact', head: true })
-      .gte('checked_in_at', todayISO),
+  const [{ count: currentlyIn }, { data: todayRows }] = await Promise.all([
+    supabase.from('attendance').select('*', { count: 'exact', head: true }).is('checked_out_at', null).gte('checked_in_at', todayISO),
+    supabase.from('attendance').select('student_id').gte('checked_in_at', todayISO),
   ])
 
-  const openAttendance = (openRows ?? []).map((row) => ({
-    id: row.id,
-    studentName: (row.profiles as { full_name: string | null } | null)?.full_name ?? 'Inconnu',
-    checkedInAt: row.checked_in_at,
-  }))
-
-  const currentlyIn = openAttendance.length
-  const total = todayTotal ?? 0
-  const checkedOut = total - currentlyIn
+  // Count distinct students, not attendance rows — a student who leaves and
+  // comes back today is still only one "visit" for the day.
+  const total = new Set((todayRows ?? []).map((r) => r.student_id).filter(Boolean)).size
+  const inCount = currentlyIn ?? 0
+  const checkedOut = total - inCount
 
   return (
     <div className="p-4 space-y-4 pb-24">
@@ -49,9 +39,8 @@ export default async function EmployeeCheckinPage() {
       </div>
 
       <CheckinClient
-        initialOpenAttendance={openAttendance}
         todayTotal={total}
-        currentlyIn={currentlyIn}
+        currentlyIn={inCount}
         checkedOut={checkedOut}
       />
     </div>

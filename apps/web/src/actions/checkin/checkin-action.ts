@@ -108,7 +108,7 @@ export const checkinAction = employeeActionClient
     // Look for active reservation
     const { data: activeReservation } = await admin
       .from('reservations')
-      .select('id, seat_id')
+      .select('id, seat_id, seats(room_id)')
       .eq('student_id', studentId)
       .eq('status', 'active')
       .maybeSingle()
@@ -126,17 +126,22 @@ export const checkinAction = employeeActionClient
         .eq('status', 'reserved')
     }
 
-    const { error: insertError } = await admin
+    const reservedRoomId = (activeReservation?.seats as { room_id: string } | null)?.room_id ?? null
+
+    const { data: newAttendance, error: insertError } = await admin
       .from('attendance')
       .insert({
         student_id: studentId,
         seat_id: activeReservation?.seat_id ?? null,
-        room_id: null,
+        room_id: reservedRoomId,
         entry_method: 'qr_scan',
       })
+      .select('id')
+      .single()
 
-    if (insertError) {
-      console.error('Attendance insert error:', insertError.message)
+    if (insertError || !newAttendance) {
+      console.error('Attendance insert error:', insertError?.message)
+      throw new Error("Erreur lors de l'enregistrement de la présence.")
     }
 
     const planName =
@@ -153,5 +158,6 @@ export const checkinAction = employeeActionClient
       endDate: subscription.end_date,
       daysRemaining,
       reservationFulfilled: !!activeReservation,
+      attendanceId: newAttendance?.id ?? '',
     }
   })

@@ -4,6 +4,7 @@ import { employeeActionClient } from '@/lib/safe-action'
 import { handleRedemptionRequestSchema } from '@/utils/zod-schemas/loyalty-handle-request'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
+import { insertInAppNotification } from '@/data/notifications/inapp'
 
 export const fulfilRedemptionAction = employeeActionClient
   .schema(handleRedemptionRequestSchema)
@@ -47,6 +48,14 @@ export const fulfilRedemptionAction = employeeActionClient
       throw new Error('Une erreur est survenue lors de la mise à jour de la demande')
     }
 
+    try {
+      await insertInAppNotification({
+        userId: request.student_id,
+        type: 'loyalty_fulfilled',
+        message: `Votre demande de récompense a été approuvée (${request.points_used} pts déduits).`,
+      })
+    } catch { /* non-fatal */ }
+
     revalidatePath('/employee/loyalty-requests')
     return { success: true, pointsDeducted: request.points_used }
   })
@@ -59,7 +68,7 @@ export const rejectRedemptionAction = employeeActionClient
 
     const { data: request, error: fetchError } = await supabase
       .from('loyalty_redemption_requests')
-      .select('id, status')
+      .select('id, student_id, status')
       .eq('id', request_id)
       .single()
 
@@ -76,6 +85,14 @@ export const rejectRedemptionAction = employeeActionClient
       .eq('id', request_id)
 
     if (updateError) throw new Error('Une erreur est survenue lors du rejet de la demande')
+
+    try {
+      await insertInAppNotification({
+        userId: request.student_id,
+        type: 'loyalty_rejected',
+        message: `Votre demande de récompense a été refusée.`,
+      })
+    } catch { /* non-fatal */ }
 
     revalidatePath('/employee/loyalty-requests')
     return { success: true }

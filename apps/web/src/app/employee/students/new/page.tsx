@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export default function NewStudentPage() {
   return (
-    <div className="space-y-4">
+    <div className="p-4 space-y-4 pb-24">
       <div>
         <Link href="/employee/students" className="text-sm text-muted-foreground hover:underline">
           ← Étudiants

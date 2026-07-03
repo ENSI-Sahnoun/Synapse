@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { createClient } from '@/supabase-clients/client'
 import { createReservation } from '@/actions/student/reservations'
+import { requestSeatSwap } from '@/actions/student/seat-swap'
 import { LiveSeatMap } from '@/components/seat-map/LiveSeatMap'
 import { toast } from 'sonner'
 import type { Seat } from '@/data/admin/seat-map'
@@ -42,7 +43,15 @@ type RoomWithData = {
   seats: PartialSeat[]
 }
 
-export function ReservationSeatMap({ rooms }: { rooms: RoomWithData[] }) {
+export function ReservationSeatMap({
+  rooms,
+  mySeatId,
+  alreadyCheckedIn,
+}: {
+  rooms: RoomWithData[]
+  mySeatId?: string | null
+  alreadyCheckedIn?: boolean
+}) {
   const [pendingSeat, setPendingSeat] = useState<PartialSeat | null>(null)
 
   useEffect(() => {
@@ -76,7 +85,15 @@ export function ReservationSeatMap({ rooms }: { rooms: RoomWithData[] }) {
     },
   })
 
-  const isPending = status === 'executing'
+  const { execute: executeSwap, status: swapStatus } = useAction(requestSeatSwap, {
+    onSuccess: () => {
+      toast.success('Demande envoyée — en attente de validation par un employé.')
+      setPendingSeat(null)
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur lors de la demande.'),
+  })
+
+  const isPending = status === 'executing' || swapStatus === 'executing'
 
   function handleSeatClick(seat: Seat | PartialSeat) {
     if (seat.status !== 'free') return
@@ -85,7 +102,11 @@ export function ReservationSeatMap({ rooms }: { rooms: RoomWithData[] }) {
 
   function handleConfirm() {
     if (!pendingSeat) return
-    execute({ seat_id: pendingSeat.id })
+    if (alreadyCheckedIn) {
+      executeSwap({ toSeatId: pendingSeat.id })
+    } else {
+      execute({ seat_id: pendingSeat.id })
+    }
   }
 
   function handleCancel() {
@@ -102,14 +123,21 @@ export function ReservationSeatMap({ rooms }: { rooms: RoomWithData[] }) {
           status_note: room.status_note,
         } as Room
 
+        const isMyRoom = room.seats.some((s) => s.id === mySeatId)
+
         return (
-          <div key={room.id} className="border rounded-xl p-4">
+          <div key={room.id} className={`border rounded-xl p-4 ${isMyRoom ? 'ring-2 ring-green-500' : ''}`}>
+            {isMyRoom && (
+              <p className="mb-2 text-xs font-semibold text-green-600">Vous êtes dans cette salle</p>
+            )}
             <LiveSeatMap
               room={roomData}
               initialTables={room.tables as import('@/data/admin/seat-map').RoomTable[]}
               initialSeats={room.seats as Seat[]}
               mode="student"
               onSeatClick={handleSeatClick}
+              highlightSeatId={mySeatId}
+              allowFullscreen
             />
           </div>
         )
@@ -119,11 +147,17 @@ export function ReservationSeatMap({ rooms }: { rooms: RoomWithData[] }) {
       {pendingSeat && (
         <div className="fixed inset-0 bg-black/40 flex items-end justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="text-lg font-bold mb-2">Confirmer la réservation</h3>
+            <h3 className="text-lg font-bold mb-2">{alreadyCheckedIn ? 'Demander ce changement' : 'Confirmer la réservation'}</h3>
             <p className="text-gray-600 mb-4">
-              Réserver la place <strong>{pendingSeat.label}</strong> ?
-              Votre réservation expirera automatiquement si vous ne vous présentez pas avant la fin
-              du délai.
+              {alreadyCheckedIn ? (
+                <>Demander la place <strong>{pendingSeat.label}</strong> ? Un employé doit valider ce changement avant qu&apos;il ne prenne effet.</>
+              ) : (
+                <>
+                  Réserver la place <strong>{pendingSeat.label}</strong> ?
+                  Votre réservation expirera automatiquement si vous ne vous présentez pas avant la fin
+                  du délai.
+                </>
+              )}
             </p>
             <div className="flex gap-3">
               <button
@@ -138,7 +172,7 @@ export function ReservationSeatMap({ rooms }: { rooms: RoomWithData[] }) {
                 disabled={isPending}
                 className="flex-1 py-2 rounded-lg bg-green-600 text-white font-medium disabled:opacity-60"
               >
-                {isPending ? 'Réservation…' : 'Confirmer'}
+                {isPending ? 'Envoi…' : alreadyCheckedIn ? 'Demander' : 'Confirmer'}
               </button>
             </div>
           </div>

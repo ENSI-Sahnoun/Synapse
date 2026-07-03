@@ -286,8 +286,9 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
   // --- Delete ---
   const handleDeleteTable = useCallback(
     (localId: string) => {
-      const table = tables.find((t) => t.localId === localId)
-      if (table?.id) execDeleteTable({ id: table.id, room_id: roomId })
+      // localId is the table's real DB id once saved; always attempt the delete
+      // (no-op if never persisted) so a saved-then-deleted table isn't orphaned.
+      execDeleteTable({ id: localId, room_id: roomId })
       // Unlink chairs (don't delete them)
       setSeats((prev) => prev.map((s) => (s.table_id === localId ? { ...s, table_id: null } : s)))
       setTables((prev) => prev.filter((t) => t.localId !== localId))
@@ -298,8 +299,10 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
 
   const handleDeleteSeat = useCallback(
     (localId: string) => {
-      const seat = seats.find((s) => s.localId === localId)
-      if (seat?.id) execDeleteSeat({ id: seat.id, room_id: roomId })
+      // localId is the seat's real DB id once saved; always attempt the delete
+      // (harmless no-op if it was never persisted) so saved-but-stale seats
+      // don't get orphaned in the DB.
+      execDeleteSeat({ id: localId, room_id: roomId })
       setSeats((prev) => prev.filter((s) => s.localId !== localId))
       setSelection(null)
     },
@@ -363,7 +366,10 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
         rotation: t.rotation,
       })),
       seats: seats.map((s) => ({
-        id: s.id,
+        // localId is a real uuid (db id for existing seats, generated for new).
+        // Sending it for every row means: (a) no NULL-id rows in the bulk
+        // upsert, and (b) re-saves match on conflict instead of duplicating.
+        id: s.localId,
         room_id: s.room_id,
         table_id: s.table_id,
         label: s.label,

@@ -61,6 +61,41 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          body: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          pinned: boolean | null
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          pinned?: boolean | null
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          pinned?: boolean | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           checked_in_at: string
@@ -69,7 +104,7 @@ export type Database = {
           id: string
           room_id: string | null
           seat_id: string | null
-          student_id: string
+          student_id: string | null
         }
         Insert: {
           checked_in_at?: string
@@ -78,7 +113,7 @@ export type Database = {
           id?: string
           room_id?: string | null
           seat_id?: string | null
-          student_id: string
+          student_id?: string | null
         }
         Update: {
           checked_in_at?: string
@@ -87,7 +122,7 @@ export type Database = {
           id?: string
           room_id?: string | null
           seat_id?: string | null
-          student_id?: string
+          student_id?: string | null
         }
         Relationships: [
           {
@@ -365,6 +400,7 @@ export type Database = {
       }
       products: {
         Row: {
+          account_category_id: string
           category: string
           created_at: string
           id: string
@@ -375,6 +411,7 @@ export type Database = {
           stock_quantity: number
         }
         Insert: {
+          account_category_id?: string
           category?: string
           created_at?: string
           id?: string
@@ -385,6 +422,7 @@ export type Database = {
           stock_quantity?: number
         }
         Update: {
+          account_category_id?: string
           category?: string
           created_at?: string
           id?: string
@@ -394,7 +432,15 @@ export type Database = {
           price_dt?: number
           stock_quantity?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_account_category_id_fkey"
+            columns: ["account_category_id"]
+            isOneToOne: false
+            referencedRelation: "account_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -600,6 +646,78 @@ export type Database = {
         }
         Relationships: []
       }
+      seat_swap_requests: {
+        Row: {
+          attendance_id: string
+          created_at: string
+          from_seat_id: string | null
+          id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          student_id: string
+          to_seat_id: string
+        }
+        Insert: {
+          attendance_id: string
+          created_at?: string
+          from_seat_id?: string | null
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          student_id: string
+          to_seat_id: string
+        }
+        Update: {
+          attendance_id?: string
+          created_at?: string
+          from_seat_id?: string | null
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          student_id?: string
+          to_seat_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seat_swap_requests_attendance_id_fkey"
+            columns: ["attendance_id"]
+            isOneToOne: false
+            referencedRelation: "attendance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_swap_requests_from_seat_id_fkey"
+            columns: ["from_seat_id"]
+            isOneToOne: false
+            referencedRelation: "seats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_swap_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_swap_requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seat_swap_requests_to_seat_id_fkey"
+            columns: ["to_seat_id"]
+            isOneToOne: false
+            referencedRelation: "seats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seats: {
         Row: {
           created_at: string
@@ -665,6 +783,44 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      shifts: {
+        Row: {
+          created_at: string | null
+          employee_id: string
+          end_time: string
+          id: string
+          notes: string | null
+          role: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string | null
+          employee_id: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          role?: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string | null
+          employee_id?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          role?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_plans: {
         Row: {
@@ -804,6 +960,7 @@ export type Database = {
     }
     Functions: {
       current_user_role: { Args: never; Returns: string }
+      default_sales_account_category_id: { Args: never; Returns: string }
       expire_stale_reservations: { Args: never; Returns: undefined }
       shift_queue_positions_down: {
         Args: { from_position: number }

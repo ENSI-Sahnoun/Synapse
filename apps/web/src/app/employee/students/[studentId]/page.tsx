@@ -25,7 +25,7 @@ export default async function StudentDetailPage({
   const activeSubscription = student.subscriptions?.find((s) => s.end_date >= today)
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 space-y-6 pb-24">
       <div>
         <Link href="/employee/students" className="text-sm text-muted-foreground hover:underline">
           ← Étudiants

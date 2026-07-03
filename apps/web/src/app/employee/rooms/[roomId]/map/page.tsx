@@ -6,10 +6,11 @@ import Link from 'next/link'
 import { CaretLeft } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 
-type Props = { params: Promise<{ roomId: string }> }
+type Props = { params: Promise<{ roomId: string }>; searchParams: Promise<{ attendanceId?: string; fromSeatId?: string }> }
 
-export default async function RoomMapPage({ params }: Props) {
+export default async function RoomMapPage({ params, searchParams }: Props) {
   const { roomId } = await params
+  const { attendanceId, fromSeatId } = await searchParams
   const [room, { tables, seats }] = await Promise.all([
     getRoomById(roomId),
     getSeatMap(roomId),
@@ -29,7 +30,7 @@ export default async function RoomMapPage({ params }: Props) {
         <h1 className="text-2xl font-semibold">{room.name}</h1>
       </div>
 
-      <EmployeeMapClient room={room} initialTables={tables} initialSeats={seats} />
+      <EmployeeMapClient room={room} initialTables={tables} initialSeats={seats} attendanceId={attendanceId} fromSeatId={fromSeatId} />
     </div>
   )
 }

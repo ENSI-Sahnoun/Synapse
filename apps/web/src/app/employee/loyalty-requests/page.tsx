@@ -19,7 +19,7 @@ export default async function EmployeeLoyaltyRequestsPage() {
   ])
 
   return (
-    <div className="space-y-8">
+    <div className="p-4 space-y-8 pb-24">
       <div>
         <h1 className="text-2xl font-semibold">Demandes de récompenses</h1>
         <p className="text-sm text-muted-foreground mt-1">

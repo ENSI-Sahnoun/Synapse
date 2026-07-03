@@ -94,6 +94,8 @@ export async function getPnl(filters: { from: string; to: string }): Promise<Pnl
        products!inner(account_category_id,
          account_categories!inner(id, name))`,
     )
+    .gte('created_at', filters.from + 'T00:00:00')
+    .lte('created_at', filters.to + 'T23:59:59')
 
   const purchaseMap = new Map<string, { name: string; total: number }>()
   purchaseItems?.forEach((pi) => {

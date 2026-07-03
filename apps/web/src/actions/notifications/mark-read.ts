@@ -36,3 +36,28 @@ export const markAllNotificationsRead = authActionClient
     if (error) throw error
     return { success: true }
   })
+
+export const clearNotification = authActionClient
+  .schema(markOneReadSchema)
+  .action(async ({ parsedInput: { notificationId }, ctx: { userId } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId)
+      .eq('user_id', userId)
+    if (error) throw error
+    return { success: true }
+  })
+
+export const clearAllNotifications = authActionClient
+  .schema(markAllReadSchema)
+  .action(async ({ ctx: { userId } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', userId)
+    if (error) throw error
+    return { success: true }
+  })

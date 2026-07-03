@@ -7,7 +7,19 @@ export const notificationTypeSchema = z.enum([
   'expired',
   'renewal_reminder',
   'reservation_confirmed',
+  'reservation_new',
+  'reservation_cancelled',
+  'reservation_accepted',
   'points_earned',
+  'purchase_completed',
+  'subscription_new',
+  'loyalty_request_new',
+  'loyalty_fulfilled',
+  'loyalty_rejected',
+  'room_almost_full',
+  'seat_swap_request_new',
+  'seat_swap_accepted',
+  'seat_swap_denied',
 ])
 
 export const notificationChannelSchema = z.enum(['email', 'sms', 'whatsapp', 'inapp'])

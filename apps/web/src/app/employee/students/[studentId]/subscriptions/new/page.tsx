@@ -26,7 +26,7 @@ export default async function NewSubscriptionPage({
     : today
 
   return (
-    <div className="space-y-4">
+    <div className="p-4 space-y-4 pb-24">
       <Link
         href={`/employee/students/${studentId}`}
         className="text-sm text-muted-foreground hover:underline"

@@ -14,14 +14,20 @@ export const checkoutAction = employeeActionClient
     const { attendanceId } = parsedInput
     const admin = createSupabaseAdminClient()
 
-    const { error } = await admin
+    const { data: attendance, error } = await admin
       .from('attendance')
       .update({ checked_out_at: new Date().toISOString() })
       .eq('id', attendanceId)
       .is('checked_out_at', null)
+      .select('seat_id')
+      .single()
 
     if (error) {
       throw new Error(`Erreur lors de la sortie: ${error.message}`)
+    }
+
+    if (attendance?.seat_id) {
+      await admin.from('seats').update({ status: 'free' }).eq('id', attendance.seat_id)
     }
 
     return { success: true }

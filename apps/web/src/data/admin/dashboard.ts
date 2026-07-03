@@ -202,6 +202,7 @@ export async function getStudentTypeSeries(days = 30): Promise<StudentTypePoint[
   const retMap = new Map<string, Set<string>>()
 
   rows?.forEach((r) => {
+    if (!r.student_id) return
     const checkDate = r.checked_in_at.slice(0, 10)
     // If profile created_at is on same day as check-in → new student
     const profileDate = (r.profiles as { created_at: string }).created_at.slice(0, 10)

@@ -1,6 +1,18 @@
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import type { NotificationType } from '@/lib/notification-types'
 
+export async function notifyAllStaff(type: NotificationType, message: string): Promise<void> {
+  const supabase = createSupabaseAdminClient()
+  const { data: staff } = await supabase
+    .from('profiles')
+    .select('id')
+    .in('role', ['admin', 'employee'])
+  if (!staff?.length) return
+  await supabase.from('notifications').insert(
+    staff.map((p) => ({ user_id: p.id, type, message })),
+  )
+}
+
 export interface InsertInAppNotificationOpts {
   userId: string
   type: NotificationType

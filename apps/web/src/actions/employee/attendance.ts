@@ -1,5 +1,6 @@
 'use server'
 
+import { z } from 'zod'
 import { employeeActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { assignSeatSchema } from '@/utils/zod-schemas/attendance'
@@ -27,10 +28,11 @@ export const assignSeatAction = employeeActionClient
     }
 
     // Create attendance record (check-out handled in Phase 4 / kiosk checkout)
+    // student_id is nullable (migration 20260629240000) to support "Sans nom" walk-ins
     const { data, error: attendanceError } = await supabase
       .from('attendance')
       .insert({
-        student_id: parsedInput.student_id,
+        student_id: parsedInput.student_id ?? null,
         seat_id: parsedInput.seat_id,
         room_id: parsedInput.room_id,
         entry_method: 'manual',
@@ -49,5 +51,125 @@ export const assignSeatAction = employeeActionClient
 
     revalidatePath(`/employee/rooms/${parsedInput.room_id}/map`)
     revalidatePath(`/admin/rooms/${parsedInput.room_id}/map`)
+    revalidatePath('/employee/rooms')
     return { attendance: data }
+  })
+
+export const unoccupySeatAction = employeeActionClient
+  .schema(z.object({ seat_id: z.string().uuid(), room_id: z.string().uuid() }))
+  .action(async ({ parsedInput: { seat_id, room_id } }) => {
+    const supabase = await createSupabaseClient()
+
+    // Close open attendance record
+    await supabase
+      .from('attendance')
+      .update({ checked_out_at: new Date().toISOString() })
+      .eq('seat_id', seat_id)
+      .is('checked_out_at', null)
+
+    // Free the seat
+    const { error } = await supabase
+      .from('seats')
+      .update({ status: 'free' })
+      .eq('id', seat_id)
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath(`/employee/rooms/${room_id}/map`)
+    revalidatePath(`/admin/rooms/${room_id}/map`)
+    revalidatePath('/employee/rooms')
+    return { success: true }
+  })
+
+export const assignSeatToAttendanceAction = employeeActionClient
+  .schema(z.object({ attendanceId: z.string().uuid(), seat_id: z.string().uuid(), room_id: z.string().uuid() }))
+  .action(async ({ parsedInput: { attendanceId, seat_id, room_id } }) => {
+    const supabase = await createSupabaseClient()
+
+    const { data: updatedSeats, error: seatError } = await supabase
+      .from('seats')
+      .update({ status: 'occupied' })
+      .eq('id', seat_id)
+      .eq('status', 'free')
+      .select('id')
+
+    if (seatError) throw new Error(seatError.message)
+    // A 0-row match isn't an error from Postgres — check the row count or a
+    // seat someone else just took would silently get double-assigned here.
+    if (!updatedSeats || updatedSeats.length === 0) throw new Error('Place non disponible.')
+
+    const { error } = await supabase
+      .from('attendance')
+      .update({ seat_id, room_id })
+      .eq('id', attendanceId)
+
+    if (error) {
+      await supabase.from('seats').update({ status: 'free' }).eq('id', seat_id)
+      throw new Error(error.message)
+    }
+
+    revalidatePath(`/employee/rooms/${room_id}/map`)
+    revalidatePath(`/admin/rooms/${room_id}/map`)
+    revalidatePath('/employee/rooms')
+    return { success: true }
+  })
+
+// Moves a student already checked in to a different seat, without checking them out
+export const changeSeatAction = employeeActionClient
+  .schema(z.object({
+    attendanceId: z.string().uuid(),
+    fromSeatId: z.string().uuid(),
+    seat_id: z.string().uuid(),
+    room_id: z.string().uuid(),
+  }))
+  .action(async ({ parsedInput: { attendanceId, fromSeatId, seat_id, room_id } }) => {
+    const supabase = await createSupabaseClient()
+
+    const { data: updatedSeats, error: seatError } = await supabase
+      .from('seats')
+      .update({ status: 'occupied' })
+      .eq('id', seat_id)
+      .eq('status', 'free')
+      .select('id')
+
+    if (seatError) throw new Error(seatError.message)
+    if (!updatedSeats || updatedSeats.length === 0) throw new Error('Place non disponible.')
+
+    const { error } = await supabase
+      .from('attendance')
+      .update({ seat_id, room_id })
+      .eq('id', attendanceId)
+
+    if (error) {
+      await supabase.from('seats').update({ status: 'free' }).eq('id', seat_id)
+      throw new Error(error.message)
+    }
+
+    await supabase.from('seats').update({ status: 'free' }).eq('id', fromSeatId)
+
+    revalidatePath(`/employee/rooms/${room_id}/map`)
+    revalidatePath(`/admin/rooms/${room_id}/map`)
+    revalidatePath('/employee/rooms')
+    return { success: true }
+  })
+
+// Frees the seat and leaves the student checked in but unassigned ("Divers")
+export const moveToDiversAction = employeeActionClient
+  .schema(z.object({ attendanceId: z.string().uuid(), seat_id: z.string().uuid(), room_id: z.string().uuid() }))
+  .action(async ({ parsedInput: { attendanceId, seat_id, room_id } }) => {
+    const supabase = await createSupabaseClient()
+
+    const { error } = await supabase
+      .from('attendance')
+      .update({ seat_id: null, room_id: null })
+      .eq('id', attendanceId)
+
+    if (error) throw new Error(error.message)
+
+    await supabase.from('seats').update({ status: 'free' }).eq('id', seat_id)
+
+    revalidatePath(`/employee/rooms/${room_id}/map`)
+    revalidatePath(`/admin/rooms/${room_id}/map`)
+    revalidatePath('/employee/rooms')
+    return { success: true }
   })

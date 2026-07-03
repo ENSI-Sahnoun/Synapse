@@ -16,6 +16,11 @@ export function LiveIndicators({ initial }: Props) {
   useEffect(() => {
     const supabase = createClient()
 
+    // ponytail: guard against stale channel from a prior mount (StrictMode/fast nav)
+    // still being torn down when this effect re-creates the same topic.
+    const stale = supabase.getChannels().find((c) => c.topic === 'realtime:dashboard-live')
+    if (stale) supabase.removeChannel(stale)
+
     // Re-fetch live snapshot on any relevant change
     async function refresh() {
       // Fetch updated counts from API route to avoid RLS issues in browser client

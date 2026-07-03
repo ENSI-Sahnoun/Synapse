@@ -4,6 +4,7 @@ import { studentActionClient } from '@/lib/safe-action'
 import { requestRedemptionSchema } from '@/utils/zod-schemas/loyalty-redemption'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
+import { notifyAllStaff } from '@/data/notifications/inapp'
 
 export const requestRedemptionAction = studentActionClient
   .schema(requestRedemptionSchema)
@@ -59,6 +60,13 @@ export const requestRedemptionAction = studentActionClient
       })
 
     if (insertError) throw new Error('Erreur lors de la demande. Veuillez réessayer.')
+
+    try {
+      await notifyAllStaff(
+        'loyalty_request_new',
+        `Nouvelle demande de récompense : "${rule.name}" (${rule.points_threshold} pts).`,
+      )
+    } catch { /* non-fatal */ }
 
     revalidatePath('/student/loyalty')
     return { ruleName: rule.name, pointsUsed: rule.points_threshold }

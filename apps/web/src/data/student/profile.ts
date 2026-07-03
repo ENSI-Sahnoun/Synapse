@@ -1,6 +1,7 @@
 'use server'
 
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 
 export async function getMyProfile() {
   const supabase = await createSupabaseClient()
@@ -9,7 +10,7 @@ export async function getMyProfile() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, phone, university, study_level, qr_token, created_at')
+    .select('id, full_name, phone, university, study_level, qr_token, student_number, created_at')
     .eq('id', user.id)
     .single()
 
@@ -38,6 +39,106 @@ export async function getMyActiveSubscription() {
     .maybeSingle()
 
   return data
+}
+
+export async function getMyCheckInHistory(limit = 500) {
+  const supabase = await createSupabaseClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) throw new Error('Non connecté')
+
+  // attendance.room_id has no FK yet — fetch room names in a separate lookup
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('id, checked_in_at, checked_out_at, room_id')
+    .eq('student_id', user.id)
+    .order('checked_in_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  const rows = data ?? []
+
+  // Resolve room names
+  const roomIds = [...new Set(rows.map((r) => r.room_id).filter(Boolean))] as string[]
+  let roomMap: Record<string, string> = {}
+  if (roomIds.length > 0) {
+    const { data: rooms } = await supabase
+      .from('rooms')
+      .select('id, name')
+      .in('id', roomIds)
+    roomMap = Object.fromEntries((rooms ?? []).map((r) => [r.id, r.name]))
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    roomName: r.room_id ? (roomMap[r.room_id] ?? 'Salle Inconnue') : 'Divers',
+  }))
+}
+
+export async function getMyCheckInCounts() {
+  const supabase = await createSupabaseClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) throw new Error('Non connecté')
+
+  const monthStart = new Date()
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
+
+  const { data } = await supabase
+    .from('attendance')
+    .select('checked_in_at')
+    .eq('student_id', user.id)
+
+  const rows = data ?? []
+  // Multiple check-ins the same day (left and came back) still count as one visit
+  const uniqueDay = (r: { checked_in_at: string }) => r.checked_in_at.slice(0, 10)
+  const total = new Set(rows.map(uniqueDay)).size
+  const thisMonth = new Set(
+    rows.filter((r) => new Date(r.checked_in_at) >= monthStart).map(uniqueDay)
+  ).size
+
+  return { total, thisMonth }
+}
+
+export type MyPresence =
+  | { status: 'seated'; attendanceId: string; seatId: string; roomId: string | null; label: string; room: string | null }
+  | { status: 'divers'; attendanceId: string }
+  | { status: 'absent' }
+
+export async function getMyPresence(): Promise<MyPresence> {
+  const supabase = await createSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { status: 'absent' }
+
+  // attendance.seat_id has no FK constraint, so PostgREST can't embed
+  // seats(...)/rooms(...) here — resolve them with separate lookups instead.
+  const { data } = await supabase
+    .from('attendance')
+    .select('id, seat_id')
+    .eq('student_id', user.id)
+    .is('checked_out_at', null)
+    .order('checked_in_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!data) return { status: 'absent' }
+  if (!data.seat_id) return { status: 'divers', attendanceId: data.id }
+
+  const admin = createSupabaseAdminClient()
+  const { data: seat } = await admin
+    .from('seats')
+    .select('label, room_id')
+    .eq('id', data.seat_id)
+    .maybeSingle()
+
+  if (!seat) return { status: 'divers', attendanceId: data.id }
+
+  let roomName: string | null = null
+  if (seat.room_id) {
+    const { data: room } = await admin.from('rooms').select('name').eq('id', seat.room_id).maybeSingle()
+    roomName = room?.name ?? null
+  }
+
+  return { status: 'seated', attendanceId: data.id, seatId: data.seat_id, roomId: seat.room_id, label: seat.label, room: roomName }
 }
 
 export async function getMyLoyaltyBalance() {

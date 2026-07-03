@@ -12,28 +12,14 @@ export default async function AdminCheckinPage() {
 
   const todayISO = startOfDay(new Date()).toISOString()
 
-  const [{ data: openRows }, { count: todayTotal }] = await Promise.all([
-    supabase
-      .from('attendance')
-      .select('id, checked_in_at, profiles!attendance_student_id_fkey(full_name)')
-      .is('checked_out_at', null)
-      .gte('checked_in_at', todayISO)
-      .order('checked_in_at', { ascending: false }),
-    supabase
-      .from('attendance')
-      .select('*', { count: 'exact', head: true })
-      .gte('checked_in_at', todayISO),
+  const [{ count: currentlyIn }, { count: todayTotal }] = await Promise.all([
+    supabase.from('attendance').select('*', { count: 'exact', head: true }).is('checked_out_at', null).gte('checked_in_at', todayISO),
+    supabase.from('attendance').select('*', { count: 'exact', head: true }).gte('checked_in_at', todayISO),
   ])
 
-  const openAttendance = (openRows ?? []).map((row) => ({
-    id: row.id,
-    studentName: (row.profiles as { full_name: string | null } | null)?.full_name ?? 'Inconnu',
-    checkedInAt: row.checked_in_at,
-  }))
-
-  const currentlyIn = openAttendance.length
   const total = todayTotal ?? 0
-  const checkedOut = total - currentlyIn
+  const inCount = currentlyIn ?? 0
+  const checkedOut = total - inCount
 
   return (
     <div>
@@ -44,9 +30,8 @@ export default async function AdminCheckinPage() {
         </p>
       </div>
       <CheckinClient
-        initialOpenAttendance={openAttendance}
         todayTotal={total}
-        currentlyIn={currentlyIn}
+        currentlyIn={inCount}
         checkedOut={checkedOut}
       />
     </div>

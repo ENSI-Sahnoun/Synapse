@@ -2,6 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { ReservationSeatMap } from './ReservationSeatMap'
 import { ActiveReservationBanner } from './ActiveReservationBanner'
+import { getMyPresence } from '@/data/student/profile'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,13 +41,17 @@ export default async function ReservationPage() {
 
   const examMode = examModeSetting?.value === 'true'
 
-  // Fetch rooms + tables + seats for map
+  // Fetch every room (open/closed/reserved) — closed/reserved ones are still shown
+  // to students, just non-interactive (LiveSeatMap handles that per its `mode` prop).
   const { data: rooms } = await supabase
     .from('rooms')
     .select(
       'id, name, status, status_note, tables(id, room_id, position_x, position_y, width, height, rotation, label, status, created_at), seats(id, label, position_x, position_y, rotation, status, table_id, room_id)',
     )
-    .eq('status', 'open')
+
+  const presence = await getMyPresence()
+  const mySeatId = presence.status === 'seated' ? presence.seatId : null
+  const alreadyCheckedIn = presence.status === 'seated' || presence.status === 'divers'
 
   const typedReservation = activeReservation as {
     id: string
@@ -75,7 +80,9 @@ export default async function ReservationPage() {
         </div>
       )}
 
-      {subscription && !typedReservation && <ReservationSeatMap rooms={rooms ?? []} />}
+      {subscription && !typedReservation && (
+        <ReservationSeatMap rooms={rooms ?? []} mySeatId={mySeatId} alreadyCheckedIn={alreadyCheckedIn} />
+      )}
     </div>
   )
 }

@@ -33,6 +33,6 @@ export async function getRoomsWithSeatCounts(): Promise<RoomWithSeatCount[]> {
   return (data as (Room & { seats: { id: string; status: string }[] })[]).map((room) => ({
     ...room,
     seat_count: room.seats.length,
-    occupied_count: room.seats.filter((s) => s.status === 'occupied').length,
+    occupied_count: room.seats.filter((s) => s.status === 'occupied' || s.status === 'reserved').length,
   }))
 }

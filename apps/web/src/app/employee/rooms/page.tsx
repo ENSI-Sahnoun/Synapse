@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation'
 import { SetRoomStatusDialog } from '@/app/admin/rooms/SetRoomStatusDialog'
 import { GridFour } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
+import { UnassignedStudents } from './UnassignedStudents'
+import { SwapRequests } from './SwapRequests'
+import { getPendingSwapRequests } from '@/data/employee/seat-swap'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +32,19 @@ export default async function EmployeeRoomsPage() {
     if (a.room_id) occupiedCounts[a.room_id] = (occupiedCounts[a.room_id] ?? 0) + 1
   }
 
+  const { data: unassignedRows } = await supabase
+    .from('attendance')
+    .select('id, profiles!attendance_student_id_fkey(full_name)')
+    .is('checked_out_at', null)
+    .is('seat_id', null)
+
+  const unassigned = (unassignedRows ?? []).map((r) => ({
+    attendanceId: r.id,
+    studentName: (r.profiles as { full_name: string | null } | null)?.full_name ?? 'Inconnu',
+  }))
+
+  const swapRequests = await getPendingSwapRequests()
+
   return (
     <div className="p-4 pb-24" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div>
@@ -43,14 +59,15 @@ export default async function EmployeeRoomsPage() {
         const pct = room.capacity > 0 ? Math.min((occupied / room.capacity) * 100, 100) : 0
         const isFull = pct >= 90
         const isClosed = room.status === 'closed'
+        const isReserved = room.status === 'reserved'
 
-        const statusLabel = isClosed ? 'Fermé' : pct >= 100 ? 'Plein' : 'Ouvert'
-        const statusColor = isClosed
+        const statusLabel = isClosed ? 'Fermé' : isReserved ? 'Réservé' : pct >= 100 ? 'Plein' : 'Ouvert'
+        const statusColor = isClosed || isReserved
           ? 'var(--muted-foreground)'
           : pct >= 100
           ? 'var(--synapse-orange-600, #ea580c)'
           : 'var(--synapse-green-500)'
-        const statusBg = isClosed
+        const statusBg = isClosed || isReserved
           ? 'var(--border-subtle)'
           : pct >= 100
           ? 'rgba(234,88,12,0.1)'
@@ -124,6 +141,10 @@ export default async function EmployeeRoomsPage() {
           Aucune salle configurée
         </div>
       )}
+
+      {swapRequests.length > 0 && <SwapRequests requests={swapRequests} />}
+
+      {unassigned.length > 0 && <UnassignedStudents students={unassigned} />}
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 const QUICK_LINKS = [
   { label: 'Scanner un QR', href: '/employee/checkin', description: 'Check-in / check-out étudiant' },
-  { label: 'Vendre un abonnement', href: '/employee/subscriptions/new', description: 'Nouvelle vente d\'abonnement' },
+  { label: 'Vendre un abonnement', href: '/employee/students', description: 'Choisir un étudiant pour vendre un abonnement' },
   { label: 'Caisse (POS)', href: '/employee/pos', description: 'Vente en magasin' },
   { label: 'Présences', href: '/employee/attendance', description: 'Gérer les présences du jour' },
   { label: 'Étudiants', href: '/employee/students', description: 'Rechercher ou créer un étudiant' },
