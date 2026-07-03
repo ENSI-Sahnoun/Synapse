@@ -25,6 +25,7 @@ export const studentSignupAction = actionClient
     })
 
     if (error) {
+      console.error('signUp error:', error.status, error.code, error.message)
       if (error.message.includes('already registered') || error.message.includes('User already registered')) {
         throw new Error('Un compte existe déjà avec cet email')
       }
