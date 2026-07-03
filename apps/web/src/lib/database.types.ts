@@ -962,6 +962,18 @@ export type Database = {
       current_user_role: { Args: never; Returns: string }
       default_sales_account_category_id: { Args: never; Returns: string }
       expire_stale_reservations: { Args: never; Returns: undefined }
+      pos_restock: {
+        Args: {
+          p_product_id: string
+          p_quantity: number
+          p_cost_price: number
+          p_tax_rate_pct?: number
+        }
+        Returns: {
+          new_stock_quantity: number
+          expense_id: string
+        }
+      }
       shift_queue_positions_down: {
         Args: { from_position: number }
         Returns: undefined
