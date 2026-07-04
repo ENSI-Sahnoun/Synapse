@@ -186,6 +186,69 @@ export type Database = {
           },
         ]
       }
+      leaderboard_awards: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          month: string
+          points: number
+          rank: number
+          student_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          month: string
+          points: number
+          rank: number
+          student_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          month?: string
+          points?: number
+          rank?: number
+          student_id?: string
+        }
+        Relationships: []
+      }
+      leaderboard_config: {
+        Row: {
+          category: string
+          emoji: string
+          enabled: boolean
+          label: string
+          points_1: number
+          points_2: number
+          points_3: number
+          sort_order: number
+        }
+        Insert: {
+          category: string
+          emoji: string
+          enabled?: boolean
+          label: string
+          points_1?: number
+          points_2?: number
+          points_3?: number
+          sort_order?: number
+        }
+        Update: {
+          category?: string
+          emoji?: string
+          enabled?: boolean
+          label?: string
+          points_1?: number
+          points_2?: number
+          points_3?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       loyalty_ledger: {
         Row: {
           created_at: string
@@ -501,6 +564,7 @@ export type Database = {
           full_name: string
           id: string
           is_archived: boolean
+          leaderboard_opt_out: boolean
           phone: string | null
           qr_token: string | null
           role: string
@@ -516,6 +580,7 @@ export type Database = {
           full_name?: string
           id: string
           is_archived?: boolean
+          leaderboard_opt_out?: boolean
           phone?: string | null
           qr_token?: string | null
           role?: string
@@ -531,6 +596,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_archived?: boolean
+          leaderboard_opt_out?: boolean
           phone?: string | null
           qr_token?: string | null
           role?: string
@@ -1075,6 +1141,26 @@ export type Database = {
       current_user_role: { Args: never; Returns: string }
       default_sales_account_category_id: { Args: never; Returns: string }
       expire_stale_reservations: { Args: never; Returns: undefined }
+      get_leaderboard: {
+        Args: { p_month: string }
+        Returns: {
+          category: string
+          emoji: string
+          full_name: string | null
+          label: string
+          rank: number
+          student_id: string
+          value: number
+        }[]
+      }
+      get_my_leaderboard_rank: {
+        Args: { p_month: string }
+        Returns: {
+          category: string
+          rank: number | null
+          value: number
+        }[]
+      }
       pos_checkout: {
         Args: { p_items: Json; p_student_id: string }
         Returns: Json
