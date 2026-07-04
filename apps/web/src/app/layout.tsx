@@ -4,6 +4,11 @@ import '@fontsource/dm-sans/500.css'
 import '@fontsource/dm-sans/600.css'
 import '@fontsource/dm-sans/700.css'
 import '@fontsource/dm-serif-display/400.css'
+import '@fontsource/outfit/400.css'
+import '@fontsource/outfit/500.css'
+import '@fontsource/outfit/600.css'
+import '@fontsource/outfit/700.css'
+import '@fontsource/outfit/800.css'
 import { DynamicLayoutProviders } from './DynamicLayoutProviders'
 
 export const metadata = {
@@ -23,11 +28,6 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      </head>
       <body style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
         <DynamicLayoutProviders>
           {children}

@@ -1,6 +1,12 @@
 import { NextConfig } from "next";
 
 const config: NextConfig = {
+  // Barrel-import optimization: only pull the icons actually used into the
+  // client bundle instead of the whole @phosphor-icons set. (lucide-react,
+  // @heroicons, date-fns are already in Next's default optimize list.)
+  experimental: {
+    optimizePackageImports: ['@phosphor-icons/react'],
+  },
   images: {
     remotePatterns: [
       {
