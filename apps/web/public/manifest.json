@@ -4,8 +4,8 @@
   "description": "Espace Synapse — votre abonnement et réservations",
   "start_url": "/student/dashboard",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#FAF7F0",
+  "theme_color": "#A2724A",
   "icons": [
     {
       "src": "/logos/icon-192.png",
