@@ -39,7 +39,13 @@ export async function getMyImportantNotifications(): Promise<NotificationRow[]> 
     .eq('is_important', true)
     .gt('important_until', new Date().toISOString())
     .order('created_at', { ascending: false })
-  if (error) throw error
+  // ponytail: important banner is optional UI — a query failure (e.g. missing
+  // migration in an environment) must not 500 the whole dashboard. Degrade to
+  // no banner and log instead of throwing.
+  if (error) {
+    console.error('getMyImportantNotifications failed, hiding banner:', error)
+    return []
+  }
   return (data ?? []) as NotificationRow[]
 }
 
