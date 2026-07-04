@@ -9,7 +9,15 @@ import '@fontsource/outfit/500.css'
 import '@fontsource/outfit/600.css'
 import '@fontsource/outfit/700.css'
 import '@fontsource/outfit/800.css'
+import type { Viewport } from 'next'
 import { DynamicLayoutProviders } from './DynamicLayoutProviders'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
 
 export const metadata = {
   title: 'Synapse Management Platform',
