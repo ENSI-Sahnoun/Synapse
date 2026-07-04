@@ -2,6 +2,7 @@ import { listAllProducts } from '@/data/admin/products'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArchiveProductButton, RestoreProductButton, DeleteProductButton } from './product-actions'
+import { RestockDialog } from '@/components/admin/products/RestockDialog'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,6 +60,7 @@ export default async function AdminProductsPage() {
                     <Button asChild variant="outline" size="sm">
                       <Link href={`/admin/products/${p.id}/edit`}>Modifier</Link>
                     </Button>
+                    <RestockDialog product={p} />
                     {p.is_active ? (
                       <ArchiveProductButton id={p.id} />
                     ) : (
