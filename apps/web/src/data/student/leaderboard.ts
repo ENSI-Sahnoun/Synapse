@@ -36,21 +36,27 @@ export type MyRank = { category: LeaderboardCategory; rank: number | null; value
 /** First day of the current calendar month, as an ISO date (YYYY-MM-DD). */
 function currentMonthISO(): string {
   const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().split('T')[0]
 }
 
 export async function getLeaderboard(): Promise<LeaderboardRow[]> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase.rpc('get_leaderboard', { p_month: currentMonthISO() })
   if (error) throw error
-  return (data ?? []) as LeaderboardRow[]
+  // PostgREST serializes Postgres `numeric` as a JSON string; coerce before use.
+  return (data ?? []).map((r) => ({ ...r, value: Number(r.value) })) as LeaderboardRow[]
 }
 
 export async function getMyLeaderboardRank(): Promise<MyRank[]> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase.rpc('get_my_leaderboard_rank', { p_month: currentMonthISO() })
   if (error) throw error
-  return (data ?? []) as MyRank[]
+  // PostgREST serializes Postgres `numeric` as a JSON string; coerce before use.
+  return (data ?? []).map((r) => ({
+    ...r,
+    value: Number(r.value),
+    rank: r.rank == null ? null : Number(r.rank),
+  })) as MyRank[]
 }
 
 export async function getLeaderboardSettings(): Promise<LeaderboardSettings> {
