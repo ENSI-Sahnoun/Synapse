@@ -20,7 +20,7 @@ export default async function StudentSettingsPage() {
 
   const { data: credRow } = await supabase
     .from('profiles')
-    .select('credentials_set')
+    .select('credentials_set, leaderboard_opt_out')
     .eq('id', user?.id ?? '')
     .maybeSingle()
 
@@ -55,6 +55,7 @@ export default async function StudentSettingsPage() {
         initialEmailDigest={meta.email_digest === true}
         currentEmail={user?.email ?? ''}
         credentialsSet={credRow?.credentials_set ?? true}
+        initialOptOut={credRow?.leaderboard_opt_out ?? false}
       />
 
       {/* Sign out */}

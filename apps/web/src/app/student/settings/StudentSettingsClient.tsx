@@ -1,24 +1,40 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Bell, EnvelopeSimple, LockKey, At, CaretDown, ShieldCheck } from '@phosphor-icons/react'
+import { useAction } from 'next-safe-action/hooks'
+import { toast } from 'sonner'
+import { Bell, EnvelopeSimple, LockKey, At, CaretDown, ShieldCheck, Trophy } from '@phosphor-icons/react'
 import { Switch } from '@/components/ui/switch'
 import { setupCredentialsAction, updateEmailAction, updatePasswordAction, updateNotificationPrefsAction } from '@/actions/student/account'
+import { setLeaderboardOptOut } from '@/actions/student/leaderboard-optout'
 
 interface Props {
   initialPush: boolean
   initialEmailDigest: boolean
   currentEmail: string
   credentialsSet: boolean
+  initialOptOut: boolean
 }
 
 const inputCls = 'w-full px-3 py-2.5 text-sm rounded-lg border outline-none transition-colors'
 const inputStyle = { borderColor: 'var(--border-default)', fontFamily: 'var(--font-body)', background: 'white' }
 
-export function StudentSettingsClient({ initialPush, initialEmailDigest, currentEmail, credentialsSet }: Props) {
+export function StudentSettingsClient({ initialPush, initialEmailDigest, currentEmail, credentialsSet, initialOptOut }: Props) {
   const [pushEnabled, setPushEnabled] = useState(initialPush)
   const [emailEnabled, setEmailEnabled] = useState(initialEmailDigest)
   const [, startTransition] = useTransition()
+
+  const [inLeaderboard, setInLeaderboard] = useState(!initialOptOut)
+  const { execute: execOptOut } = useAction(setLeaderboardOptOut, {
+    onError: () => {
+      setInLeaderboard((v) => !v) // revert optimistic update
+      toast.error('Erreur lors de la mise à jour.')
+    },
+  })
+  function toggleLeaderboard(checked: boolean) {
+    setInLeaderboard(checked) // optimistic; checked = appear on board = NOT opted out
+    execOptOut({ optOut: !checked })
+  }
 
   const [emailOpen, setEmailOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
@@ -144,6 +160,22 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
             <Switch checked={value} onCheckedChange={onChange} />
           </div>
         ))}
+      </div>
+
+      {/* Leaderboard opt-out */}
+      <div className="rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: '#fef9c3' }}>
+            <Trophy size={17} weight="duotone" style={{ color: '#ca8a04' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Apparaître dans le classement</p>
+            <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+              Votre nom peut figurer dans le classement mensuel des étudiants.
+            </p>
+          </div>
+          <Switch checked={inLeaderboard} onCheckedChange={toggleLeaderboard} aria-label="Apparaître dans le classement" />
+        </div>
       </div>
 
       {/* Email — collapsed by default */}
