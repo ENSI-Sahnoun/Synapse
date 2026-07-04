@@ -17,9 +17,18 @@ export default async function AnnouncementsPage() {
       created_at: string; created_by: string | null;
     }[] | null }
 
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .order('full_name', { ascending: true })
+
   return (
     <div className="p-4 pb-24">
-      <AnnouncementsClient announcements={announcements ?? []} currentUserId={user.id} />
+      <AnnouncementsClient
+        announcements={announcements ?? []}
+        currentUserId={user.id}
+        recipients={(profiles ?? []) as { id: string; full_name: string | null }[]}
+      />
     </div>
   )
 }

@@ -20,6 +20,7 @@ export const notificationTypeSchema = z.enum([
   'seat_swap_request_new',
   'seat_swap_accepted',
   'seat_swap_denied',
+  'announcement_new',
 ])
 
 export const notificationChannelSchema = z.enum(['email', 'sms', 'whatsapp', 'inapp'])

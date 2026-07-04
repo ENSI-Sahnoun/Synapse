@@ -36,3 +36,5 @@ nextbase-nextjs-supabase-starter/
 
 # Next.js generated types (auto-generated)
 apps/web/next-env.d.ts
+.vercel
+.env*

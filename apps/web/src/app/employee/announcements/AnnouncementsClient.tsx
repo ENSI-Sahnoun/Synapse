@@ -15,18 +15,33 @@ interface Announcement {
   created_by: string | null
 }
 
+interface Recipient {
+  id: string
+  full_name: string | null
+}
+
 export function AnnouncementsClient({
   announcements,
   currentUserId,
+  recipients,
 }: {
   announcements: Announcement[]
   currentUserId: string
+  recipients: Recipient[]
 }) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [pinned, setPinned] = useState(false)
+  const [important, setImportant] = useState(false)
+  const [recipientId, setRecipientId] = useState('')
+  const [recipientQuery, setRecipientQuery] = useState('')
+
+  const selectedRecipient = recipients.find(r => r.id === recipientId) ?? null
+  const matchingRecipients = recipientQuery.trim()
+    ? recipients.filter(r => (r.full_name ?? '').toLowerCase().includes(recipientQuery.trim().toLowerCase())).slice(0, 8)
+    : []
 
   const { execute: create, isPending: creating } = useAction(createAnnouncementAction, {
     onSuccess: () => {
@@ -34,6 +49,9 @@ export function AnnouncementsClient({
       setTitle('')
       setBody('')
       setPinned(false)
+      setImportant(false)
+      setRecipientId('')
+      setRecipientQuery('')
       toast.success('Annonce publiée')
       router.refresh()
     },
@@ -95,8 +113,68 @@ export function AnnouncementsClient({
             />
             Épingler cette annonce
           </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={important}
+              onChange={e => setImportant(e.target.checked)}
+            />
+            Marquer comme importante (notification 24h)
+          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, position: 'relative' }}>
+            <label style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Destinataire</label>
+            {selectedRecipient ? (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)',
+                padding: '10px 12px', fontSize: 14,
+              }}>
+                <span>{selectedRecipient.full_name ?? selectedRecipient.id}</span>
+                <button
+                  type="button"
+                  onClick={() => { setRecipientId(''); setRecipientQuery('') }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 16, lineHeight: 1 }}
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  value={recipientQuery}
+                  onChange={e => setRecipientQuery(e.target.value)}
+                  placeholder="Tout le monde (rechercher pour cibler une personne)…"
+                  style={{
+                    border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)',
+                    padding: '10px 12px', fontSize: 14, outline: 'none', background: 'transparent',
+                  }}
+                />
+                {matchingRecipients.length > 0 && (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 10,
+                    background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)', overflow: 'hidden',
+                  }}>
+                    {matchingRecipients.map(r => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => { setRecipientId(r.id); setRecipientQuery('') }}
+                        style={{
+                          display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                          padding: '10px 12px', fontSize: 13, cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)',
+                        }}
+                      >
+                        {r.full_name ?? r.id}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
           <button
-            onClick={() => create({ title, body, pinned })}
+            onClick={() => create({ title, body, pinned, important, recipientId: recipientId || undefined })}
             disabled={creating || !title.trim() || !body.trim()}
             style={{
               background: 'var(--accent-brand)', color: '#fff',

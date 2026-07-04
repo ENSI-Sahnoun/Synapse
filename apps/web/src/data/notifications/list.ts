@@ -31,6 +31,18 @@ export async function getMyUnreadCount(): Promise<number> {
   return count ?? 0
 }
 
+export async function getMyImportantNotifications(): Promise<NotificationRow[]> {
+  const supabase = await createSupabaseClient()
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, type, message, is_read, created_at')
+    .eq('is_important', true)
+    .gt('important_until', new Date().toISOString())
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as NotificationRow[]
+}
+
 export async function getNotificationsForUser(
   userId: string,
   limit = 20,

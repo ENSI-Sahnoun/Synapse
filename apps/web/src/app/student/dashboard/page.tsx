@@ -1,16 +1,18 @@
 import { getMyProfile, getMyActiveSubscription, getMyPresence } from '@/data/student/profile'
+import { getMyImportantNotifications } from '@/data/notifications/list'
 import { differenceInDays, parseISO, format, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { WarningCircle, ArrowRight } from '@phosphor-icons/react/dist/ssr'
+import { WarningCircle, ArrowRight, Megaphone } from '@phosphor-icons/react/dist/ssr'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PresenceBanner } from './PresenceBanner'
 
 export default async function StudentDashboardPage() {
-  const [profile, activeSubscription, presence] = await Promise.all([
+  const [profile, activeSubscription, presence, importantNotifications] = await Promise.all([
     getMyProfile(),
     getMyActiveSubscription(),
     getMyPresence(),
+    getMyImportantNotifications(),
   ])
 
   const today = startOfDay(new Date())
@@ -49,6 +51,18 @@ export default async function StudentDashboardPage() {
 
       {/* Presence banner */}
       <PresenceBanner presence={presence} />
+
+      {/* Important announcements — visible for 24h after being marked important */}
+      {importantNotifications.map((n) => (
+        <div
+          key={n.id}
+          className="rounded-xl flex items-start gap-3 px-4 py-3"
+          style={{ background: '#fee2e2', border: '1px solid #fecaca' }}
+        >
+          <Megaphone size={18} weight="fill" style={{ color: '#dc2626', flexShrink: 0, marginTop: 2 }} />
+          <p className="text-sm font-semibold" style={{ color: '#991b1b' }}>{n.message}</p>
+        </div>
+      ))}
 
       {/* QR Card */}
       {profile.qr_token ? (

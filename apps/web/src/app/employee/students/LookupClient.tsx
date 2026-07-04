@@ -496,7 +496,7 @@ function DetailView({
                 title="QR code"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: showQr ? 'var(--accent-brand)' : 'var(--text-tertiary)' }}
               >
-                <QrCode size={18} weight={showQr ? 'fill' : 'regular'} />
+                <QrCode size={22} weight={showQr ? 'fill' : 'regular'} />
               </button>
             )}
             {isPresent && (
@@ -505,7 +505,7 @@ function DetailView({
                 title="Changer de place"
                 style={{ color: 'var(--text-tertiary)', display: 'flex' }}
               >
-                <Armchair size={18} />
+                <Armchair size={22} />
               </Link>
             )}
             {isPresent ? (
@@ -519,7 +519,7 @@ function DetailView({
                 title="Sortie"
                 style={{ background: 'none', border: 'none', cursor: checkoutPending ? 'not-allowed' : 'pointer', padding: 2, color: 'var(--destructive)', opacity: checkoutPending ? 0.5 : 1 }}
               >
-                <SignOut size={18} />
+                <SignOut size={22} />
               </button>
             ) : (
               <button
@@ -528,7 +528,7 @@ function DetailView({
                 title="Entrée"
                 style={{ background: 'none', border: 'none', cursor: (checkinPending || !student.qr_token) ? 'not-allowed' : 'pointer', padding: 2, color: 'var(--synapse-green-500, #22c55e)', opacity: (checkinPending || !student.qr_token) ? 0.5 : 1 }}
               >
-                <SignIn size={18} />
+                <SignIn size={22} />
               </button>
             )}
           </div>

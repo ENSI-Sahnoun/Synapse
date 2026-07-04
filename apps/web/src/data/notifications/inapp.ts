@@ -13,6 +13,29 @@ export async function notifyAllStaff(type: NotificationType, message: string): P
   )
 }
 
+export async function notifyAllUsers(
+  type: NotificationType,
+  message: string,
+  opts?: { important?: boolean; onlyUserId?: string },
+): Promise<void> {
+  const supabase = createSupabaseAdminClient()
+  let query = supabase.from('profiles').select('id')
+  if (opts?.onlyUserId) query = query.eq('id', opts.onlyUserId)
+  const { data: users } = await query
+  if (!users?.length) return
+  const isImportant = opts?.important ?? false
+  const importantUntil = isImportant ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null
+  await supabase.from('notifications').insert(
+    users.map((p) => ({
+      user_id: p.id,
+      type,
+      message,
+      is_important: isImportant,
+      important_until: importantUntil,
+    })),
+  )
+}
+
 export interface InsertInAppNotificationOpts {
   userId: string
   type: NotificationType

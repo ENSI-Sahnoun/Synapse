@@ -23,6 +23,7 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   seat_swap_request_new: 'Demande de changement de place (personnel)',
   seat_swap_accepted: 'Changement de place accepté (étudiant)',
   seat_swap_denied: 'Changement de place refusé (étudiant)',
+  announcement_new: 'Nouvelle annonce publiée',
 }
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {

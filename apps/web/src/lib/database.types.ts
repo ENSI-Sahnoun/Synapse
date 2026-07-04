@@ -357,6 +357,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          important_until: string | null
+          is_important: boolean
           is_read: boolean
           message: string
           type: string
@@ -365,6 +367,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          important_until?: string | null
+          is_important?: boolean
           is_read?: boolean
           message: string
           type: string
@@ -373,6 +377,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          important_until?: string | null
+          is_important?: boolean
           is_read?: boolean
           message?: string
           type?: string

@@ -4,20 +4,28 @@ import { employeeActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
+import { notifyAllUsers } from '@/data/notifications/inapp'
 
 const announcementSchema = z.object({
   title: z.string().min(1),
   body: z.string().min(1),
   pinned: z.boolean().default(false),
+  important: z.boolean().default(false),
+  recipientId: z.string().uuid().optional(),
 })
 
 export const createAnnouncementAction = employeeActionClient
   .schema(announcementSchema)
   .action(async ({ parsedInput, ctx }) => {
+    const { important, recipientId, ...record } = parsedInput
     const supabase = await createSupabaseClient()
     const { error } = await (supabase.from('announcements' as never) as any)
-      .insert({ ...parsedInput, created_by: ctx.userId })
+      .insert({ ...record, created_by: ctx.userId })
     if (error) throw new Error('Erreur lors de la publication')
+    await notifyAllUsers('announcement_new', `${parsedInput.title}: ${parsedInput.body}`, {
+      important,
+      onlyUserId: recipientId,
+    })
     revalidatePath('/employee/announcements')
     return { ok: true }
   })
