@@ -259,9 +259,9 @@ export function EmployeeMobileShell({ fullName, role, initialNotifications, init
         >
           <div className="flex items-center gap-2.5">
             <Image
-              src="/logos/logo.png"
+              src="/logos/synapse-logo-nobg.png"
               alt="Synapse"
-              width={80}
+              width={28}
               height={28}
               style={{ height: 28, width: 'auto', objectFit: 'contain' }}
               priority

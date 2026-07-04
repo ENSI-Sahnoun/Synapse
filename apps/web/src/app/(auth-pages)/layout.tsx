@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       className="min-h-screen flex flex-col"
       style={{ background: 'var(--bg-base)' }}
     >
-      <header className="p-4">
+      <header className="flex justify-center p-4 md:justify-start">
         <Link href="/" className="inline-flex items-center" aria-label="Synapse — accueil">
           <Image
             src="/logos/synapse-logo-nobg.png"

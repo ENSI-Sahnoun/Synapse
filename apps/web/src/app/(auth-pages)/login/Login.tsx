@@ -12,7 +12,6 @@ import {
   signInWithProviderAction,
 } from '@/data/auth/auth';
 import { useAction } from 'next-safe-action/hooks';
-import Image from 'next/image';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { markPwaInstallTrigger } from '@/components/pwa/usePwaInstall';
@@ -254,25 +253,19 @@ export function Login({
           onMouseLeave={() => setMouse(null)}
         >
           <QrField mouse={mouse} />
-          <div className="relative flex flex-col items-center gap-4 text-center">
-            <div
-              className="flex items-center justify-center rounded-full p-3 md:p-4"
+          <div className="relative">
+            <p
+              className="text-2xl tracking-tight md:text-3xl"
               style={{
-                background: 'var(--synapse-cream-100)',
-                boxShadow: '0 0 40px rgba(245,149,66,0.18)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                color: 'var(--synapse-cream-100)',
               }}
             >
-              <Image
-                src="/logos/synapse-logo-nobg.png"
-                alt="Synapse"
-                width={120}
-                height={120}
-                priority
-                className="h-16 w-16 md:h-28 md:w-28"
-              />
-            </div>
+              Synapse
+            </p>
             <p
-              className="hidden text-sm leading-relaxed md:block md:max-w-[24ch]"
+              className="mt-1 hidden text-sm leading-relaxed md:block md:max-w-[24ch]"
               style={{ color: 'var(--synapse-stone-400)' }}
             >
               Votre espace d'étude. Scannez votre carte ou connectez-vous pour

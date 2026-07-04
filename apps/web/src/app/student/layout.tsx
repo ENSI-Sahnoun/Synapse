@@ -1,4 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
+import Image from 'next/image'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { SignOut } from '@phosphor-icons/react/dist/ssr'
 import { StudentBottomNav } from '@/components/student/StudentBottomNav'
@@ -47,12 +49,15 @@ export default async function StudentLayout({ children }: { children: React.Reac
           borderColor: 'var(--border)',
         }}
       >
-        <span
-          className="text-base tracking-tight"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--accent-brand)', fontWeight: 700 }}
-        >
-          Synapse
-        </span>
+        <Link href="/student/dashboard" aria-label="Synapse — accueil" className="flex items-center">
+          <Image
+            src="/logos/synapse-logo-nobg.png"
+            alt="Synapse"
+            width={36}
+            height={36}
+            priority
+          />
+        </Link>
 
         <div className="flex items-center gap-3">
           {/* Notification bell */}
