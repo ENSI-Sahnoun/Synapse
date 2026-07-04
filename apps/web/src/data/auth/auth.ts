@@ -3,6 +3,7 @@ import { actionClient } from '@/lib/safe-action';
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { createSupabaseAdminClient } from '@/supabase-clients/admin';
 import { toSiteURL } from '@/utils/helpers';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { z } from 'zod';
 
 const signInSchema = z.object({
@@ -20,6 +21,7 @@ const signInSchema = z.object({
 export const signInWithPasswordAction = actionClient
   .schema(signInSchema)
   .action(async ({ parsedInput: { email, password } }) => {
+    await enforceRateLimit('password-login', { limit: 10, windowMs: 60_000 });
     const supabase = await createSupabaseClient();
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -69,6 +71,7 @@ const signInWithQrSchema = z.object({
 export const signInWithQrAction = actionClient
   .schema(signInWithQrSchema)
   .action(async ({ parsedInput: { qr_token } }) => {
+    await enforceRateLimit('qr-login', { limit: 10, windowMs: 60_000 });
     const { isValidQrTokenFormat } = await import('@/lib/qr-token');
     const token = qr_token.trim().toUpperCase();
 
@@ -202,6 +205,7 @@ const resetPasswordSchema = z.object({
 export const resetPasswordAction = actionClient
   .schema(resetPasswordSchema)
   .action(async ({ parsedInput: { email } }) => {
+    await enforceRateLimit('password-reset', { limit: 5, windowMs: 60_000 });
     const supabase = await createSupabaseClient();
     const redirectToURL = new URL(toSiteURL('/auth/callback'));
     redirectToURL.searchParams.set('next', '/update-password');
