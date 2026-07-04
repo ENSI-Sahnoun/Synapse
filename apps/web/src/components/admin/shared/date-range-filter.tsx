@@ -11,36 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
-type Preset = 'today' | 'this_month' | 'last_month' | 'this_year' | 'custom'
-
-function getPresetDates(preset: Preset): { from: string; to: string } {
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-
-  switch (preset) {
-    case 'today': {
-      const t = fmt(now)
-      return { from: t, to: t }
-    }
-    case 'this_month': {
-      const from = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
-      const to = fmt(now)
-      return { from, to }
-    }
-    case 'last_month': {
-      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      const last = new Date(now.getFullYear(), now.getMonth(), 0)
-      return { from: fmt(first), to: fmt(last) }
-    }
-    case 'this_year': {
-      return { from: `${now.getFullYear()}-01-01`, to: fmt(now) }
-    }
-    default:
-      return { from: fmt(now), to: fmt(now) }
-  }
-}
+import { getPresetRange, type DateRangePreset } from '@/lib/date-range'
 
 type Props = {
   from: string
@@ -61,9 +32,9 @@ export function DateRangeFilter({ from, to }: Props) {
     [router, pathname, searchParams],
   )
 
-  const applyPreset = (preset: Preset) => {
+  const applyPreset = (preset: DateRangePreset) => {
     if (preset === 'custom') return
-    const { from: f, to: t } = getPresetDates(preset)
+    const { from: f, to: t } = getPresetRange(preset)
     updateParams({ from: f, to: t })
   }
 
@@ -73,15 +44,16 @@ export function DateRangeFilter({ from, to }: Props) {
         <Label htmlFor="preset-select" className="text-xs">
           Période rapide
         </Label>
-        <Select onValueChange={(v) => applyPreset(v as Preset)}>
+        <Select onValueChange={(v) => applyPreset(v as DateRangePreset)}>
           <SelectTrigger id="preset-select" className="w-40">
             <SelectValue placeholder="Choisir…" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="today">{"Aujourd'hui"}</SelectItem>
+            <SelectItem value="7d">7 derniers jours</SelectItem>
+            <SelectItem value="30d">30 derniers jours</SelectItem>
             <SelectItem value="this_month">Ce mois</SelectItem>
-            <SelectItem value="last_month">Mois dernier</SelectItem>
-            <SelectItem value="this_year">Cette année</SelectItem>
+            <SelectItem value="this_quarter">Ce trimestre</SelectItem>
             <SelectItem value="custom">Personnalisé</SelectItem>
           </SelectContent>
         </Select>

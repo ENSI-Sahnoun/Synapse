@@ -165,3 +165,186 @@ export async function getExpenseCategories(): Promise<AccountCategory[]> {
     .order('name')
   return (data ?? []) as AccountCategory[]
 }
+
+export type FinanceSummary = {
+  revenue: number
+  subsRevenue: number
+  posRevenue: number
+  cogs: number
+  missingCostProducts: number
+  expenses: number
+  grossMargin: number
+  netProfit: number
+  prevNetProfit: number
+  netProfitDelta: number
+}
+
+export function previousPeriod(from: string, to: string): { from: string; to: string } {
+  const fromDate = new Date(from + 'T00:00:00Z')
+  const toDate = new Date(to + 'T00:00:00Z')
+  const days = Math.round((toDate.getTime() - fromDate.getTime()) / 86_400_000) + 1
+  const prevTo = new Date(fromDate.getTime() - 86_400_000)
+  const prevFrom = new Date(prevTo.getTime() - (days - 1) * 86_400_000)
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  return { from: fmt(prevFrom), to: fmt(prevTo) }
+}
+
+async function computeNetProfit(
+  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  from: string,
+  to: string,
+) {
+  const [{ data: cogsRows }, { data: subs }, { data: expenses }] = await Promise.all([
+    supabase.rpc('analytics_cogs', { p_from: from, p_to: to }),
+    supabase
+      .from('subscriptions')
+      .select('paid_amount')
+      .gte('created_at', from + 'T00:00:00')
+      .lte('created_at', to + 'T23:59:59'),
+    supabase.from('expenses').select('amount_dt').gte('date', from).lte('date', to),
+  ])
+
+  const cogsRow = cogsRows?.[0] ?? { cogs: 0, revenue: 0, missing_cost_products: 0 }
+  const subsRevenue = subs?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0
+  const posRevenue = Number(cogsRow.revenue)
+  const cogs = Number(cogsRow.cogs)
+  const expensesTotal = expenses?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0
+  const grossMargin = subsRevenue + posRevenue - cogs
+  const netProfit = grossMargin - expensesTotal
+
+  return {
+    netProfit,
+    subsRevenue,
+    posRevenue,
+    cogs,
+    missingCostProducts: Number(cogsRow.missing_cost_products),
+    expenses: expensesTotal,
+  }
+}
+
+export async function getFinanceSummary(filters: { from: string; to: string }): Promise<FinanceSummary> {
+  const supabase = await createSupabaseClient()
+  const prev = previousPeriod(filters.from, filters.to)
+
+  const [current, previous] = await Promise.all([
+    computeNetProfit(supabase, filters.from, filters.to),
+    computeNetProfit(supabase, prev.from, prev.to),
+  ])
+
+  return {
+    revenue: current.subsRevenue + current.posRevenue,
+    subsRevenue: current.subsRevenue,
+    posRevenue: current.posRevenue,
+    cogs: current.cogs,
+    missingCostProducts: current.missingCostProducts,
+    expenses: current.expenses,
+    grossMargin: current.subsRevenue + current.posRevenue - current.cogs,
+    netProfit: current.netProfit,
+    prevNetProfit: previous.netProfit,
+    netProfitDelta: current.netProfit - previous.netProfit,
+  }
+}
+
+export type RevenueSplitPoint = { date: string; subs: number; pos: number }
+export type ExpenseByCategory = { category: string; total: number }
+export type CashFlowPoint = { date: string; net: number }
+
+function enumerateDays(from: string, to: string): string[] {
+  const days: string[] = []
+  const cur = new Date(from + 'T00:00:00Z')
+  const end = new Date(to + 'T00:00:00Z')
+  while (cur <= end) {
+    days.push(cur.toISOString().slice(0, 10))
+    cur.setUTCDate(cur.getUTCDate() + 1)
+  }
+  return days
+}
+
+export async function getRevenueSplit(filters: { from: string; to: string }): Promise<RevenueSplitPoint[]> {
+  const supabase = await createSupabaseClient()
+
+  const [{ data: subs }, { data: purchases }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('paid_amount, created_at')
+      .gte('created_at', filters.from + 'T00:00:00')
+      .lte('created_at', filters.to + 'T23:59:59'),
+    supabase
+      .from('purchases')
+      .select('total_dt, created_at')
+      .gte('created_at', filters.from + 'T00:00:00')
+      .lte('created_at', filters.to + 'T23:59:59'),
+  ])
+
+  const subsMap = new Map<string, number>()
+  subs?.forEach((r) => {
+    const d = r.created_at.slice(0, 10)
+    subsMap.set(d, (subsMap.get(d) ?? 0) + Number(r.paid_amount))
+  })
+
+  const posMap = new Map<string, number>()
+  purchases?.forEach((r) => {
+    const d = r.created_at.slice(0, 10)
+    posMap.set(d, (posMap.get(d) ?? 0) + Number(r.total_dt))
+  })
+
+  return enumerateDays(filters.from, filters.to).map((date) => ({
+    date,
+    subs: subsMap.get(date) ?? 0,
+    pos: posMap.get(date) ?? 0,
+  }))
+}
+
+export async function getExpensesByCategory(filters: { from: string; to: string }): Promise<ExpenseByCategory[]> {
+  const supabase = await createSupabaseClient()
+
+  const { data } = await supabase
+    .from('expenses')
+    .select('amount_dt, account_categories!inner(name)')
+    .gte('date', filters.from)
+    .lte('date', filters.to)
+
+  const map = new Map<string, number>()
+  data?.forEach((r) => {
+    const cat = r.account_categories as unknown as { name: string }
+    map.set(cat.name, (map.get(cat.name) ?? 0) + Number(r.amount_dt))
+  })
+
+  return Array.from(map.entries())
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total)
+}
+
+export async function getCashFlow(filters: { from: string; to: string }): Promise<CashFlowPoint[]> {
+  const supabase = await createSupabaseClient()
+
+  const [{ data: subs }, { data: purchases }, { data: expenses }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('paid_amount, created_at')
+      .gte('created_at', filters.from + 'T00:00:00')
+      .lte('created_at', filters.to + 'T23:59:59'),
+    supabase
+      .from('purchases')
+      .select('total_dt, created_at')
+      .gte('created_at', filters.from + 'T00:00:00')
+      .lte('created_at', filters.to + 'T23:59:59'),
+    supabase.from('expenses').select('amount_dt, date').gte('date', filters.from).lte('date', filters.to),
+  ])
+
+  const map = new Map<string, number>()
+  subs?.forEach((r) => {
+    const d = r.created_at.slice(0, 10)
+    map.set(d, (map.get(d) ?? 0) + Number(r.paid_amount))
+  })
+  purchases?.forEach((r) => {
+    const d = r.created_at.slice(0, 10)
+    map.set(d, (map.get(d) ?? 0) + Number(r.total_dt))
+  })
+  expenses?.forEach((r) => {
+    const d = r.date.slice(0, 10)
+    map.set(d, (map.get(d) ?? 0) - Number(r.amount_dt))
+  })
+
+  return enumerateDays(filters.from, filters.to).map((date) => ({ date, net: map.get(date) ?? 0 }))
+}

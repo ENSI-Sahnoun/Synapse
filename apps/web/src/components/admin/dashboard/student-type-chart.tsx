@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { StudentTypePoint } from '@/data/admin/dashboard'
+import type { StudentTypePoint } from '@/data/admin/analytics/students'
 
 type Props = { data: StudentTypePoint[] }
 

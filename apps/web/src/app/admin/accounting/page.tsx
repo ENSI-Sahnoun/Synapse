@@ -2,27 +2,33 @@ import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getExpenses, getPnl, getExpenseCategories } from '@/data/admin/accounting'
+import {
+  getExpenses,
+  getPnl,
+  getExpenseCategories,
+  getFinanceSummary,
+  getRevenueSplit,
+  getExpensesByCategory,
+  getCashFlow,
+} from '@/data/admin/accounting'
 import { ExpenseForm } from '@/components/admin/accounting/expense-form'
 import { ExpenseTable } from '@/components/admin/accounting/expense-table'
 import { PnlTable } from '@/components/admin/accounting/pnl-table'
-import { DateRangeFilter } from '@/components/admin/accounting/date-range-filter'
+import { NetProfitCard } from '@/components/admin/accounting/net-profit-card'
+import { RevenueSplitChart } from '@/components/admin/accounting/revenue-split-chart'
+import { ExpensesByCategoryChart } from '@/components/admin/accounting/expenses-by-category-chart'
+import { CashFlowChart } from '@/components/admin/accounting/cash-flow-chart'
+import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ExportButtons } from '@/components/admin/accounting/export-buttons'
+import { defaultDateRange } from '@/lib/date-range'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 type PageProps = {
   searchParams: Promise<{ from?: string; to?: string; category_id?: string }>
-}
-
-function defaultDateRange(): { from: string; to: string } {
-  const now = new Date()
-  const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-  const to = now.toISOString().slice(0, 10)
-  return { from, to }
 }
 
 export default async function AccountingPage({ searchParams }: PageProps) {
@@ -32,11 +38,16 @@ export default async function AccountingPage({ searchParams }: PageProps) {
   const to = params.to ?? defaults.to
   const category_id = params.category_id
 
-  const [expenses, pnl, categories] = await Promise.all([
-    getExpenses({ from, to, category_id }),
-    getPnl({ from, to }),
-    getExpenseCategories(),
-  ])
+  const [expenses, pnl, categories, financeSummary, revenueSplit, expensesByCategory, cashFlow] =
+    await Promise.all([
+      getExpenses({ from, to, category_id }),
+      getPnl({ from, to }),
+      getExpenseCategories(),
+      getFinanceSummary({ from, to }),
+      getRevenueSplit({ from, to }),
+      getExpensesByCategory({ from, to }),
+      getCashFlow({ from, to }),
+    ])
 
   return (
     <div className="space-y-6 p-6">
@@ -83,7 +94,16 @@ export default async function AccountingPage({ searchParams }: PageProps) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="pnl">
+        <TabsContent value="pnl" className="space-y-6">
+          <NetProfitCard summary={financeSummary} />
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <RevenueSplitChart data={revenueSplit} />
+            <ExpensesByCategoryChart data={expensesByCategory} />
+          </div>
+
+          <CashFlowChart data={cashFlow} />
+
           <Card>
             <CardHeader>
               <CardTitle>

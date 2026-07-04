@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
+import { sendPushToUsers } from '@/lib/notifications/push'
 import type { NotificationType } from '@/lib/notification-types'
 
 export async function notifyAllStaff(type: NotificationType, message: string): Promise<void> {
@@ -11,6 +12,7 @@ export async function notifyAllStaff(type: NotificationType, message: string): P
   await supabase.from('notifications').insert(
     staff.map((p) => ({ user_id: p.id, type, message })),
   )
+  await sendPushToUsers(staff.map((p) => p.id), { title: 'Synapse', body: message })
 }
 
 export async function notifyAllUsers(
@@ -34,6 +36,7 @@ export async function notifyAllUsers(
       important_until: importantUntil,
     })),
   )
+  await sendPushToUsers(users.map((p) => p.id), { title: 'Synapse', body: message })
 }
 
 export interface InsertInAppNotificationOpts {
@@ -54,6 +57,7 @@ export async function insertInAppNotification({
     message,
   })
   if (error) throw error
+  await sendPushToUsers([userId], { title: 'Synapse', body: message })
 }
 
 export function buildExpiryWarningMessage(opts: {

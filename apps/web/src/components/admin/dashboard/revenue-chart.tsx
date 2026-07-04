@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { RevenuePoint } from '@/data/admin/dashboard'
+import type { RevenuePoint } from '@/data/admin/analytics/overview'
 
 type Props = { data: RevenuePoint[] }
 

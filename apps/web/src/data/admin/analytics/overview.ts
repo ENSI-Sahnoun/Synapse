@@ -1,4 +1,5 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { getFinanceSummary, previousPeriod } from '@/data/admin/accounting'
 
 export type LiveSnapshot = {
   studentsInside: number
@@ -17,8 +18,6 @@ export type DailySummary = {
 }
 
 export type RevenuePoint = { date: string; revenue: number }
-export type StudentTypePoint = { date: string; nouveaux: number; recurrents: number }
-export type PlanPopularity = { name: string; value: number }
 export type CustomMetricRow = {
   id: string
   name: string
@@ -186,64 +185,6 @@ export async function getRevenueOverTime(days = 30): Promise<RevenuePoint[]> {
   return result
 }
 
-export async function getStudentTypeSeries(days = 30): Promise<StudentTypePoint[]> {
-  const supabase = await createSupabaseClient()
-  const since = new Date()
-  since.setDate(since.getDate() - days)
-  const sinceStr = since.toISOString().slice(0, 10)
-
-  // Attendance rows with student join to detect new vs returning
-  const { data: rows } = await supabase
-    .from('attendance')
-    .select('checked_in_at, student_id, profiles!inner(created_at)')
-    .gte('checked_in_at', sinceStr)
-
-  const newMap = new Map<string, Set<string>>()
-  const retMap = new Map<string, Set<string>>()
-
-  rows?.forEach((r) => {
-    if (!r.student_id) return
-    const checkDate = r.checked_in_at.slice(0, 10)
-    // If profile created_at is on same day as check-in → new student
-    const profileDate = (r.profiles as { created_at: string }).created_at.slice(0, 10)
-    const isNew = profileDate === checkDate
-    if (isNew) {
-      if (!newMap.has(checkDate)) newMap.set(checkDate, new Set())
-      newMap.get(checkDate)!.add(r.student_id)
-    } else {
-      if (!retMap.has(checkDate)) retMap.set(checkDate, new Set())
-      retMap.get(checkDate)!.add(r.student_id)
-    }
-  })
-
-  const result: StudentTypePoint[] = []
-  for (let i = days; i >= 0; i--) {
-    const d = new Date()
-    d.setDate(d.getDate() - i)
-    const key = d.toISOString().slice(0, 10)
-    result.push({
-      date: key,
-      nouveaux: newMap.get(key)?.size ?? 0,
-      recurrents: retMap.get(key)?.size ?? 0,
-    })
-  }
-  return result
-}
-
-export async function getPlanPopularity(): Promise<PlanPopularity[]> {
-  const supabase = await createSupabaseClient()
-  const { data } = await supabase
-    .from('subscriptions')
-    .select('plan_id, subscription_plans!inner(name)')
-
-  const map = new Map<string, number>()
-  data?.forEach((r) => {
-    const name = (r.subscription_plans as { name: string }).name
-    map.set(name, (map.get(name) ?? 0) + 1)
-  })
-  return Array.from(map.entries()).map(([name, value]) => ({ name, value }))
-}
-
 export async function getCustomMetrics(): Promise<CustomMetricRow[]> {
   const supabase = await createSupabaseClient()
   const { data: metrics } = await supabase
@@ -263,4 +204,79 @@ export async function getCustomMetrics(): Promise<CustomMetricRow[]> {
     target_value: m.target_value ? Number(m.target_value) : null,
     current_value: 0,
   }))
+}
+
+export function diffDelta(current: number, previous: number): number {
+  return current - previous
+}
+
+export type OverviewKpis = {
+  netProfit: number
+  netProfitDelta: number
+  totalRevenue: number
+  totalRevenueDelta: number
+  grossMargin: number
+  grossMarginDelta: number
+  expenses: number
+  expensesDelta: number
+  activeSubscriptions: number
+  activeSubscriptionsDelta: number
+  newStudents: number
+  newStudentsDelta: number
+}
+
+async function countActiveSubscriptions(
+  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  asOf: string,
+): Promise<number> {
+  const { count } = await supabase
+    .from('subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .lte('start_date', asOf)
+    .gte('end_date', asOf)
+  return count ?? 0
+}
+
+async function countNewStudents(
+  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  from: string,
+  to: string,
+): Promise<number> {
+  const { count } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('role', 'student')
+    .gte('created_at', from + 'T00:00:00')
+    .lte('created_at', to + 'T23:59:59')
+  return count ?? 0
+}
+
+export async function getOverviewKpis(range: { from: string; to: string }): Promise<OverviewKpis> {
+  const supabase = await createSupabaseClient()
+  const prev = previousPeriod(range.from, range.to)
+
+  const [current, previousSummary, activeNow, activePrev, newStudents, newStudentsPrev] =
+    await Promise.all([
+      getFinanceSummary(range),
+      getFinanceSummary(prev),
+      countActiveSubscriptions(supabase, range.to),
+      countActiveSubscriptions(supabase, prev.to),
+      countNewStudents(supabase, range.from, range.to),
+      countNewStudents(supabase, prev.from, prev.to),
+    ])
+
+  return {
+    netProfit: current.netProfit,
+    netProfitDelta: current.netProfitDelta,
+    totalRevenue: current.revenue,
+    totalRevenueDelta: diffDelta(current.revenue, previousSummary.revenue),
+    grossMargin: current.grossMargin,
+    grossMarginDelta: diffDelta(current.grossMargin, previousSummary.grossMargin),
+    expenses: current.expenses,
+    expensesDelta: diffDelta(current.expenses, previousSummary.expenses),
+    activeSubscriptions: activeNow,
+    activeSubscriptionsDelta: diffDelta(activeNow, activePrev),
+    newStudents,
+    newStudentsDelta: diffDelta(newStudents, newStudentsPrev),
+  }
 }

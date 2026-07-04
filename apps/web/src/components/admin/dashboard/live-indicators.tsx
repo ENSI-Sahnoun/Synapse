@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/supabase-clients/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { LiveSnapshot } from '@/data/admin/dashboard'
+import type { LiveSnapshot } from '@/data/admin/analytics/overview'
 
 type Props = {
   initial: LiveSnapshot

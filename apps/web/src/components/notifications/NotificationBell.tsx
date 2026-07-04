@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, BellPlus } from 'lucide-react'
+import { usePushSubscription } from '@/hooks/use-push-subscription'
 import { createClient } from '@/supabase-clients/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,6 +28,7 @@ export function NotificationBell({
   const [notifications, setNotifications] = useState(initialNotifications)
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
   const [isPending, startTransition] = useTransition()
+  const { supported: pushSupported, subscribed: pushSubscribed, subscribe: enablePush } = usePushSubscription()
 
   // Live-update the bell: new/changed/removed notifications for this user.
   // RLS scopes the stream, but filter by user_id too so admins (who can read
@@ -118,6 +120,16 @@ export function NotificationBell({
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold text-sm">Notifications</h3>
           <div className="flex items-center gap-3">
+            {pushSupported && !pushSubscribed && (
+              <button
+                onClick={() => void enablePush()}
+                className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                title="Recevoir les notifications sur ce téléphone"
+              >
+                <BellPlus className="h-3.5 w-3.5" />
+                Activer
+              </button>
+            )}
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}

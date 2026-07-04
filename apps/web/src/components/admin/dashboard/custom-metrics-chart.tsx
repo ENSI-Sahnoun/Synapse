@@ -12,7 +12,7 @@ import {
   Cell,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { CustomMetricRow } from '@/data/admin/dashboard'
+import type { CustomMetricRow } from '@/data/admin/analytics/overview'
 
 type Props = { metrics: CustomMetricRow[] }
 

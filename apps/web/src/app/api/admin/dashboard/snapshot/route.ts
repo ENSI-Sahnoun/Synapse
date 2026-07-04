@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getLiveSnapshot } from '@/data/admin/dashboard'
+import { getLiveSnapshot } from '@/data/admin/analytics/overview'
 import { createSupabaseClient } from '@/supabase-clients/server'
 
 export async function GET() {
