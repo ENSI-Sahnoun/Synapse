@@ -42,10 +42,12 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
           name: product.name,
           category: product.category,
           price_dt: product.price_dt,
-          stock_quantity: product.stock_quantity,
+          cost_price: product.cost_price ?? undefined,
+          supplier: product.supplier ?? undefined,
+          barcode: product.barcode ?? undefined,
           image_url: product.image_url ?? undefined,
         }
-      : { name: '', category: '', price_dt: 0, stock_quantity: 0 },
+      : { name: '', category: '', price_dt: 0 },
   })
 
   const { execute: execCreate, status: createStatus } = useAction(createProductAction, {
@@ -234,14 +236,42 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
           )}
         </div>
 
-        {/* Stock */}
+        {/* Cost price */}
         <div className="space-y-1">
-          <Label>Stock</Label>
-          <Input type="number" min="0" {...form.register('stock_quantity')} />
-          {form.formState.errors.stock_quantity && (
-            <p className="text-sm text-destructive">{(form.formState.errors.stock_quantity as any).message}</p>
+          <Label>Coût d&apos;achat (DT)</Label>
+          <Input type="number" step="0.1" min="0" {...form.register('cost_price')} placeholder="ex: 0.8" />
+          {form.formState.errors.cost_price && (
+            <p className="text-sm text-destructive">{(form.formState.errors.cost_price as any).message}</p>
+          )}
+          {Number(form.watch('price_dt')) > 0 && Number(form.watch('cost_price')) > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Marge: {(Number(form.watch('price_dt')) - Number(form.watch('cost_price'))).toFixed(3)} DT
+            </p>
           )}
         </div>
+
+        {/* Supplier */}
+        <div className="space-y-1">
+          <Label>Fournisseur</Label>
+          <Input {...form.register('supplier')} placeholder="ex: Grossiste Ariana" />
+        </div>
+
+        {/* Barcode */}
+        <div className="space-y-1">
+          <Label>Code-barres</Label>
+          <Input {...form.register('barcode')} placeholder="ex: 6191234567890" />
+        </div>
+
+        {/* Stock (read-only, restock happens via dedicated action) */}
+        {isEdit && (
+          <div className="space-y-1">
+            <Label>Stock actuel</Label>
+            <p className="text-sm">{product.stock_quantity} unité(s)</p>
+            <p className="text-xs text-muted-foreground">
+              Utilisez le bouton &quot;Réapprovisionner&quot; sur la page produits pour ajouter du stock.
+            </p>
+          </div>
+        )}
 
         <Button type="submit" disabled={submitting || uploadingImage}>
           {submitting ? 'Enregistrement...' : isEdit ? 'Enregistrer' : 'Créer le produit'}
