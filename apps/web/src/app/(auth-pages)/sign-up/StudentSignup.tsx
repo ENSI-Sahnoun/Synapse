@@ -14,7 +14,13 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { markPwaInstallTrigger } from '@/components/pwa/usePwaInstall'
 
-export function StudentSignup() {
+export function StudentSignup({
+  embedded = false,
+  onBack,
+}: {
+  embedded?: boolean
+  onBack?: () => void
+}) {
   const router = useRouter()
   const [emailConfirmPending, setEmailConfirmPending] = useState(false)
 
@@ -48,27 +54,35 @@ export function StudentSignup() {
 
   if (emailConfirmPending) {
     return (
-      <div className="max-w-md mx-auto p-6 space-y-4 text-center">
+      <div className={embedded ? 'space-y-4 text-center' : 'max-w-md mx-auto p-6 space-y-4 text-center'}>
         <h2 className="text-xl font-semibold">Vérifiez votre email</h2>
         <p className="text-muted-foreground text-sm">
           Un lien de confirmation a été envoyé à <strong>{form.getValues('email')}</strong>.
           Cliquez sur le lien pour activer votre compte.
         </p>
-        <Link href="/login" className="text-primary text-sm underline">
-          Retour à la connexion
-        </Link>
+        {onBack ? (
+          <button type="button" onClick={onBack} className="text-primary text-sm underline">
+            Retour à la connexion
+          </button>
+        ) : (
+          <Link href="/login" className="text-primary text-sm underline">
+            Retour à la connexion
+          </Link>
+        )}
       </div>
     )
   }
 
   return (
-    <div className="max-w-md mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Créer un compte</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Espace Synapse — étudiants uniquement
-        </p>
-      </div>
+    <div className={embedded ? 'space-y-6' : 'max-w-md mx-auto p-6 space-y-6'}>
+      {!embedded && (
+        <div>
+          <h1 className="text-2xl font-semibold">Créer un compte</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Espace Synapse — étudiants uniquement
+          </p>
+        </div>
+      )}
 
       <form onSubmit={form.handleSubmit((d) => execute(d))} className="space-y-4">
         <div className="space-y-1">
@@ -125,9 +139,15 @@ export function StudentSignup() {
 
       <p className="text-center text-sm text-muted-foreground">
         Déjà inscrit ?{' '}
-        <Link href="/login" className="text-primary underline">
-          Se connecter
-        </Link>
+        {onBack ? (
+          <button type="button" onClick={onBack} className="text-primary underline">
+            Se connecter
+          </button>
+        ) : (
+          <Link href="/login" className="text-primary underline">
+            Se connecter
+          </Link>
+        )}
       </p>
     </div>
   )
