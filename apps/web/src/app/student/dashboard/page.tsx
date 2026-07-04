@@ -1,19 +1,26 @@
 import { getMyProfile, getMyActiveSubscription, getMyPresence } from '@/data/student/profile'
 import { getMyImportantNotifications } from '@/data/notifications/list'
+import { getLeaderboard, getMyLeaderboardRank, getLeaderboardSettings, getLeaderboardConfig } from '@/data/student/leaderboard'
 import { differenceInDays, parseISO, format, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { WarningCircle, ArrowRight, Megaphone } from '@phosphor-icons/react/dist/ssr'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PresenceBanner } from './PresenceBanner'
+import { LeaderboardCard } from './LeaderboardCard'
 
 export default async function StudentDashboardPage() {
-  const [profile, activeSubscription, presence, importantNotifications] = await Promise.all([
-    getMyProfile(),
-    getMyActiveSubscription(),
-    getMyPresence(),
-    getMyImportantNotifications(),
-  ])
+  const [profile, activeSubscription, presence, importantNotifications, lbRows, lbMyRanks, lbSettings, lbConfig] =
+    await Promise.all([
+      getMyProfile(),
+      getMyActiveSubscription(),
+      getMyPresence(),
+      getMyImportantNotifications(),
+      getLeaderboard(),
+      getMyLeaderboardRank(),
+      getLeaderboardSettings(),
+      getLeaderboardConfig(),
+    ])
 
   const today = startOfDay(new Date())
 
@@ -178,6 +185,7 @@ export default async function StudentDashboardPage() {
         )}
       </div>
 
+      <LeaderboardCard rows={lbRows} myRanks={lbMyRanks} settings={lbSettings} config={lbConfig} />
     </div>
   )
 }
