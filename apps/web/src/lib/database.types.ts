@@ -401,7 +401,9 @@ export type Database = {
       products: {
         Row: {
           account_category_id: string
+          barcode: string | null
           category: string
+          cost_price: number | null
           created_at: string
           id: string
           image_url: string | null
@@ -409,10 +411,13 @@ export type Database = {
           name: string
           price_dt: number
           stock_quantity: number
+          supplier: string | null
         }
         Insert: {
           account_category_id?: string
+          barcode?: string | null
           category?: string
+          cost_price?: number | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -420,10 +425,13 @@ export type Database = {
           name: string
           price_dt: number
           stock_quantity?: number
+          supplier?: string | null
         }
         Update: {
           account_category_id?: string
+          barcode?: string | null
           category?: string
+          cost_price?: number | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -431,6 +439,7 @@ export type Database = {
           name?: string
           price_dt?: number
           stock_quantity?: number
+          supplier?: string | null
         }
         Relationships: [
           {
@@ -486,6 +495,54 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pos_activity_log: {
+        Row: {
+          id: string
+          action: string
+          product_id: string | null
+          actor_id: string
+          quantity: number | null
+          amount_dt: number | null
+          details: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          action: string
+          product_id?: string | null
+          actor_id: string
+          quantity?: number | null
+          amount_dt?: number | null
+          details?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          action?: string
+          product_id?: string | null
+          actor_id?: string
+          quantity?: number | null
+          amount_dt?: number | null
+          details?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_activity_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchase_items: {
         Row: {
@@ -962,6 +1019,25 @@ export type Database = {
       current_user_role: { Args: never; Returns: string }
       default_sales_account_category_id: { Args: never; Returns: string }
       expire_stale_reservations: { Args: never; Returns: undefined }
+      pos_checkout: {
+        Args: {
+          p_student_id: string | null
+          p_items: Json
+        }
+        Returns: Json
+      }
+      pos_restock: {
+        Args: {
+          p_product_id: string
+          p_quantity: number
+          p_cost_price: number
+          p_tax_rate_pct?: number
+        }
+        Returns: {
+          new_stock_quantity: number
+          expense_id: string
+        }
+      }
       shift_queue_positions_down: {
         Args: { from_position: number }
         Returns: undefined

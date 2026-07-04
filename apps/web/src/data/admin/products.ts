@@ -7,6 +7,9 @@ export interface AdminProduct {
   name: string
   category: string
   price_dt: number
+  cost_price: number | null
+  supplier: string | null
+  barcode: string | null
   stock_quantity: number
   is_active: boolean
   image_url: string | null
@@ -17,7 +20,7 @@ export async function listAllProducts(): Promise<AdminProduct[]> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, category, price_dt, stock_quantity, is_active, image_url, created_at')
+    .select('id, name, category, price_dt, cost_price, supplier, barcode, stock_quantity, is_active, image_url, created_at')
     .order('category', { ascending: true })
     .order('name', { ascending: true })
   if (error) throw new Error('Erreur de chargement des produits')
@@ -28,7 +31,7 @@ export async function getProductById(id: string): Promise<AdminProduct | null> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, category, price_dt, stock_quantity, is_active, image_url, created_at')
+    .select('id, name, category, price_dt, cost_price, supplier, barcode, stock_quantity, is_active, image_url, created_at')
     .eq('id', id)
     .single()
   if (error) return null
