@@ -29,6 +29,7 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
 
   const [categories, setCategories] = useState(initialCategories)
   const [newCatName, setNewCatName] = useState('')
+  const [newCatEmoji, setNewCatEmoji] = useState('')
   const [addingCat, setAddingCat] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(product?.image_url ?? null)
@@ -61,14 +62,15 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
   })
 
   const { execute: execCreateCat } = useAction(createCategoryAction, {
-    onSuccess: (result) => {
+    onSuccess: () => {
       toast.success('Catégorie ajoutée')
       // Optimistically add to local list; page refresh will confirm
       if (newCatName.trim()) {
-        setCategories((prev) => [...prev, { id: crypto.randomUUID(), name: newCatName.trim() }].sort((a, b) => a.name.localeCompare(b.name)))
+        setCategories((prev) => [...prev, { id: crypto.randomUUID(), name: newCatName.trim(), emoji: newCatEmoji.trim() || null, sort_order: prev.length }].sort((a, b) => a.name.localeCompare(b.name)))
         form.setValue('category', newCatName.trim())
       }
       setNewCatName('')
+      setNewCatEmoji('')
       setAddingCat(false)
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
@@ -172,7 +174,7 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
             >
               <option value="">— Choisir —</option>
               {categories.map((c) => (
-                <option key={c.id} value={c.name}>{c.name}</option>
+                <option key={c.id} value={c.name}>{c.emoji ? `${c.emoji} ${c.name}` : c.name}</option>
               ))}
             </select>
             <Button type="button" variant="outline" size="sm" onClick={() => setAddingCat((v) => !v)}>
@@ -185,22 +187,43 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
 
           {/* Add category inline */}
           {addingCat && (
-            <div className="flex gap-2 mt-2">
-              <Input
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
-                placeholder="Nouvelle catégorie"
-                className="flex-1"
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (newCatName.trim()) execCreateCat({ name: newCatName.trim() }) } }}
-              />
-              <Button
-                type="button"
-                size="sm"
-                disabled={!newCatName.trim()}
-                onClick={() => { if (newCatName.trim()) execCreateCat({ name: newCatName.trim() }) }}
-              >
-                Ajouter
-              </Button>
+            <div className="mt-2 space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={newCatEmoji}
+                  onChange={(e) => setNewCatEmoji([...e.target.value].slice(0, 2).join(''))}
+                  placeholder="🙂"
+                  className="w-14 text-center text-lg"
+                  aria-label="Emoji de la catégorie"
+                />
+                <Input
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  placeholder="Nouvelle catégorie"
+                  className="flex-1"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (newCatName.trim()) execCreateCat({ name: newCatName.trim(), emoji: newCatEmoji.trim() || null }) } }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!newCatName.trim()}
+                  onClick={() => { if (newCatName.trim()) execCreateCat({ name: newCatName.trim(), emoji: newCatEmoji.trim() || null }) }}
+                >
+                  Ajouter
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {['🥤', '🍫', '✏️', '📦', '🍬', '☕', '🥪', '📚', '🖊️', '🧃'].map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => setNewCatEmoji(e)}
+                    className={`rounded-md border px-2 py-1 text-lg ${newCatEmoji === e ? 'border-primary bg-muted' : ''}`}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -212,7 +235,7 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
                   key={c.id}
                   className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"
                 >
-                  {c.name}
+                  {c.emoji ? `${c.emoji} ${c.name}` : c.name}
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-destructive"

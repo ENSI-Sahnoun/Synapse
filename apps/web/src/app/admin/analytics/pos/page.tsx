@@ -3,12 +3,12 @@ import {
   getBestSellers,
   getSalesByCategory,
   getRestockHistory,
-  getLowStockList,
+  getStockOverPeriod,
 } from '@/data/admin/analytics/pos'
 import { BestSellersTable } from '@/components/admin/analytics/best-sellers-table'
 import { SalesByCategoryChart } from '@/components/admin/analytics/sales-by-category-chart'
 import { RestockHistoryTable } from '@/components/admin/analytics/restock-history-table'
-import { LowStockPanel } from '@/components/admin/dashboard/low-stock-panel'
+import { StockSnapshotTable } from '@/components/admin/analytics/stock-snapshot-table'
 import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,12 +25,12 @@ export default async function PosAnalyticsPage({ searchParams }: PageProps) {
   const from = params.from ?? defaults.from
   const to = params.to ?? defaults.to
 
-  const [margin, bestSellers, byCategory, restocks, lowStock] = await Promise.all([
+  const [margin, bestSellers, byCategory, restocks, stockSnapshot] = await Promise.all([
     getProductMargin({ from, to }),
     getBestSellers({ from, to }),
     getSalesByCategory({ from, to }),
     getRestockHistory({ from, to }),
-    getLowStockList(),
+    getStockOverPeriod({ from, to }),
   ])
 
   return (
@@ -85,7 +85,7 @@ export default async function PosAnalyticsPage({ searchParams }: PageProps) {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <LowStockPanel products={lowStock} />
+        <StockSnapshotTable rows={stockSnapshot} from={from} to={to} />
         <RestockHistoryTable data={restocks} />
       </div>
     </div>

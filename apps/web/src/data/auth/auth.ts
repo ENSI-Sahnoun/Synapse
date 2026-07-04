@@ -46,7 +46,7 @@ export const signInWithPasswordAction = actionClient
     // Use admin client — same-request session cookies aren't readable via the
     // regular client after signInWithPassword (getAll() returns pre-request cookies)
     const admin = createSupabaseAdminClient()
-    const { data: profile, error: profileErr } = await admin
+    const { data: profile } = await admin
       .from('profiles')
       .select('role')
       .eq('id', data.user.id)
@@ -54,6 +54,70 @@ export const signInWithPasswordAction = actionClient
 
     const redirectTo = ROLE_HOME[profile?.role ?? ''] ?? '/login'
     return { redirectTo }
+  });
+
+const signInWithQrSchema = z.object({
+  qr_token: z.string().min(1),
+});
+
+/**
+ * Signs in a student by their QR card token.
+ * Only allowed for student accounts that have not yet set their own
+ * credentials (credentials_set = false). Mints a session server-side via
+ * generateLink + verifyOtp — no email is sent.
+ */
+export const signInWithQrAction = actionClient
+  .schema(signInWithQrSchema)
+  .action(async ({ parsedInput: { qr_token } }) => {
+    const { isValidQrTokenFormat } = await import('@/lib/qr-token');
+    const token = qr_token.trim().toUpperCase();
+
+    if (!isValidQrTokenFormat(token)) {
+      throw new Error('Code QR invalide ou expiré.');
+    }
+
+    const admin = createSupabaseAdminClient();
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('id, role, credentials_set, is_archived')
+      .eq('qr_token', token)
+      .maybeSingle();
+
+    if (!profile || profile.role !== 'student' || profile.is_archived) {
+      throw new Error('Code QR invalide ou expiré.');
+    }
+
+    if (profile.credentials_set) {
+      throw new Error(
+        'Ce compte est protégé par mot de passe. Connectez-vous avec votre email.'
+      );
+    }
+
+    const { data: authUser, error: userError } =
+      await admin.auth.admin.getUserById(profile.id);
+    if (userError || !authUser.user.email) {
+      throw new Error('Code QR invalide ou expiré.');
+    }
+
+    const { data: linkData, error: linkError } =
+      await admin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: authUser.user.email,
+      });
+    if (linkError || !linkData.properties?.hashed_token) {
+      throw new Error('Erreur lors de la connexion. Réessayez.');
+    }
+
+    const supabase = await createSupabaseClient();
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      type: 'magiclink',
+      token_hash: linkData.properties.hashed_token,
+    });
+    if (verifyError) {
+      throw new Error('Erreur lors de la connexion. Réessayez.');
+    }
+
+    return { redirectTo: '/student/dashboard' };
   });
 
 const signInWithMagicLinkSchema = z.object({

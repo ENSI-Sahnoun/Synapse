@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
 import { createPurchaseAction } from '@/actions/employee/purchases'
+import { searchStudentsByNameAction } from '@/actions/employee/search-students-by-name'
 import { QrScanDialog } from './qr-scan-dialog'
 import { type Product } from '@/data/employee/products'
 
@@ -19,7 +20,7 @@ interface StudentInfo {
   loyaltyBalance: number
 }
 
-type AssignStep = 'choose' | 'scan' | 'id' | 'confirm'
+type AssignStep = 'choose' | 'scan' | 'name' | 'confirm'
 
 function formatDt(amount: number) {
   return amount.toLocaleString('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' DT'
@@ -29,12 +30,20 @@ function initials(name: string) {
   return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
 }
 
-export function PosClient({ products }: { products: Product[] }) {
+export function PosClient({ products, categoryEmojis, categoryOrder }: { products: Product[]; categoryEmojis: Record<string, string>; categoryOrder: string[] }) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [assignOpen, setAssignOpen] = useState(false)
   const [assignStep, setAssignStep] = useState<AssignStep>('choose')
   const [pendingStudent, setPendingStudent] = useState<StudentInfo | null>(null)
   const [receiptData, setReceiptData] = useState<{ totalDt: number; studentName: string | null; items: CartItem[] } | null>(null)
+  const [nameQuery, setNameQuery] = useState('')
+  const [nameResults, setNameResults] = useState<StudentInfo[]>([])
+  const [search, setSearch] = useState('')
+
+  const { execute: searchByName, status: searchStatus } = useAction(searchStudentsByNameAction, {
+    onSuccess: ({ data }) => setNameResults(data ?? []),
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur de recherche'),
+  })
 
   const totalDt = cart.reduce((sum, item) => sum + item.product.price_dt * item.quantity, 0)
 
@@ -103,7 +112,14 @@ export function PosClient({ products }: { products: Product[] }) {
   function openAssign() {
     setAssignStep('choose')
     setPendingStudent(null)
+    setNameQuery('')
+    setNameResults([])
     setAssignOpen(true)
+  }
+
+  function pickStudent(student: StudentInfo) {
+    setPendingStudent(student)
+    setAssignStep('confirm')
   }
 
   if (receiptData) {
@@ -170,137 +186,178 @@ export function PosClient({ products }: { products: Product[] }) {
     )
   }
 
-  const categories = [...new Set(products.map((p) => p.category))]
+  const q = search.trim().toLowerCase()
+  const visibleProducts = q
+    ? products.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+    : products
+  const catRank = new Map(categoryOrder.map((name, i) => [name, i]))
+  const categories = [...new Set(visibleProducts.map((p) => p.category))].sort(
+    (a, b) => (catRank.get(a) ?? 999) - (catRank.get(b) ?? 999)
+  )
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '16px 16px 100px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {categories.map((category) => (
-          <div key={category} style={{ display: 'contents' }}>
-            {products.filter((p) => p.category === category).map((product) => {
-              const outOfStock = product.stock_quantity === 0
-              const cartItem = cart.find((i) => i.product.id === product.id)
-              return (
-                <button
-                  key={product.id}
-                  disabled={outOfStock}
-                  onClick={() => addToCart(product)}
-                  style={{
-                    background: '#fff',
-                    border: cartItem ? '1.5px solid var(--accent-brand)' : '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-lg)',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    opacity: outOfStock ? 0.4 : 1,
-                    cursor: outOfStock ? 'default' : 'pointer',
-                    padding: 0,
-                    textAlign: 'left',
-                  }}
-                >
-                  <div style={{
-                    aspectRatio: '4/3',
-                    background: 'repeating-linear-gradient(-45deg, var(--synapse-cream-100, #f5f0eb) 0px 6px, var(--synapse-cream-200, #e8e0d6) 6px 12px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                  }}>
-                    <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'monospace', padding: '0 8px', textAlign: 'center' }}>
-                      {product.name}
-                    </span>
-                  </div>
-                  <div style={{ padding: 10 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{product.name}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-brand)', marginTop: 2 }}>{product.price_dt.toFixed(3)} DT</div>
-                  </div>
-                  {cartItem && (
-                    <span style={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      width: 20,
-                      height: 20,
-                      borderRadius: '50%',
-                      background: 'var(--accent-brand)',
-                      color: '#fff',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      {cartItem.quantity}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        ))}
-        {products.length === 0 && (
-          <p style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 14, padding: '32px 0' }}>
-            Aucun produit actif. Ajoutez des produits depuis l&apos;administration.
-          </p>
-        )}
-      </div>
-
-      {cart.length > 0 && (
-        <div style={{
-          background: '#fff',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-xl)',
-          overflow: 'hidden',
-        }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: 15 }}>
-            Panier
-          </div>
-          <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {cart.map((item) => (
-              <div key={item.product.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-                <span style={{ flex: 1, fontWeight: 500 }}>{item.product.name}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <button
-                    onClick={() => changeQty(item.product.id, -1)}
-                    style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 16 }}
-                  >–</button>
-                  <span style={{ width: 24, textAlign: 'center', fontWeight: 600 }}>{item.quantity}</span>
-                  <button
-                    onClick={() => changeQty(item.product.id, 1)}
-                    disabled={item.quantity >= item.product.stock_quantity}
-                    style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: item.quantity >= item.product.stock_quantity ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 16, opacity: item.quantity >= item.product.stock_quantity ? 0.4 : 1 }}
-                  >+</button>
-                </div>
-                <span style={{ color: 'var(--accent-brand)', fontWeight: 600, minWidth: 72, textAlign: 'right' }}>
-                  {formatDt(item.product.price_dt * item.quantity)}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, fontSize: 15 }}>
-            <span>Total</span>
-            <span style={{ color: 'var(--accent-brand)' }}>{formatDt(totalDt)}</span>
-          </div>
-        </div>
-      )}
-
+  function renderCard(product: Product) {
+    const outOfStock = product.stock_quantity === 0
+    const cartItem = cart.find((i) => i.product.id === product.id)
+    return (
       <button
-        disabled={cart.length === 0}
-        onClick={openAssign}
+        key={product.id}
+        disabled={outOfStock}
+        onClick={() => addToCart(product)}
         style={{
-          width: '100%',
-          padding: '16px 0',
+          background: '#fff',
+          border: cartItem ? '1.5px solid var(--accent-brand)' : '1px solid var(--border-subtle)',
           borderRadius: 'var(--radius-lg)',
-          background: cart.length === 0 ? 'var(--border-subtle)' : 'var(--accent-brand)',
-          color: cart.length === 0 ? 'var(--muted-foreground)' : '#fff',
-          fontWeight: 700,
-          fontSize: 16,
-          border: 'none',
-          cursor: cart.length === 0 ? 'default' : 'pointer',
-          transition: 'background 0.2s',
+          overflow: 'hidden',
+          position: 'relative',
+          opacity: outOfStock ? 0.4 : 1,
+          cursor: outOfStock ? 'default' : 'pointer',
+          padding: 0,
+          textAlign: 'left',
         }}
       >
-        {cart.length === 0 ? 'Ajouter des articles' : `Valider — ${formatDt(totalDt)}`}
+        <div style={{
+          aspectRatio: '1/1',
+          background: 'var(--synapse-cream-100, #f5f0eb)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+        }}>
+          {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.image_url}
+              alt={product.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : categoryEmojis[product.category] ? (
+            <span style={{ fontSize: 40, lineHeight: 1 }}>{categoryEmojis[product.category]}</span>
+          ) : (
+            <span style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '0 8px', textAlign: 'center' }}>
+              {product.name}
+            </span>
+          )}
+        </div>
+        <div style={{ padding: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{product.name}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-brand)', marginTop: 2 }}>{product.price_dt.toFixed(3)} DT</div>
+        </div>
+        {cartItem && (
+          <span style={{
+            position: 'absolute',
+            top: 6,
+            right: 6,
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            background: 'var(--accent-brand)',
+            color: '#fff',
+            fontSize: 11,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {cartItem.quantity}
+          </span>
+        )}
       </button>
+    )
+  }
+
+  return (
+    <div style={{ padding: '16px 16px 100px' }}>
+      <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher un article…"
+            style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', fontSize: 14 }}
+          />
+
+          {categories.map((category) => (
+            <div key={category}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontWeight: 700, fontSize: 15 }}>
+                <span style={{ fontSize: 20 }}>{categoryEmojis[category] ?? '📦'}</span>
+                <span>{category}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(108px, 1fr))', gap: 10 }}>
+                {visibleProducts.filter((p) => p.category === category).map(renderCard)}
+              </div>
+            </div>
+          ))}
+
+          {products.length === 0 && (
+            <p style={{ textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 14, padding: '32px 0' }}>
+              Aucun produit actif. Ajoutez des produits depuis l&apos;administration.
+            </p>
+          )}
+          {products.length > 0 && visibleProducts.length === 0 && (
+            <p style={{ textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 14, padding: '32px 0' }}>
+              Aucun résultat
+            </p>
+          )}
+        </div>
+
+        {cart.length > 0 && (
+          <aside className="w-full lg:w-80 lg:sticky lg:top-4 flex flex-col gap-3">
+            <div style={{
+              background: '#fff',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-xl)',
+              overflow: 'hidden',
+            }}>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: 15 }}>
+                Panier
+              </div>
+              <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {cart.map((item) => (
+                  <div key={item.product.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                    <span style={{ flex: 1, fontWeight: 500 }}>{item.product.name}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <button
+                        onClick={() => changeQty(item.product.id, -1)}
+                        style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 16 }}
+                      >–</button>
+                      <span style={{ width: 24, textAlign: 'center', fontWeight: 600 }}>{item.quantity}</span>
+                      <button
+                        onClick={() => changeQty(item.product.id, 1)}
+                        disabled={item.quantity >= item.product.stock_quantity}
+                        style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: item.quantity >= item.product.stock_quantity ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 16, opacity: item.quantity >= item.product.stock_quantity ? 0.4 : 1 }}
+                      >+</button>
+                    </div>
+                    <span style={{ color: 'var(--accent-brand)', fontWeight: 600, minWidth: 72, textAlign: 'right' }}>
+                      {formatDt(item.product.price_dt * item.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, fontSize: 15 }}>
+                <span>Total</span>
+                <span style={{ color: 'var(--accent-brand)' }}>{formatDt(totalDt)}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={openAssign}
+              style={{
+                width: '100%',
+                padding: '16px 0',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--accent-brand)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 16,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              {`Valider — ${formatDt(totalDt)}`}
+            </button>
+          </aside>
+        )}
+      </div>
 
       <div
         style={{
@@ -354,7 +411,7 @@ export function PosClient({ products }: { products: Product[] }) {
                 Scanner le QR étudiant
               </button>
               <button
-                onClick={() => setAssignStep('id')}
+                onClick={() => setAssignStep('name')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -369,7 +426,7 @@ export function PosClient({ products }: { products: Product[] }) {
                   fontSize: 14,
                 }}
               >
-                Saisir l&apos;identifiant
+                Rechercher par nom
               </button>
               <button
                 disabled={status === 'executing'}
@@ -406,7 +463,7 @@ export function PosClient({ products }: { products: Product[] }) {
           </div>
         )}
 
-        {assignStep === 'id' && (
+        {assignStep === 'name' && (
           <div style={{ padding: '20px 20px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <button
@@ -415,23 +472,86 @@ export function PosClient({ products }: { products: Product[] }) {
               >
                 ← Retour
               </button>
-              <span style={{ fontWeight: 700, fontSize: 17 }}>Saisir l&apos;identifiant</span>
+              <span style={{ fontWeight: 700, fontSize: 17 }}>Rechercher par nom</span>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (nameQuery.trim().length >= 2) searchByName({ query: nameQuery.trim() })
+              }}
+              style={{ display: 'flex', gap: 8 }}
+            >
               <input
-                placeholder="Numéro étudiant ou téléphone"
+                autoFocus
+                value={nameQuery}
+                onChange={(e) => setNameQuery(e.target.value)}
+                placeholder="Nom de l'étudiant"
                 style={{ flex: 1, padding: '10px 12px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 14 }}
               />
               <button
-                disabled
-                style={{ padding: '10px 16px', borderRadius: 'var(--radius-md)', background: 'var(--border-subtle)', color: 'var(--muted-foreground)', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'not-allowed' }}
+                type="submit"
+                disabled={nameQuery.trim().length < 2 || searchStatus === 'executing'}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  background: nameQuery.trim().length < 2 ? 'var(--border-subtle)' : 'var(--accent-brand)',
+                  color: nameQuery.trim().length < 2 ? 'var(--muted-foreground)' : '#fff',
+                  border: 'none',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: nameQuery.trim().length < 2 ? 'not-allowed' : 'pointer',
+                }}
               >
-                Trouver
+                {searchStatus === 'executing' ? '...' : 'Trouver'}
               </button>
+            </form>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
+              {nameResults.map((student) => (
+                <button
+                  key={student.studentId}
+                  onClick={() => pickStudent(student)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '12px 14px',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 'var(--radius-lg)',
+                    background: '#fff',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    background: 'var(--accent-brand)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    flexShrink: 0,
+                  }}>
+                    {initials(student.fullName)}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{student.fullName}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                      Solde: {student.loyaltyBalance} pts
+                      {student.phone && ` · ${student.phone}`}
+                    </div>
+                  </div>
+                </button>
+              ))}
+              {searchStatus === 'hasSucceeded' && nameResults.length === 0 && (
+                <p style={{ fontSize: 13, color: 'var(--muted-foreground)', textAlign: 'center', padding: '8px 0' }}>
+                  Aucun étudiant trouvé
+                </p>
+              )}
             </div>
-            <p style={{ fontSize: 12, color: 'var(--text-tertiary, var(--muted-foreground))', marginTop: 8 }}>
-              Recherche manuelle non disponible sur cette version
-            </p>
           </div>
         )}
 

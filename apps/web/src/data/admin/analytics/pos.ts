@@ -119,15 +119,69 @@ export async function getRestockHistory(range: { from: string; to: string }): Pr
   }))
 }
 
-export async function getLowStockList(
-  threshold = 5,
-): Promise<Array<{ id: string; name: string; stock_quantity: number }>> {
+export type StockSnapshotRow = {
+  id: string
+  name: string
+  category: string
+  startStock: number
+  endStock: number
+  delta: number
+}
+
+// Reconstructs each product's stock at the start and end of the period by
+// rewinding movements from the current stock:
+//   stock_at(T) = current − restocks_after(T) + sales_after(T)
+// startStock = stock just before the period (rewind everything from `from` onward)
+// endStock   = stock at the end of `to`
+// Note: manual stock edits via product update aren't tracked as movements, so
+// the result is exact only for stock changed through sales and restocks.
+export async function getStockOverPeriod(range: { from: string; to: string }): Promise<StockSnapshotRow[]> {
   const supabase = await createSupabaseClient()
-  const { data } = await supabase
-    .from('products')
-    .select('id, name, stock_quantity')
-    .eq('is_active', true)
-    .lte('stock_quantity', threshold)
-    .order('stock_quantity', { ascending: true })
-  return data ?? []
+  const periodStart = range.from + 'T00:00:00'
+  const periodEnd = range.to + 'T23:59:59'
+
+  // Fetch every movement from the start of the period onward; movements strictly
+  // after `to` are the subset used for the end-of-period figure.
+  const [{ data: products }, { data: sales }, { data: restocks }] = await Promise.all([
+    supabase.from('products').select('id, name, category, stock_quantity').eq('is_active', true),
+    supabase.from('purchase_items').select('product_id, quantity, created_at').gte('created_at', periodStart),
+    supabase
+      .from('pos_activity_log')
+      .select('product_id, quantity, created_at')
+      .eq('action', 'restock')
+      .gte('created_at', periodStart),
+  ])
+
+  // Accumulate per product: movements within the whole window (>= from) and the
+  // tail after `to`.
+  const salesFrom = new Map<string, number>()
+  const salesAfterTo = new Map<string, number>()
+  for (const r of sales ?? []) {
+    const q = Number(r.quantity)
+    salesFrom.set(r.product_id, (salesFrom.get(r.product_id) ?? 0) + q)
+    if (r.created_at > periodEnd) salesAfterTo.set(r.product_id, (salesAfterTo.get(r.product_id) ?? 0) + q)
+  }
+  const restocksFrom = new Map<string, number>()
+  const restocksAfterTo = new Map<string, number>()
+  for (const r of restocks ?? []) {
+    if (!r.product_id) continue
+    const q = Number(r.quantity ?? 0)
+    restocksFrom.set(r.product_id, (restocksFrom.get(r.product_id) ?? 0) + q)
+    if (r.created_at > periodEnd) restocksAfterTo.set(r.product_id, (restocksAfterTo.get(r.product_id) ?? 0) + q)
+  }
+
+  return (products ?? [])
+    .map((p) => {
+      const startStock = p.stock_quantity - (restocksFrom.get(p.id) ?? 0) + (salesFrom.get(p.id) ?? 0)
+      const endStock = p.stock_quantity - (restocksAfterTo.get(p.id) ?? 0) + (salesAfterTo.get(p.id) ?? 0)
+      return {
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        startStock,
+        endStock,
+        delta: endStock - startStock,
+      }
+    })
+    .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
 }

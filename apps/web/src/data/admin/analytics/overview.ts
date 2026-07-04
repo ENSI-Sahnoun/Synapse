@@ -18,13 +18,6 @@ export type DailySummary = {
 }
 
 export type RevenuePoint = { date: string; revenue: number }
-export type CustomMetricRow = {
-  id: string
-  name: string
-  unit: string
-  target_value: number | null
-  current_value: number
-}
 
 const today = () => {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Africa/Tunis' }).format(new Date())
@@ -183,27 +176,6 @@ export async function getRevenueOverTime(days = 30): Promise<RevenuePoint[]> {
     result.push({ date: key, revenue: map.get(key) ?? 0 })
   }
   return result
-}
-
-export async function getCustomMetrics(): Promise<CustomMetricRow[]> {
-  const supabase = await createSupabaseClient()
-  const { data: metrics } = await supabase
-    .from('custom_metrics')
-    .select('*')
-    .eq('is_dashboard_visible', true)
-    .order('created_at')
-
-  if (!metrics) return []
-
-  // For now, current_value is always 0 unless we have a known mapping.
-  // Admins define custom metrics manually; actual value collection is out of scope for 7A.
-  return metrics.map((m) => ({
-    id: m.id,
-    name: m.name,
-    unit: m.unit,
-    target_value: m.target_value ? Number(m.target_value) : null,
-    current_value: 0,
-  }))
 }
 
 export function diffDelta(current: number, previous: number): number {

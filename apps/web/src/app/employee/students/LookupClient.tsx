@@ -265,11 +265,12 @@ function HistoryList({ rows }: { rows: AttendanceHistoryRow[] }) {
             open={isOpen}
             onClick={() => setOpenDays((prev) => {
               const next = new Set(prev)
-              isOpen ? next.delete(fullDayKey) : next.add(fullDayKey)
+              if (isOpen) next.delete(fullDayKey)
+              else next.add(fullDayKey)
               return next
             })}
           />
-          {isOpen && dayRows.map((h, i) => (
+          {isOpen && dayRows.map((h) => (
             <div key={h.id} style={{ borderTop: '1px solid var(--border-subtle)', paddingLeft: 10 }}>
               <HistoryRow h={h} showDate={false} />
             </div>
@@ -299,7 +300,8 @@ function HistoryList({ rows }: { rows: AttendanceHistoryRow[] }) {
             open={isOpen}
             onClick={() => setOpenMonths((prev) => {
               const next = new Set(prev)
-              isOpen ? next.delete(monthKey) : next.add(monthKey)
+              if (isOpen) next.delete(monthKey)
+              else next.add(monthKey)
               return next
             })}
           />
@@ -324,7 +326,8 @@ function HistoryList({ rows }: { rows: AttendanceHistoryRow[] }) {
               open={isOpen}
               onClick={() => setOpenYears((prev) => {
                 const next = new Set(prev)
-                isOpen ? next.delete(year) : next.add(year)
+                if (isOpen) next.delete(year)
+                else next.add(year)
                 return next
               })}
             />
@@ -890,12 +893,6 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans 
     const wantedId = searchParams.get('studentId')
     return wantedId ? students.find((s) => s.id === wantedId) ?? null : null
   })
-
-  const studentMap = useMemo(() => {
-    const m: Record<string, Student> = {}
-    for (const s of students) m[s.id] = s
-    return m
-  }, [students])
 
   const attMap = useMemo(() => {
     const m: Record<string, CurrentlyIn> = {}

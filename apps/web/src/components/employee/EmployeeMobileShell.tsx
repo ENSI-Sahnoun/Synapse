@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   QrCode, ClipboardText, Users, ShoppingCart, DotsThree,
-  ChartBar, Buildings, Gift, FileText, CalendarBlank,
+  ChartBar, Buildings, CalendarBlank,
   Megaphone, Export, UserCircle, X, Armchair, CaretDown,
 } from '@phosphor-icons/react'
 import { signOutAction } from '@/data/auth/sign-out'

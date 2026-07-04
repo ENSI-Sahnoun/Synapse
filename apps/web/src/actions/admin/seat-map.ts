@@ -26,6 +26,7 @@ export const upsertSeatMapAction = adminActionClient
             width: t.width,
             height: t.height,
             rotation: t.rotation,
+            table_type: t.table_type,
           })),
           { onConflict: 'id', ignoreDuplicates: false },
         )

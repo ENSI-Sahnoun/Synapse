@@ -15,6 +15,7 @@ vi.mock('@/lib/safe-action', () => ({
 
 vi.mock('@/utils/zod-schemas/student', () => ({
   createStudentSchema: { parse: vi.fn() },
+  updateStudentSchema: { omit: vi.fn().mockReturnValue({ parse: vi.fn() }) },
 }))
 
 vi.mock('next/cache', () => ({

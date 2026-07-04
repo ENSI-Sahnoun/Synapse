@@ -13,7 +13,9 @@ export const createPurchaseAction = employeeActionClient
     const supabase = await createSupabaseClient()
 
     const { data, error } = await supabase.rpc('pos_checkout', {
-      p_student_id: student_id ?? null,
+      // database.types.ts says p_student_id: string, but DB fn accepts NULL
+      // (anonymous purchase). Regenerate types once project is linked.
+      p_student_id: (student_id ?? null) as unknown as string,
       p_items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
     })
 

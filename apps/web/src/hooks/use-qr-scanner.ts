@@ -21,6 +21,12 @@ export function useQRScanner(onResult: (result: QRScanResult) => void) {
 
   const startScan = useCallback(async () => {
     if (!videoRef.current) return
+    // Camera requires a secure context (HTTPS or localhost) — otherwise
+    // getUserMedia/canvas readback throws SecurityError.
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setError('Caméra indisponible sur cette connexion (HTTPS requis)')
+      return
+    }
     setError(null)
     setScanning(true)
     try {

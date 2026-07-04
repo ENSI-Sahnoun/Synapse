@@ -117,7 +117,7 @@ export function distributeHorizontally(
   }
 
   // Map back to original order
-  const result = new Array<number>(elements.length)
+  const result = Array.from<number>({ length: elements.length })
   for (let i = 0; i < sorted.length; i++) {
     result[sorted[i].origIdx] = sortedPositions[i]
   }
@@ -142,7 +142,7 @@ export function distributeVertically(
     sortedPositions.push(sortedPositions[i - 1] + sorted[i - 1].e.height + gap)
   }
 
-  const result = new Array<number>(elements.length)
+  const result = Array.from<number>({ length: elements.length })
   for (let i = 0; i < sorted.length; i++) {
     result[sorted[i].origIdx] = sortedPositions[i]
   }

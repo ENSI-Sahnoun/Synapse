@@ -417,18 +417,24 @@ export type Database = {
       product_categories: {
         Row: {
           created_at: string
+          emoji: string | null
           id: string
           name: string
+          sort_order: number
         }
         Insert: {
           created_at?: string
+          emoji?: string | null
           id?: string
           name: string
+          sort_order?: number
         }
         Update: {
           created_at?: string
+          emoji?: string | null
           id?: string
           name?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -444,6 +450,7 @@ export type Database = {
           is_active: boolean
           name: string
           price_dt: number
+          sort_order: number
           stock_quantity: number
           supplier: string | null
         }
@@ -458,6 +465,7 @@ export type Database = {
           is_active?: boolean
           name: string
           price_dt: number
+          sort_order?: number
           stock_quantity?: number
           supplier?: string | null
         }
@@ -472,6 +480,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           price_dt?: number
+          sort_order?: number
           stock_quantity?: number
           supplier?: string | null
         }
@@ -488,6 +497,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          credentials_set: boolean
           full_name: string
           id: string
           is_archived: boolean
@@ -502,6 +512,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          credentials_set?: boolean
           full_name?: string
           id: string
           is_archived?: boolean
@@ -516,6 +527,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          credentials_set?: boolean
           full_name?: string
           id?: string
           is_archived?: boolean
@@ -988,6 +1000,7 @@ export type Database = {
           room_id: string
           rotation: number
           status: string
+          table_type: string | null
           width: number
         }
         Insert: {
@@ -1000,6 +1013,7 @@ export type Database = {
           room_id: string
           rotation?: number
           status?: string
+          table_type?: string | null
           width?: number
         }
         Update: {
@@ -1012,6 +1026,7 @@ export type Database = {
           room_id?: string
           rotation?: number
           status?: string
+          table_type?: string | null
           width?: number
         }
         Relationships: [

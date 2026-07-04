@@ -9,6 +9,26 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// Storage access throws SecurityError in some browsers (Firefox with cookies
+// blocked, private mode, iframe contexts) — never let that crash the app.
+function storageGet(storage: 'local' | 'session', key: string): string | null {
+  try {
+    return (storage === 'local' ? window.localStorage : window.sessionStorage).getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function storageSet(storage: 'local' | 'session', key: string, value: string | null) {
+  try {
+    const s = storage === 'local' ? window.localStorage : window.sessionStorage;
+    if (value === null) s.removeItem(key);
+    else s.setItem(key, value);
+  } catch {
+    // ignore — feature degrades gracefully
+  }
+}
+
 function isMobile() {
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 }
@@ -25,7 +45,7 @@ function isStandalone() {
 }
 
 export function markPwaInstallTrigger() {
-  sessionStorage.setItem(TRIGGER_KEY, '1');
+  storageSet('session', TRIGGER_KEY, '1');
 }
 
 export function usePwaInstall() {
@@ -34,10 +54,10 @@ export function usePwaInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    if (localStorage.getItem(DISMISSED_KEY)) return;
+    if (storageGet('local', DISMISSED_KEY)) return;
     if (isStandalone()) return;
     if (!isMobile()) return;
-    if (!sessionStorage.getItem(TRIGGER_KEY)) return;
+    if (!storageGet('session', TRIGGER_KEY)) return;
 
     if (isIos()) {
       setPlatform('ios');
@@ -48,7 +68,7 @@ export function usePwaInstall() {
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       clearTimeout(fallbackTimer);
-      if (localStorage.getItem(DISMISSED_KEY)) return;
+      if (storageGet('local', DISMISSED_KEY)) return;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setPlatform('android');
       setOpen(true);
@@ -63,7 +83,7 @@ export function usePwaInstall() {
     }, 2500);
 
     const onInstalled = () => {
-      localStorage.setItem(DISMISSED_KEY, '1');
+      storageSet('local', DISMISSED_KEY, '1');
       setOpen(false);
     };
     window.addEventListener('appinstalled', onInstalled);
@@ -76,17 +96,17 @@ export function usePwaInstall() {
   }, []);
 
   function dismiss() {
-    localStorage.setItem(DISMISSED_KEY, '1');
-    sessionStorage.removeItem(TRIGGER_KEY);
+    storageSet('local', DISMISSED_KEY, '1');
+    storageSet('session', TRIGGER_KEY, null);
     setOpen(false);
   }
 
   async function install() {
-    sessionStorage.removeItem(TRIGGER_KEY);
+    storageSet('session', TRIGGER_KEY, null);
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    localStorage.setItem(DISMISSED_KEY, '1');
+    storageSet('local', DISMISSED_KEY, '1');
     setDeferredPrompt(null);
     setOpen(false);
     return outcome;

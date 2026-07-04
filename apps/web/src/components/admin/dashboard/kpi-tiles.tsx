@@ -3,18 +3,23 @@ import type { OverviewKpis } from '@/data/admin/analytics/overview'
 
 type Props = { kpis: OverviewKpis }
 
-function DeltaBadge({ value, unit }: { value: number; unit: 'DT' | 'count' }) {
-  const positive = value >= 0
+function DeltaBadge({ value, unit, invert = false }: { value: number; unit: 'DT' | 'count'; invert?: boolean }) {
+  if (value === 0) {
+    return <span className="text-xs font-medium text-muted-foreground">–</span>
+  }
+  const up = value > 0
+  // invert: for metrics where an increase is bad (e.g. expenses), color it red on the way up.
+  const good = invert ? !up : up
   return (
-    <span className={`text-xs font-medium ${positive ? 'text-green-600' : 'text-red-600'}`}>
-      {positive ? '▲' : '▼'} {Math.abs(value).toFixed(unit === 'DT' ? 3 : 0)}
+    <span className={`text-xs font-medium ${good ? 'text-green-600' : 'text-red-600'}`}>
+      {up ? '▲' : '▼'} {Math.abs(value).toFixed(unit === 'DT' ? 3 : 0)}
       {unit === 'DT' ? ' DT' : ''}
     </span>
   )
 }
 
 export function KpiTiles({ kpis }: Props) {
-  const tiles: Array<{ label: string; value: string; delta: number; unit: 'DT' | 'count' }> = [
+  const tiles: Array<{ label: string; value: string; delta: number; unit: 'DT' | 'count'; invert?: boolean }> = [
     { label: 'Bénéfice net', value: `${kpis.netProfit.toFixed(3)} DT`, delta: kpis.netProfitDelta, unit: 'DT' },
     {
       label: 'Revenus totaux',
@@ -40,7 +45,7 @@ export function KpiTiles({ kpis }: Props) {
       delta: kpis.newStudentsDelta,
       unit: 'count',
     },
-    { label: 'Dépenses', value: `${kpis.expenses.toFixed(3)} DT`, delta: kpis.expensesDelta, unit: 'DT' },
+    { label: 'Dépenses', value: `${kpis.expenses.toFixed(3)} DT`, delta: kpis.expensesDelta, unit: 'DT', invert: true },
   ]
 
   return (
@@ -52,7 +57,7 @@ export function KpiTiles({ kpis }: Props) {
           </CardHeader>
           <CardContent className="space-y-1">
             <p className="text-xl font-bold">{t.value}</p>
-            <DeltaBadge value={t.delta} unit={t.unit} />
+            <DeltaBadge value={t.delta} unit={t.unit} invert={t.invert} />
           </CardContent>
         </Card>
       ))}

@@ -5,6 +5,7 @@ import { Stage, Layer, Rect, Text, Group } from 'react-konva'
 import { ArrowsOut, X } from '@phosphor-icons/react'
 import { createClient } from '@/supabase-clients/client'
 import { CapacityBadge } from './CapacityBadge'
+import { DoorGlyph } from './TableToken'
 import type { RoomTable, Seat } from '@/data/admin/seat-map'
 import type { Room } from '@/data/admin/rooms'
 
@@ -52,6 +53,10 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
   const [tables, setTables] = useState<RoomTable[]>(initialTables)
   const [seats, setSeats] = useState<Seat[]>(initialSeats)
   const [occupantNames, setOccupantNames] = useState<Record<string, string>>({})
+  // Occupied seat ids that actually have an open attendance row. null = not yet
+  // loaded (don't override anything until we know). Occupied seats absent from
+  // this set are stale (owner unknown) and render as vacant.
+  const [attendedSeatIds, setAttendedSeatIds] = useState<Set<string> | null>(null)
   const [hover, setHover] = useState<{ x: number; y: number; name: string } | null>(null)
 
   // The seat plan is laid out on a fixed 900x600 canvas. Inline, the container
@@ -130,22 +135,22 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
       setBox({ w: width, h: height })
       const cap = fullscreen ? 4 : 1
 
-      let scaleNormal: number
-      let scaleRotated: number
+      // Rotation is only ever applied in the student fullscreen layout, where
+      // fitting a landscape room onto a portrait phone is worth it. The inline
+      // (employee) canvas must never rotate — just fit to width.
       if (fullscreen && height) {
-        scaleNormal = Math.min(cap, width / bounds.w, height / bounds.h)
-        scaleRotated = Math.min(cap, width / bounds.h, height / bounds.w)
-      } else {
-        scaleNormal = Math.min(cap, width / bounds.w)
-        scaleRotated = Math.min(cap, width / bounds.h)
-      }
-
-      if (scaleRotated > scaleNormal) {
-        setRotated(true)
-        setScale(scaleRotated)
+        const scaleNormal = Math.min(cap, width / bounds.w, height / bounds.h)
+        const scaleRotated = Math.min(cap, width / bounds.h, height / bounds.w)
+        if (scaleRotated > scaleNormal) {
+          setRotated(true)
+          setScale(scaleRotated)
+        } else {
+          setRotated(false)
+          setScale(scaleNormal)
+        }
       } else {
         setRotated(false)
-        setScale(scaleNormal)
+        setScale(Math.min(cap, width / bounds.w))
       }
     }
 
@@ -175,6 +180,7 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
     async function load() {
       const names: Record<string, string> = {}
 
+      const attended = new Set<string>()
       if (occupiedSeatIds.length > 0) {
         const { data } = await supabase
           .from('attendance')
@@ -182,10 +188,12 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
           .in('seat_id', occupiedSeatIds)
           .is('checked_out_at', null)
         for (const row of data ?? []) {
+          if (row.seat_id) attended.add(row.seat_id)
           const name = (row.profiles as unknown as { full_name: string | null } | null)?.full_name
           if (row.seat_id && name) names[row.seat_id] = name
         }
       }
+      setAttendedSeatIds(attended)
 
       if (reservedSeatIds.length > 0) {
         const { data } = await supabase
@@ -203,7 +211,7 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
     }
 
     if (occupiedSeatIds.length > 0 || reservedSeatIds.length > 0) load()
-    else setOccupantNames({})
+    else { setOccupantNames({}); setAttendedSeatIds(new Set()) }
   }, [seats])
 
   useEffect(() => {
@@ -303,9 +311,7 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
     <div
       ref={containerRef}
       className="relative overflow-hidden rounded-lg border bg-slate-50 w-full"
-      style={{
-        ...(fullscreen ? { height: '100%', minHeight: 0, touchAction: 'none' } : { height: (rotated ? bounds.w : bounds.h) * scale }),
-      }}
+      style={fullscreen ? { height: '100%', minHeight: 0, touchAction: 'none' } : { height: (rotated ? bounds.w : bounds.h) * scale }}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onWheel={onWheel}
@@ -366,6 +372,13 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
               const lx = -w / 2
               const ly = -h / 2
               const LEG = 8
+              if (table.table_type === 'door') {
+                return (
+                  <Group key={table.id} x={table.position_x} y={table.position_y} rotation={table.rotation} listening={false}>
+                    <DoorGlyph width={w} />
+                  </Group>
+                )
+              }
               const fill = TABLE_FILL[table.status] ?? '#fde8c8'
               const stroke = TABLE_STROKE[table.status] ?? '#a16207'
               return (
@@ -386,7 +399,12 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
             {seats.map((seat) => {
               const isClickable = isSeatClickable(seat)
               const isMine = seat.id === highlightSeatId
-              const effectiveStatus = isRoomClosed && mode === 'student' ? 'out_of_service' : seat.status
+              // A seat marked occupied but with no open attendance (once loaded)
+              // has an unknown owner — render it vacant rather than anonymous.
+              const staleOccupied =
+                seat.status === 'occupied' && attendedSeatIds !== null && !attendedSeatIds.has(seat.id)
+              const baseStatus = staleOccupied ? 'free' : seat.status
+              const effectiveStatus = isRoomClosed && mode === 'student' ? 'out_of_service' : baseStatus
               const fill = isMine ? '#22c55e' : (SEAT_FILL[effectiveStatus] ?? SEAT_FILL.free)
               const opacity = effectiveStatus === 'out_of_service' && !isMine ? 0.55 : 1
               return (

@@ -1,26 +1,51 @@
 'use client';
-import { Email } from '@/components/Auth/Email';
 import { EmailAndPassword } from '@/components/Auth/EmailAndPassword';
-import { EmailConfirmationPendingCard } from '@/components/Auth/EmailConfirmationPendingCard';
+import { QrLoginPanel } from '@/components/Auth/QrLoginPanel';
 import { RedirectingPleaseWaitCard } from '@/components/Auth/RedirectingPleaseWaitCard';
 import { RenderProviders } from '@/components/Auth/RenderProviders';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  signInWithMagicLinkAction,
   signInWithPasswordAction,
   signInWithProviderAction,
 } from '@/data/auth/auth';
 import { useAction } from 'next-safe-action/hooks';
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { markPwaInstallTrigger } from '@/components/pwa/usePwaInstall';
+
+/** QR-dot cluster — echoes the student QR card on the brand panel. */
+function QrMotif() {
+  const cells = [
+    1, 1, 1, 0, 1, 0, 1,
+    1, 0, 1, 0, 0, 1, 0,
+    1, 1, 1, 0, 1, 0, 1,
+    0, 0, 0, 0, 0, 1, 0,
+    1, 0, 1, 0, 1, 1, 1,
+    0, 1, 0, 0, 1, 0, 1,
+    1, 0, 1, 0, 1, 1, 1,
+  ];
+  return (
+    <div
+      aria-hidden
+      className="grid gap-1.5"
+      style={{ gridTemplateColumns: 'repeat(7, 10px)' }}
+    >
+      {cells.map((on, i) => (
+        <span
+          key={i}
+          className="h-2.5 w-2.5 rounded-[2px]"
+          style={{
+            background: on
+              ? 'var(--synapse-orange-400)'
+              : 'rgba(255,255,255,0.08)',
+            opacity: on ? 0.9 : 1,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function Login({
   next,
@@ -29,63 +54,32 @@ export function Login({
   next?: string;
   nextActionType?: string;
 }) {
-  const [emailSentSuccessMessage, setEmailSentSuccessMessage] = useState<
-    string | null
-  >(null);
   const [redirectInProgress, setRedirectInProgress] = useState(false);
   const toastRef = useRef<string | number | undefined>(undefined);
 
-  const { execute: executeMagicLink, status: magicLinkStatus } = useAction(
-    signInWithMagicLinkAction,
-    {
-      onExecute: () => {
-        toastRef.current = toast.loading('Sending magic link...');
-      },
-      onSuccess: () => {
-        toast.success('A magic link has been sent to your email!', {
-          id: toastRef.current,
-        });
-        toastRef.current = undefined;
-        setEmailSentSuccessMessage('A magic link has been sent to your email!');
-      },
-      onError: (error) => {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : `Send magic link failed ${String(error)}`;
-        toast.error(errorMessage, {
-          id: toastRef.current,
-        });
-        toastRef.current = undefined;
-      },
-    }
-  );
+  const goTo = (fallback: string) => {
+    setRedirectInProgress(true);
+    markPwaInstallTrigger();
+    window.location.href = next ? decodeURIComponent(next) : fallback;
+  };
 
   const { execute: executePassword, status: passwordStatus } = useAction(
     signInWithPasswordAction,
     {
       onExecute: () => {
-        toastRef.current = toast.loading('Logging in...');
+        toastRef.current = toast.loading('Connexion...');
       },
       onSuccess: (payload) => {
-        toast.success('Logged in!', {
-          id: toastRef.current,
-        });
+        toast.success('Connecté !', { id: toastRef.current });
         toastRef.current = undefined;
-        setRedirectInProgress(true);
-        markPwaInstallTrigger();
-        window.location.href = next
-          ? decodeURIComponent(next)
-          : (payload.data?.redirectTo ?? '/login')
+        goTo(payload.data?.redirectTo ?? '/login');
       },
       onError: (error) => {
         const errorMessage =
           error instanceof Error
             ? error.message
-            : `Sign in account failed ${String(error)}`;
-        toast.error(errorMessage, {
-          id: toastRef.current,
-        });
+            : 'Email ou mot de passe incorrect.';
+        toast.error(errorMessage, { id: toastRef.current });
         toastRef.current = undefined;
       },
     }
@@ -95,111 +89,123 @@ export function Login({
     signInWithProviderAction,
     {
       onExecute: () => {
-        toastRef.current = toast.loading('Requesting login...');
+        toastRef.current = toast.loading('Redirection...');
       },
       onSuccess: (payload) => {
-        toast.success('Redirecting...', {
-          id: toastRef.current,
-        });
+        toast.success('Redirection...', { id: toastRef.current });
         toastRef.current = undefined;
         window.location.href = payload.data?.url || '/';
       },
       onError: () => {
-        toast.error('Failed to login', {
-          id: toastRef.current,
-        });
+        toast.error('Échec de la connexion', { id: toastRef.current });
         toastRef.current = undefined;
       },
     }
   );
 
-  return (
-    <div
-      data-success={emailSentSuccessMessage}
-      className="container data-success:flex items-center data-success:justify-center text-left max-w-lg mx-auto overflow-auto data-success:h-full min-h-[470px]"
-    >
-      {emailSentSuccessMessage ? (
-        <EmailConfirmationPendingCard
-          type={'login'}
-          heading={'Confirmation Link Sent'}
-          message={emailSentSuccessMessage}
-          resetSuccessMessage={setEmailSentSuccessMessage}
-        />
-      ) : redirectInProgress ? (
+  if (redirectInProgress) {
+    return (
+      <div className="container flex h-full min-h-[470px] max-w-lg items-center justify-center">
         <RedirectingPleaseWaitCard
-          message="Please wait while we redirect you to your dashboard."
-          heading="Redirecting to Dashboard"
+          message="Veuillez patienter pendant la redirection vers votre espace."
+          heading="Redirection en cours"
         />
-      ) : (
-        <div className="space-y-8 bg-background p-6 rounded-lg shadow-sm dark:border">
-          <Tabs defaultValue="password" className="md:min-w-[400px]">
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-4xl">
+      <div
+        className="flex flex-col overflow-hidden rounded-2xl shadow-lg md:min-h-[540px] md:flex-row"
+        style={{ background: 'var(--bg-surface)' }}
+      >
+        {/* Brand panel */}
+        <div
+          className="flex items-center justify-between gap-4 p-6 md:w-[42%] md:flex-col md:items-start md:justify-between md:p-10"
+          style={{ background: 'var(--synapse-stone-900)' }}
+        >
+          <div>
+            <p
+              className="text-2xl tracking-tight md:text-3xl"
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                color: 'var(--synapse-cream-100)',
+              }}
+            >
+              Synapse
+            </p>
+            <p
+              className="mt-1 hidden text-sm leading-relaxed md:block md:max-w-[24ch]"
+              style={{ color: 'var(--synapse-stone-400)' }}
+            >
+              Votre espace d'étude. Scannez votre carte ou connectez-vous pour
+              continuer.
+            </p>
+          </div>
+          <div className="shrink-0 md:self-end">
+            <QrMotif />
+          </div>
+        </div>
+
+        {/* Auth panel */}
+        <div className="flex-1 p-6 md:p-10">
+          <h1
+            className="text-xl"
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+          >
+            Connexion
+          </h1>
+          <p className="mt-1 mb-5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            Heureux de vous revoir.
+          </p>
+
+          <Tabs defaultValue="password">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="password">Password</TabsTrigger>
-              <TabsTrigger value="magic-link">Magic Link</TabsTrigger>
-              <TabsTrigger value="social-login">Social Login</TabsTrigger>
+              <TabsTrigger value="password">Mot de passe</TabsTrigger>
+              <TabsTrigger value="qr">Carte QR</TabsTrigger>
+              <TabsTrigger value="social">Social</TabsTrigger>
             </TabsList>
-            <TabsContent value="password">
-              <Card className="border-none shadow-none">
-                <CardHeader className="py-6 px-0">
-                  <CardTitle>Login to NextBase</CardTitle>
-                  <CardDescription>
-                    Login with the account you used to signup.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 p-0">
-                  <EmailAndPassword
-                    isLoading={passwordStatus === 'executing'}
-                    onSubmit={(data) => {
-                      executePassword({
-                        email: data.email,
-                        password: data.password,
-                      });
-                    }}
-                    view="sign-in"
-                  />
-                </CardContent>
-              </Card>
+
+            <TabsContent value="password" className="pt-5">
+              <EmailAndPassword
+                isLoading={passwordStatus === 'executing'}
+                onSubmit={(data) => {
+                  executePassword({
+                    email: data.email,
+                    password: data.password,
+                  });
+                }}
+                view="sign-in"
+              />
+              <p className="mt-4 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                <Link
+                  href="/forgot-password"
+                  className="font-medium hover:underline"
+                  style={{ color: 'var(--text-brand)' }}
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </p>
             </TabsContent>
 
-            <TabsContent value="magic-link">
-              <Card className="border-none shadow-none">
-                <CardHeader className="py-6 px-0">
-                  <CardTitle>Login to NextBase</CardTitle>
-                  <CardDescription>
-                    Login with magic link we will send to your email.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 p-0">
-                  <Email
-                    onSubmit={(email) => executeMagicLink({ email, next })}
-                    isLoading={magicLinkStatus === 'executing'}
-                    view="sign-in"
-                  />
-                </CardContent>
-              </Card>
+            <TabsContent value="qr" className="pt-5">
+              <QrLoginPanel onSuccess={(redirectTo) => goTo(redirectTo)} />
             </TabsContent>
-            <TabsContent value="social-login">
-              <Card className="border-none shadow-none">
-                <CardHeader className="py-6 px-0">
-                  <CardTitle>Login to NextBase</CardTitle>
-                  <CardDescription>
-                    Login with your social account.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 p-0">
-                  <RenderProviders
-                    providers={['google', 'github', 'twitter']}
-                    isLoading={providerStatus === 'executing'}
-                    onProviderLoginRequested={(
-                      provider: 'google' | 'github' | 'twitter'
-                    ) => executeProvider({ provider, next })}
-                  />
-                </CardContent>
-              </Card>
+
+            <TabsContent value="social" className="pt-5">
+              <RenderProviders
+                providers={['google', 'github', 'twitter']}
+                isLoading={providerStatus === 'executing'}
+                onProviderLoginRequested={(
+                  provider: 'google' | 'github' | 'twitter'
+                ) => executeProvider({ provider, next })}
+              />
             </TabsContent>
           </Tabs>
         </div>
-      )}
+      </div>
     </div>
   );
 }

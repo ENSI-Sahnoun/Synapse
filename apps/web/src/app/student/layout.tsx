@@ -6,6 +6,7 @@ import { signOutAction } from '@/data/auth/sign-out'
 import { getMyNotifications, getMyUnreadCount } from '@/data/notifications/list'
 import { StudentNotificationSheet } from '@/components/notifications/StudentNotificationSheet'
 import { PullToRefresh } from '@/components/PullToRefresh'
+import { SecureAccountBanner } from '@/components/student/SecureAccountBanner'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseClient()
@@ -14,7 +15,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name')
+    .select('role, full_name, credentials_set')
     .eq('id', user.id)
     .single()
 
@@ -81,6 +82,8 @@ export default async function StudentLayout({ children }: { children: React.Reac
           </form>
         </div>
       </header>
+
+      {!profile.credentials_set && <SecureAccountBanner />}
 
       {/* Page content */}
       <main className="flex-1 px-4 pt-4 pb-24">

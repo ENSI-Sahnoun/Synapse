@@ -21,6 +21,7 @@ export function usePushSubscription() {
     navigator.serviceWorker.ready
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => setSubscribed(!!sub))
+      .catch(() => setSubscribed(false)) // push service unavailable (common in dev) — treat as not subscribed
   }, [])
 
   const subscribe = useCallback(async () => {

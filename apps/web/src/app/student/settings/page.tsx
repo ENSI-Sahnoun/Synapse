@@ -18,6 +18,12 @@ export default async function StudentSettingsPage() {
 
   const meta = user?.user_metadata ?? {}
 
+  const { data: credRow } = await supabase
+    .from('profiles')
+    .select('credentials_set')
+    .eq('id', user?.id ?? '')
+    .maybeSingle()
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
@@ -48,6 +54,7 @@ export default async function StudentSettingsPage() {
         initialPush={meta.push_enabled !== false}
         initialEmailDigest={meta.email_digest === true}
         currentEmail={user?.email ?? ''}
+        credentialsSet={credRow?.credentials_set ?? true}
       />
 
       {/* Sign out */}

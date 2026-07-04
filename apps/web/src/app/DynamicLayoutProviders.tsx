@@ -3,7 +3,6 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { Toaster as SonnerToaster } from 'sonner';
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import { InstallPromptModal } from '@/components/pwa/InstallPromptModal';
-import { PushPromptModal } from '@/components/notifications/PushPromptModal';
 
 export function DynamicLayoutProviders({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);

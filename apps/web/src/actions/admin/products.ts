@@ -1,7 +1,7 @@
 'use server'
 
 import { adminActionClient } from '@/lib/safe-action'
-import { createProductSchema, updateProductSchema, productIdSchema } from '@/utils/zod-schemas/product'
+import { createProductSchema, updateProductSchema, productIdSchema, reorderProductsSchema } from '@/utils/zod-schemas/product'
 import { restockProductSchema } from '@/utils/zod-schemas/restock'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { createSupabaseClient } from '@/supabase-clients/server'
@@ -19,6 +19,19 @@ export const createProductAction = adminActionClient
       actor_id: ctx.userId,
       details: parsedInput,
     })
+    revalidatePath('/admin/products')
+    return { success: true }
+  })
+
+export const reorderProductsAction = adminActionClient
+  .schema(reorderProductsSchema)
+  .action(async ({ parsedInput: { ids } }) => {
+    const supabase = createSupabaseAdminClient()
+    // ids arrive in the desired display order; index becomes sort_order.
+    const results = await Promise.all(
+      ids.map((id, index) => supabase.from('products').update({ sort_order: index }).eq('id', id))
+    )
+    if (results.some((r) => r.error)) throw new Error('Erreur lors du réordonnancement')
     revalidatePath('/admin/products')
     return { success: true }
   })

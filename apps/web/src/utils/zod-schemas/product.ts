@@ -7,7 +7,7 @@ export const createProductSchema = z.object({
   cost_price: z.coerce.number().min(0, 'Coût invalide').nullable().optional(),
   supplier: z.string().max(100).nullable().optional(),
   barcode: z.preprocess((v) => (v === '' ? null : v), z.string().max(64).nullable().optional()),
-  image_url: z.string().url().nullable().optional(),
+  image_url: z.preprocess((v) => (v === '' ? null : v), z.string().url().nullable().optional()),
 })
 
 export const updateProductSchema = z.object({
@@ -19,10 +19,15 @@ export const updateProductSchema = z.object({
   supplier: z.string().max(100).nullable().optional(),
   barcode: z.preprocess((v) => (v === '' ? null : v), z.string().max(64).nullable().optional()),
   is_active: z.boolean().optional(),
-  image_url: z.string().url().nullable().optional(),
+  image_url: z.preprocess((v) => (v === '' ? null : v), z.string().url().nullable().optional()),
 })
 
 export const productIdSchema = z.object({ id: z.string().uuid() })
+
+// Ordered list of product ids within a category; index becomes sort_order.
+export const reorderProductsSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1),
+})
 
 export type CreateProductInput = z.infer<typeof createProductSchema>
 export type UpdateProductInput = z.infer<typeof updateProductSchema>

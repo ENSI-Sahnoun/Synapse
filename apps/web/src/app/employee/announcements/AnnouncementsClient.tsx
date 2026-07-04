@@ -199,7 +199,7 @@ export function AnnouncementsClient({
         </div>
       )}
 
-      {announcements.map((a, i) => (
+      {announcements.map((a) => (
         <div
           key={a.id}
           style={{

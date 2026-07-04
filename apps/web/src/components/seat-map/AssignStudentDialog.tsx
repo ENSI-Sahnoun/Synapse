@@ -46,7 +46,12 @@ export function AssignStudentDialog({ seat, open, onOpenChange, attendanceId, fr
   const [rooms, setRooms] = useState<RoomOption[]>([])
   const [loadingRooms, setLoadingRooms] = useState(false)
 
-  const isOccupied = seat?.status === 'occupied'
+  // A seat only counts as occupied if it has a real open attendance row.
+  // An 'occupied' seat with no such row is stale (owner unknown) → treat as
+  // vacant. While the occupant is still loading we keep it occupied to avoid a
+  // flash. Deliberate anonymous walk-ins DO have an attendance row (occupant
+  // set, full_name null), so they stay occupied and show "Sans nom".
+  const isOccupied = seat?.status === 'occupied' && (loadingInfo || occupant !== null)
   const isReserved = seat?.status === 'reserved'
 
   useEffect(() => {

@@ -10,7 +10,7 @@ import { z } from 'zod'
 
 export const createStudentAction = employeeActionClient
   .schema(createStudentSchema)
-  .action(async ({ parsedInput, ctx }) => {
+  .action(async ({ parsedInput }) => {
     const { full_name, phone, email, university, study_level } = parsedInput
     const adminSupabase = createSupabaseAdminClient()
 
