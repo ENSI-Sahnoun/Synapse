@@ -6,7 +6,7 @@ export const createProductSchema = z.object({
   price_dt: z.coerce.number().min(0, 'Prix invalide'),
   cost_price: z.coerce.number().min(0, 'Coût invalide').nullable().optional(),
   supplier: z.string().max(100).nullable().optional(),
-  barcode: z.string().max(64).nullable().optional(),
+  barcode: z.preprocess((v) => (v === '' ? null : v), z.string().max(64).nullable().optional()),
   image_url: z.string().url().nullable().optional(),
 })
 
@@ -17,7 +17,7 @@ export const updateProductSchema = z.object({
   price_dt: z.coerce.number().min(0).optional(),
   cost_price: z.coerce.number().min(0).nullable().optional(),
   supplier: z.string().max(100).nullable().optional(),
-  barcode: z.string().max(64).nullable().optional(),
+  barcode: z.preprocess((v) => (v === '' ? null : v), z.string().max(64).nullable().optional()),
   is_active: z.boolean().optional(),
   image_url: z.string().url().nullable().optional(),
 })

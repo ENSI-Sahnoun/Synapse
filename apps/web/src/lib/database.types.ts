@@ -1019,6 +1019,13 @@ export type Database = {
       current_user_role: { Args: never; Returns: string }
       default_sales_account_category_id: { Args: never; Returns: string }
       expire_stale_reservations: { Args: never; Returns: undefined }
+      pos_checkout: {
+        Args: {
+          p_student_id: string | null
+          p_items: Json
+        }
+        Returns: Json
+      }
       pos_restock: {
         Args: {
           p_product_id: string

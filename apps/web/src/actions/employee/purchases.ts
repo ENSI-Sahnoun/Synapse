@@ -12,7 +12,7 @@ export const createPurchaseAction = employeeActionClient
     const { student_id, items } = parsedInput
     const supabase = await createSupabaseClient()
 
-    const { data, error } = await supabase.rpc('pos_checkout' as any, {
+    const { data, error } = await supabase.rpc('pos_checkout', {
       p_student_id: student_id ?? null,
       p_items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
     })
