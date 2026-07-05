@@ -5,7 +5,7 @@ import { useAction } from 'next-safe-action/hooks'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Armchair, ArrowCounterClockwise } from '@phosphor-icons/react'
-import { moveSelfToDivers, undoMoveSelfToDivers } from '@/actions/student/seat-swap'
+import { moveSelfToDivers, undoMoveSelfToDivers, checkOutSelf } from '@/actions/student/seat-swap'
 import type { MyPresence } from '@/data/student/profile'
 
 const UNDO_WINDOW_MS = 60_000
@@ -44,6 +44,19 @@ export function PresenceBanner({ presence }: { presence: MyPresence }) {
     onError: ({ error }) => {
       toast.error(error.serverError ?? 'Erreur')
       setUndoInfo(null)
+    },
+  })
+
+  const [confirmCheckout, setConfirmCheckout] = useState(false)
+  const { execute: checkOut, status: checkOutStatus } = useAction(checkOutSelf, {
+    onSuccess: () => {
+      toast.success('Sortie enregistrée')
+      setConfirmCheckout(false)
+      router.refresh()
+    },
+    onError: ({ error }) => {
+      toast.error(error.serverError ?? 'Erreur')
+      setConfirmCheckout(false)
     },
   })
 
@@ -98,6 +111,40 @@ export function PresenceBanner({ presence }: { presence: MyPresence }) {
           </button>
         )}
       </div>
+
+      {(presence.status === 'seated' || presence.status === 'divers') && (
+        confirmCheckout ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium flex-1" style={{ color: 'var(--text-secondary)' }}>
+              Confirmer la sortie ?
+            </span>
+            <button
+              onClick={() => setConfirmCheckout(false)}
+              disabled={checkOutStatus === 'executing'}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
+              style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+            >
+              Annuler
+            </button>
+            <button
+              onClick={() => checkOut({})}
+              disabled={checkOutStatus === 'executing'}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+              style={{ background: 'var(--accent-brand)', color: '#fff' }}
+            >
+              Sortir
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmCheckout(true)}
+            className="w-full text-xs font-semibold px-3 py-2 rounded-lg border"
+            style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+          >
+            Terminer ma session
+          </button>
+        )
+      )}
 
       {undoInfo && (
         <button
