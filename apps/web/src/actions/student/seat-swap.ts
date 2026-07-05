@@ -20,6 +20,46 @@ async function getMyOpenAttendance(userId: string) {
   return data
 }
 
+// Student ends their own attendance session — frees their seat if they had one.
+// No id is accepted: the action always resolves the caller's own open
+// attendance from ctx.userId, so a student can only ever check out themselves.
+export const checkOutSelf = studentActionClient
+  .schema(z.object({}))
+  .action(async ({ ctx: { userId } }) => {
+    const attendance = await getMyOpenAttendance(userId)
+    if (!attendance) throw new Error("Vous n'êtes pas enregistré comme présent.")
+
+    const admin = createSupabaseAdminClient()
+
+    let roomId: string | null = null
+    if (attendance.seat_id) {
+      const { data: seat } = await admin
+        .from('seats')
+        .select('room_id')
+        .eq('id', attendance.seat_id)
+        .maybeSingle()
+      roomId = seat?.room_id ?? null
+    }
+
+    const { error } = await admin
+      .from('attendance')
+      .update({ checked_out_at: new Date().toISOString() })
+      .eq('id', attendance.id)
+      .is('checked_out_at', null)
+    if (error) throw new Error(error.message)
+
+    if (attendance.seat_id) {
+      await admin.from('seats').update({ status: 'free' }).eq('id', attendance.seat_id)
+    }
+
+    if (roomId) {
+      revalidatePath(`/employee/rooms/${roomId}/map`)
+      revalidatePath(`/admin/rooms/${roomId}/map`)
+    }
+    revalidatePath('/employee/rooms')
+    return { success: true }
+  })
+
 // Student moves themself to "Divers" — frees their seat if they had one.
 export const moveSelfToDivers = studentActionClient
   .schema(z.object({}))
