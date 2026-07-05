@@ -1,18 +1,19 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { signOutAction } from '@/data/auth/sign-out'
 
 export const dynamic = 'force-dynamic'
 
 export default async function EmployeeProfilePage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, full_name, phone, created_at')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single()
 
   const initials = (profile?.full_name ?? '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()

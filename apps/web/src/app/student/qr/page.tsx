@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { FullscreenButton } from '@/components/student/FullscreenButton'
 import { SecretCodeReveal } from '@/components/student/SecretCodeReveal'
@@ -10,16 +11,13 @@ export const metadata = {
 
 export default async function StudentQrPage() {
   const supabase = await createSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
 
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('full_name, qr_token, student_number')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single()
 
   if (error || !profile) redirect('/login')

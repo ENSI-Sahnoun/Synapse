@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { format, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AttendanceClient } from './AttendanceClient'
@@ -9,8 +10,7 @@ export const revalidate = 0
 
 export default async function EmployeeAttendancePage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!(await getCachedLoggedInUserIdOrNull())) redirect('/login')
 
   const todayStr = startOfDay(new Date()).toISOString()
 

@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { startOfDay } from 'date-fns'
 import { Suspense } from 'react'
 import { LookupClient } from './LookupClient'
@@ -8,8 +9,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function EmployeeStudentsPage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!(await getCachedLoggedInUserIdOrNull())) redirect('/login')
 
   const [studentsResult, openAttResult, plansResult, roomsResult] = await Promise.all([
     supabase

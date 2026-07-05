@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { startOfDay } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
@@ -18,8 +19,7 @@ function StatCard({ label, value, color }: { label: string; value: string | numb
 
 export default async function ReportsPage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!(await getCachedLoggedInUserIdOrNull())) redirect('/login')
 
   const todayISO = startOfDay(new Date()).toISOString()
 

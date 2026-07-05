@@ -1,13 +1,14 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { AnnouncementsClient } from './AnnouncementsClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AnnouncementsPage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
 
   const { data: announcements } = await (supabase.from('announcements' as never) as ReturnType<typeof supabase.from>)
     .select('id, title, body, pinned, created_at, created_by')
@@ -26,7 +27,7 @@ export default async function AnnouncementsPage() {
     <div className="p-4 pb-24">
       <AnnouncementsClient
         announcements={announcements ?? []}
-        currentUserId={user.id}
+        currentUserId={userId}
         recipients={(profiles ?? []) as { id: string; full_name: string | null }[]}
       />
     </div>

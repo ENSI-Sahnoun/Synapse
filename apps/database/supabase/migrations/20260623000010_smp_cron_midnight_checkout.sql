@@ -1,4 +1,13 @@
-CREATE EXTENSION IF NOT EXISTS pg_cron;
+-- Guard the create: Supabase's local Postgres image ships pg_cron pre-installed,
+-- and re-issuing CREATE EXTENSION triggers an update path that fails with
+-- 2BP01 (dependent privileges) on `supabase start`/`db reset`. Skip entirely
+-- when already present. No behavior change for prod.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    CREATE EXTENSION pg_cron;
+  END IF;
+END $$;
 
 SELECT cron.schedule(
   'midnight-checkout',

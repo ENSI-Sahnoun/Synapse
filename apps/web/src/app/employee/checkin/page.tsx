@@ -12,8 +12,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function EmployeeCheckinPage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!(await getCachedLoggedInUserIdOrNull())) redirect('/login')
 
   const todayISO = startOfDay(new Date()).toISOString()
 

@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PrintButton } from '@/components/employee/PrintButton'
 
@@ -11,8 +12,7 @@ export default async function AdminPrintQrPage({
   const { id } = await params
   const supabase = await createSupabaseClient()
 
-  const { data: viewer } = await supabase.auth.getUser()
-  if (!viewer.user) redirect('/login')
+  if (!(await getCachedLoggedInUserIdOrNull())) redirect('/login')
 
   const { data: student } = await supabase
     .from('profiles')

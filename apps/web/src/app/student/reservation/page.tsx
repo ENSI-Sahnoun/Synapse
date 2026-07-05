@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { ReservationSeatMap } from './ReservationSeatMap'
 import { ActiveReservationBanner } from './ActiveReservationBanner'
 import { getMyPresence } from '@/data/student/profile'
@@ -9,17 +10,15 @@ export const dynamic = 'force-dynamic'
 export default async function ReservationPage() {
   const supabase = await createSupabaseClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
 
   // Check active subscription
   const today = new Date().toISOString().split('T')[0]
   const { data: subscription } = await supabase
     .from('subscriptions')
     .select('end_date')
-    .eq('student_id', user.id)
+    .eq('student_id', userId)
     .gte('end_date', today)
     .limit(1)
     .maybeSingle()
@@ -28,7 +27,7 @@ export default async function ReservationPage() {
   const { data: activeReservation } = await supabase
     .from('reservations')
     .select('id, seat_id, expires_at, queue_position, seats(label)')
-    .eq('student_id', user.id)
+    .eq('student_id', userId)
     .eq('status', 'active')
     .maybeSingle()
 

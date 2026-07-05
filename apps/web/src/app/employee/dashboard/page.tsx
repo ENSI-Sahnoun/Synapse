@@ -2,20 +2,21 @@ import { getEmployeeDashboardData } from '@/data/employee/dashboard'
 import { EmployeeKpiCards } from '@/components/employee/dashboard/kpi-cards'
 import { QuickLinks } from '@/components/employee/dashboard/quick-links'
 import { createSupabaseClient as createSupabaseServerClient } from '@/supabase-clients/server'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function EmployeeDashboardPage() {
   const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name')
-    .eq('id', user!.id)
+    .eq('id', userId)
     .single()
 
   const data = await getEmployeeDashboardData()

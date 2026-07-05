@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,12 +13,12 @@ function formatShiftTime(iso: string) {
 
 export default async function ShiftsPage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
 
   const { data: shifts } = await (supabase.from('shifts' as never) as any)
     .select('id, start_time, end_time, role, notes')
-    .eq('employee_id', user.id)
+    .eq('employee_id', userId)
     .order('start_time', { ascending: false })
     .limit(20)
 

@@ -1,0 +1,95 @@
+<h2>Hub « Récompenses » — quelle structure ?</h2>
+<p class="subtitle">Page unique fusionnant classement + points fidélité. Cliquez pour choisir.</p>
+
+<style>
+  .wf { font-size: 11px; border-radius: 12px; overflow: hidden; border: 1px solid #e5dcc9; background:#faf6ec; padding:10px; display:flex; flex-direction:column; gap:8px; min-height:380px;}
+  .wf .hero { background: linear-gradient(135deg,#2f9e5f,#237a49); color:#fff; border-radius:10px; padding:12px; text-align:center;}
+  .wf .hero .big { font-size:26px; font-weight:800; }
+  .wf .tabs { display:flex; gap:6px; }
+  .wf .tab { flex:1; text-align:center; padding:6px 4px; border-radius:999px; background:#fff; border:1px solid #e5dcc9;}
+  .wf .tab.on { background:#2f9e5f; color:#fff; border-color:#2f9e5f;}
+  .wf .box { background:#fff; border:1px solid #e5dcc9; border-radius:10px; padding:10px;}
+  .wf .podium { display:flex; align-items:flex-end; gap:6px; justify-content:center; }
+  .wf .podium div { background:#e9dfc8; border-radius:6px 6px 0 0; width:30%; text-align:center; font-size:14px;}
+  .wf .row { display:flex; justify-content:space-between; font-size:10px; padding:3px 2px; border-bottom:1px dashed #eee;}
+  .wf .chip { background:#e8f5ee; color:#237a49; border-radius:8px; padding:6px; text-align:center; font-weight:700;}
+  .wf .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+  .wf .reward { background:#fff; border:1px solid #e5dcc9; border-radius:10px; padding:8px; text-align:center;}
+  .wf .ring { width:44px;height:44px;border-radius:50%;border:4px solid #2f9e5f;border-right-color:#e5dcc9; margin:0 auto 4px; display:flex;align-items:center;justify-content:center;font-weight:800;}
+  .wf .muted{color:#8a7f6a;}
+</style>
+
+<div class="cards">
+
+  <div class="card" data-choice="tabs" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="wf">
+        <div class="hero">POINTS SYNAPSE<div class="big">1 240 ✦</div><div>compteur animé + niveau</div></div>
+        <div class="tabs"><div class="tab on">🏆 Classement</div><div class="tab">🎁 Récompenses</div><div class="tab">📜 Historique</div></div>
+        <div class="box">
+          <div class="podium"><div style="height:34px">🥈</div><div style="height:50px">🥇</div><div style="height:26px">🥉</div></div>
+          <div class="row"><span>#4 Rania</span><span>38 visites</span></div>
+          <div class="row"><span>#5 Omar</span><span>35 visites</span></div>
+          <div class="chip">Votre position : #7</div>
+        </div>
+        <div class="muted">contenu change selon onglet, transitions glissées</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Héros points + onglets</h3>
+      <p>Carte points en haut (compteur animé), 3 onglets en dessous : Classement / Récompenses / Historique. Compact, un écran, navigation interne.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="scroll" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="wf">
+        <div class="hero">POINTS SYNAPSE<div class="big">1 240 ✦</div></div>
+        <div class="box">
+          <div class="muted">🏆 CLASSEMENT DU MOIS</div>
+          <div class="podium"><div style="height:30px">🥈</div><div style="height:44px">🥇</div><div style="height:22px">🥉</div></div>
+          <div class="chip">Votre position : #7</div>
+        </div>
+        <div class="grid2">
+          <div class="reward">☕ Café offert<div class="muted">200 pts ✓</div></div>
+          <div class="reward">🎫 Journée<div class="muted">500 pts 🔒</div></div>
+        </div>
+        <div class="box"><div class="muted">📜 HISTORIQUE</div>
+          <div class="row"><span>Abonnement</span><span>+300</span></div>
+          <div class="row"><span>Achat</span><span>+45</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Défilement unique</h3>
+      <p>Tout empilé : points → podium → grille de récompenses → historique. Entrées animées en cascade au scroll. Zéro navigation, tout visible.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="journey" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="wf">
+        <div class="box" style="text-align:center">
+          <div class="ring">7</div>
+          <b>Votre rang · 1 240 ✦</b>
+          <div class="muted">anneau de progression vers prochaine récompense</div>
+        </div>
+        <div class="box">
+          <div class="muted">PROCHAINE RÉCOMPENSE — ☕ à 200 pts</div>
+          <div style="height:8px;background:#e5dcc9;border-radius:99px"><div style="height:8px;width:70%;background:#2f9e5f;border-radius:99px"></div></div>
+        </div>
+        <div class="box">
+          <div class="podium"><div style="height:30px">🥈</div><div style="height:44px">🥇</div><div style="height:22px">🥉</div></div>
+        </div>
+        <div class="grid2">
+          <div class="reward">☕ 200</div><div class="reward">🎫 500</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — « Parcours » orienté progression</h3>
+      <p>Héros = mon statut (rang + points + anneau de progression vers prochaine récompense), puis podium et récompenses. Met l'accent sur la motivation personnelle.</p>
+    </div>
+  </div>
+
+</div>

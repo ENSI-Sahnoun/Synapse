@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { startOfDay } from 'date-fns'
 import { CheckinClient } from '@/app/employee/checkin/CheckinClient'
 
@@ -7,8 +8,7 @@ export const metadata = { title: "Contrôle d'accès — Synapse" }
 
 export default async function AdminCheckinPage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!(await getCachedLoggedInUserIdOrNull())) redirect('/login')
 
   const todayISO = startOfDay(new Date()).toISOString()
 

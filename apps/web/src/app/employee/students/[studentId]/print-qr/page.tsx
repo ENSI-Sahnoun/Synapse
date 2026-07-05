@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PrintButton } from '@/components/employee/PrintButton'
 
@@ -11,13 +12,13 @@ export default async function PrintQrPage({ params }: PrintQrPageProps) {
   const { studentId } = await params
   const supabase = await createSupabaseClient()
 
-  const { data: viewer } = await supabase.auth.getUser()
-  if (!viewer.user) redirect('/login')
+  const viewerId = await getCachedLoggedInUserIdOrNull()
+  if (!viewerId) redirect('/login')
 
   const { data: viewerProfile } = await supabase
     .from('profiles')
     .select('role')
-    .eq('id', viewer.user.id)
+    .eq('id', viewerId)
     .single()
 
   if (!viewerProfile || !['admin', 'employee'].includes(viewerProfile.role)) {
