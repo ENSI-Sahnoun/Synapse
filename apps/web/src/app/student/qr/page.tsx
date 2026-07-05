@@ -58,11 +58,11 @@ export default async function StudentQrPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6">
+    <div className="mx-auto w-full max-w-5xl py-2">
       <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
         {/* Left: the QR + secret code */}
         <div
-          className="flex flex-col items-center justify-center gap-5 rounded-2xl border p-6 text-center"
+          className="flex flex-col items-center justify-center gap-5 rounded-2xl border p-4 sm:p-6 text-center"
           style={{ background: 'var(--synapse-cream-100)', borderColor: 'var(--synapse-cream-300)' }}
         >
           <div>
@@ -74,7 +74,7 @@ export default async function StudentQrPage() {
             </p>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl shadow-lg">
+          <div className="bg-white p-4 rounded-2xl shadow-lg max-w-full">
             <QrCodeImage token={profile.qr_token} size={280} />
           </div>
 

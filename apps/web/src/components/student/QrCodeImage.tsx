@@ -29,7 +29,7 @@ export function QrCodeImage({ token, size = 280 }: QrCodeImageProps) {
       ref={canvasRef}
       width={size}
       height={size}
-      className="rounded-xl shadow-md"
+      className="rounded-xl shadow-md max-w-full h-auto"
       aria-label="Code QR Synapse"
     />
   )
