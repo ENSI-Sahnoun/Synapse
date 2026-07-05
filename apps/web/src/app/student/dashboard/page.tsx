@@ -1,4 +1,4 @@
-import { createSupabaseClient } from '@/supabase-clients/server'
+import { getCachedLoggedInUserId } from '@/rsc-data/supabase'
 import { getMyProfile, getMyActiveSubscription, getMyPresence } from '@/data/student/profile'
 import { getMyImportantNotifications } from '@/data/notifications/list'
 import { getMyLeaderboardRank, getLeaderboardSettings, getLeaderboardConfig } from '@/data/student/leaderboard'
@@ -12,8 +12,7 @@ import { PresenceBanner } from './PresenceBanner'
 import { GamificationTeaser } from '@/components/student/GamificationTeaser'
 
 export default async function StudentDashboardPage() {
-  const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const userId = await getCachedLoggedInUserId()
 
   const [profile, activeSubscription, presence, importantNotifications, lbMyRanks, lbSettings, lbConfig, balance] =
     await Promise.all([
@@ -24,7 +23,7 @@ export default async function StudentDashboardPage() {
       getMyLeaderboardRank(),
       getLeaderboardSettings(),
       getLeaderboardConfig(),
-      getStudentLoyaltyBalance(user!.id),
+      getStudentLoyaltyBalance(userId),
     ])
 
   const enabledCats = lbConfig.filter((c) => c.enabled).sort((a, b) => a.sort_order - b.sort_order)

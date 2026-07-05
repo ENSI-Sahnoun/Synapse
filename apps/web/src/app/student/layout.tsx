@@ -1,4 +1,5 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -9,14 +10,14 @@ import { PullToRefresh } from '@/components/PullToRefresh'
 import { SecureAccountBanner } from '@/components/student/SecureAccountBanner'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
 
+  const supabase = await createSupabaseClient()
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, full_name, credentials_set')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single()
 
   if (profile?.role !== 'student') redirect('/login')

@@ -1,12 +1,15 @@
 import { getMyProfile } from '@/data/student/profile'
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { getCachedLoggedInUserClaims } from '@/rsc-data/supabase'
 import { signOutAction } from '@/data/auth/sign-out'
 import { SignOut } from '@phosphor-icons/react/dist/ssr'
 import { StudentSettingsClient } from './StudentSettingsClient'
 
 export default async function StudentSettingsPage() {
-  const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const claims = await getCachedLoggedInUserClaims()
+  const userId = claims.sub
+  const email = typeof claims.email === 'string' ? claims.email : ''
+  const meta = (claims.user_metadata ?? {}) as Record<string, unknown>
   const profile = await getMyProfile()
 
   const initials = profile.full_name
@@ -16,12 +19,11 @@ export default async function StudentSettingsPage() {
     .join('')
     .toUpperCase() ?? '?'
 
-  const meta = user?.user_metadata ?? {}
-
+  const supabase = await createSupabaseClient()
   const { data: credRow } = await supabase
     .from('profiles')
     .select('credentials_set, leaderboard_opt_out')
-    .eq('id', user?.id ?? '')
+    .eq('id', userId)
     .maybeSingle()
 
   return (
@@ -44,7 +46,7 @@ export default async function StudentSettingsPage() {
         <div className="flex-1 min-w-0">
           <p className="font-bold text-base truncate">{profile.full_name}</p>
           <p className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>
-            {user?.email}
+            {email}
           </p>
         </div>
       </div>
@@ -53,7 +55,7 @@ export default async function StudentSettingsPage() {
       <StudentSettingsClient
         initialPush={meta.push_enabled !== false}
         initialEmailDigest={meta.email_digest === true}
-        currentEmail={user?.email ?? ''}
+        currentEmail={email}
         credentialsSet={credRow?.credentials_set ?? true}
         initialOptOut={credRow?.leaderboard_opt_out ?? false}
       />

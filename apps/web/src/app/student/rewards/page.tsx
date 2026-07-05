@@ -1,4 +1,4 @@
-import { createSupabaseClient } from '@/supabase-clients/server'
+import { getCachedLoggedInUserId } from '@/rsc-data/supabase'
 import {
   getStudentLoyaltyBalance,
   getStudentLoyaltyLedger,
@@ -17,9 +17,7 @@ import { RewardsHub } from './RewardsHub'
 import type { RedemptionRequest } from './RewardsPanel'
 
 export default async function StudentRewardsPage() {
-  const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const studentId = user!.id
+  const studentId = await getCachedLoggedInUserId()
 
   const [balance, ledger, rules, pendingRuleIds, requests, lbRows, lbMyRanks, lbSettings, lbConfig] =
     await Promise.all([

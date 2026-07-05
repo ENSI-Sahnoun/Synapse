@@ -6,6 +6,14 @@ const config: NextConfig = {
   // @heroicons, date-fns are already in Next's default optimize list.)
   experimental: {
     optimizePackageImports: ['@phosphor-icons/react'],
+    // Client Router Cache: hold rendered segments in memory so returning to a
+    // page (tab-switching in the PWA) is instant instead of re-running the full
+    // dynamic server render. Default for dynamic is 0 = refetch every nav.
+    // Realtime subscriptions + pull-to-refresh keep data fresh within the window.
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
   images: {
     remotePatterns: [
