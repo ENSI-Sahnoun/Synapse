@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { House, ClockCounterClockwise, Star, CreditCard, GearSix } from '@phosphor-icons/react'
+import { House, ClockCounterClockwise, Trophy, CreditCard, GearSix } from '@phosphor-icons/react'
 
 const tabs = [
   { href: '/student/dashboard', label: 'Accueil', Icon: House },
   { href: '/student/history', label: 'Historique', Icon: ClockCounterClockwise },
-  { href: '/student/loyalty', label: 'Récompenses', Icon: Star },
+  { href: '/student/rewards', label: 'Récompenses', Icon: Trophy },
   { href: '/student/rooms', label: 'Réserver', Icon: CreditCard },
   { href: '/student/settings', label: 'Paramètres', Icon: GearSix },
 ]
