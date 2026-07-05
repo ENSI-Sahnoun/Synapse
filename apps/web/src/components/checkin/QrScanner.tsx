@@ -27,9 +27,10 @@ export function QrScanner({ onScan, ready }: QrScannerProps) {
         return
       }
 
+      // Selfie / front-facing camera preferred for the kiosk.
       const device =
-        devices.find((d) => d.label.toLowerCase().includes('back')) ??
-        devices[devices.length - 1]
+        devices.find((d) => /front|user|face|selfie/i.test(d.label)) ??
+        devices[0]
 
       setCameraActive(true)
 

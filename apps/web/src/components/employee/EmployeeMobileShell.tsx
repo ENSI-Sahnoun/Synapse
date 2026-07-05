@@ -11,6 +11,7 @@ import {
 import { signOutAction } from '@/data/auth/sign-out'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { SidebarNavLink } from '@/components/ui/sidebar-nav-link'
+import { RoutePrefetcher } from '@/components/RoutePrefetcher'
 import type { NotificationRow } from '@/data/notifications/list'
 import Image from 'next/image'
 
@@ -165,6 +166,17 @@ export function EmployeeMobileShell({ fullName, role, initialNotifications, init
 
   return (
     <>
+      <RoutePrefetcher
+        routes={
+          role === 'admin'
+            ? [
+                ...EMPLOYEE_NAV.map((n) => n.href),
+                ADMIN_DASHBOARD_ITEM.href,
+                ...ADMIN_NAV.map((n) => n.href),
+              ]
+            : EMPLOYEE_NAV.map((n) => n.href)
+        }
+      />
       {/* ── Desktop layout (md+) ── */}
       <div className="hidden md:flex min-h-screen">
         <aside

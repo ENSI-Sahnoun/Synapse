@@ -8,8 +8,6 @@ import type { CheckinResult } from '@/utils/zod-schemas/checkin'
 interface KioskResultProps {
   result: CheckinResult
   onReset: () => void
-  /** Present only for an authorized student with a reserved seat — lets them change it. */
-  onChangeSeat?: () => void
 }
 
 function formatDate(dateStr: string): string {
@@ -20,10 +18,10 @@ function formatDate(dateStr: string): string {
   }
 }
 
-export function KioskResult({ result, onReset, onChangeSeat }: KioskResultProps) {
+export function KioskResult({ result, onReset }: KioskResultProps) {
   useEffect(() => {
-    // Give reserved-seat students longer to read their seat / hit "change".
-    const delay = result.status === 'AUTHORIZED' && result.seatLabel ? 6000 : 2500
+    // Give authorized students longer to read their seat / phone instruction.
+    const delay = result.status === 'AUTHORIZED' ? 6000 : 2500
     const timer = setTimeout(onReset, delay)
     return () => clearTimeout(timer)
   }, [result, onReset])
@@ -40,11 +38,18 @@ export function KioskResult({ result, onReset, onChangeSeat }: KioskResultProps)
           <p className="text-5xl font-bold text-[#4ADE80]">{result.studentName}</p>
           <p className="text-2xl text-[#D6C4B0] mt-2">{result.planName}</p>
         </div>
-        {result.seatLabel && (
+        {result.seatLabel ? (
           <div className="rounded-2xl border border-[#16A34A]/40 bg-[#16A34A]/10 px-8 py-4">
             <p className="text-sm uppercase tracking-widest text-[#A08060]">Votre place réservée</p>
             <p className="text-3xl font-bold text-white mt-1">
               {result.roomName ? `${result.roomName} · ` : ''}{result.seatLabel}
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-[#D6C4B0]/30 bg-white/5 px-8 py-4 max-w-lg">
+            <p className="text-sm uppercase tracking-widest text-[#A08060]">Choisissez votre place</p>
+            <p className="text-xl text-white mt-1">
+              Ouvrez l&apos;app Synapse sur votre téléphone pour réserver votre place.
             </p>
           </div>
         )}
@@ -55,14 +60,6 @@ export function KioskResult({ result, onReset, onChangeSeat }: KioskResultProps)
           </p>
         </div>
         <p className="text-[#4ADE80] text-2xl font-bold tracking-widest">BIENVENUE</p>
-        {onChangeSeat && (
-          <button
-            onClick={onChangeSeat}
-            className="text-sm text-[#D6C4B0] underline underline-offset-4 hover:text-white"
-          >
-            Changer de place
-          </button>
-        )}
       </div>
     )
   }

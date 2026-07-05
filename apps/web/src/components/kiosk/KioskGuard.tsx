@@ -4,9 +4,17 @@ import { useEffect } from 'react'
 
 export function KioskGuard() {
   useEffect(() => {
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {})
+    const goFullscreen = () => {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      }
     }
+
+    // Try immediately (works if we still hold a gesture), then re-arm on the
+    // first user interaction — most browsers reject requestFullscreen without
+    // an active gesture, so a bare useEffect call silently fails.
+    goFullscreen()
+    document.addEventListener('pointerdown', goFullscreen)
 
     if ('keyboard' in navigator && (navigator as any).keyboard?.lock) {
       ;(navigator as any).keyboard
@@ -24,6 +32,7 @@ export function KioskGuard() {
     window.addEventListener('beforeunload', handleBeforeUnload)
 
     return () => {
+      document.removeEventListener('pointerdown', goFullscreen)
       document.removeEventListener('contextmenu', handleContextMenu)
       window.removeEventListener('beforeunload', handleBeforeUnload)
       if ('keyboard' in navigator && (navigator as any).keyboard?.unlock) {

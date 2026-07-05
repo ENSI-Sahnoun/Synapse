@@ -6,7 +6,6 @@ import { QrScanner } from '@/components/checkin/QrScanner'
 import { KioskResult } from '@/components/kiosk/KioskResult'
 import { KioskGuard } from '@/components/kiosk/KioskGuard'
 import { KioskManualEntry } from '@/components/kiosk/KioskManualEntry'
-import { KioskSeatPicker } from '@/components/kiosk/KioskSeatPicker'
 import { checkinAction } from '@/actions/checkin/checkin-action'
 import type { CheckinResult } from '@/utils/zod-schemas/checkin'
 import type { RoomTable, Seat } from '@/data/admin/seat-map'
@@ -20,9 +19,9 @@ export type KioskRoom = {
   seats: Seat[]
 }
 
-type Mode = 'scanning' | 'selecting' | 'result'
+type Mode = 'scanning' | 'result'
 
-export function KioskClient({ rooms }: { rooms: KioskRoom[] }) {
+export function KioskClient({ rooms: _rooms }: { rooms: KioskRoom[] }) {
   const [mode, setMode] = useState<Mode>('scanning')
   const [scannerReady, setScannerReady] = useState(true)
   const [lastResult, setLastResult] = useState<CheckinResult | null>(null)
@@ -31,13 +30,9 @@ export function KioskClient({ rooms }: { rooms: KioskRoom[] }) {
     onSuccess: ({ data }) => {
       if (!data) return
       setLastResult(data)
-      // Authorized walk-ins (no reserved seat) go straight to the seat picker.
-      // Everyone else (reserved seat, or any denial) sees the result screen.
-      if (data.status === 'AUTHORIZED' && !data.seatId) {
-        setMode('selecting')
-      } else {
-        setMode('result')
-      }
+      // Every scan now goes straight to the welcome / result screen. Seat
+      // choice happens on the student's own phone, not at the kiosk.
+      setMode('result')
     },
     onError: () => {
       setLastResult({ status: 'DENIED_UNKNOWN' })
@@ -59,15 +54,6 @@ export function KioskClient({ rooms }: { rooms: KioskRoom[] }) {
     setScannerReady(true)
     setMode('scanning')
   }, [])
-
-  // From the welcome screen a student with a reserved seat can change it.
-  const handleChangeSeat = useCallback(() => setMode('selecting'), [])
-
-  // Seat picker finished (assigned, changed, or skipped) → show welcome.
-  const handlePickerDone = useCallback(() => setMode('result'), [])
-
-  const authorized =
-    lastResult?.status === 'AUTHORIZED' ? lastResult : null
 
   return (
     <div className="w-screen h-screen bg-black text-white flex flex-col">
@@ -94,28 +80,9 @@ export function KioskClient({ rooms }: { rooms: KioskRoom[] }) {
         </div>
       )}
 
-      {mode === 'selecting' && authorized && (
-        <KioskSeatPicker
-          rooms={rooms}
-          studentName={authorized.studentName}
-          studentId={authorized.studentId}
-          attendanceId={authorized.attendanceId}
-          deferred={!!authorized.deferred}
-          currentSeatId={authorized.seatId ?? null}
-          onDone={handlePickerDone}
-          // Walk-in who never chooses is NOT marked present → back to scanning.
-          // A reserved student changing seats is already present → back to welcome.
-          onTimeout={authorized.deferred ? handleReset : handlePickerDone}
-        />
-      )}
-
       {mode === 'result' && lastResult && (
         <div className="flex-1 flex items-center justify-center p-8">
-          <KioskResult
-            result={lastResult}
-            onReset={handleReset}
-            onChangeSeat={authorized?.seatId ? handleChangeSeat : undefined}
-          />
+          <KioskResult result={lastResult} onReset={handleReset} />
         </div>
       )}
     </div>

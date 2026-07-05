@@ -122,21 +122,36 @@ export const checkinAction = employeeActionClient
       startOfDay(new Date())
     )
 
-    // Walk-in (no reservation): the student is NOT marked present here. We only
-    // validated their access. Attendance is created later, at the kiosk, once
-    // they either pick a seat or explicitly defer — or not at all if they walk
-    // away (the picker times out). This avoids phantom "present" rows.
+    // Walk-in (no reservation): mark present immediately with no seat. The
+    // kiosk no longer picks a seat — the student chooses one from their phone
+    // (their dashboard shows a "Divers" prompt while seatless).
     if (!activeReservation) {
+      const { data: walkInAttendance, error: walkInError } = await admin
+        .from('attendance')
+        .insert({
+          student_id: studentId,
+          seat_id: null,
+          room_id: null,
+          entry_method: 'qr_scan',
+        })
+        .select('id')
+        .single()
+
+      if (walkInError || !walkInAttendance) {
+        console.error('Walk-in attendance insert error:', walkInError?.message)
+        throw new Error("Erreur lors de l'enregistrement de la présence.")
+      }
+
       return {
         status: 'AUTHORIZED',
         studentName: profile.full_name,
         studentId,
-        deferred: true,
+        deferred: false,
         planName,
         endDate: subscription.end_date,
         daysRemaining,
         reservationFulfilled: false,
-        attendanceId: '',
+        attendanceId: walkInAttendance.id,
         seatId: null,
         seatLabel: null,
         roomId: null,

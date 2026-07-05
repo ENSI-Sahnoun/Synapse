@@ -10,6 +10,7 @@ import { getStudentDetailAction, createStudentAction, updateStudentInfoAction, g
 import { createSubscriptionAction } from '@/actions/employee/subscriptions'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PostCheckinSeatDialog } from '@/components/checkin/PostCheckinSeatDialog'
+import { createClient } from '@/supabase-clients/client'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -92,14 +93,12 @@ const PRESENT_COLORS = {
 
 function StudentCard({
   student,
-  subtitle,
   present,
   place,
   daily,
   onClick,
 }: {
   student: Student
-  subtitle: string
   present?: boolean
   place?: string | null
   daily?: boolean
@@ -128,7 +127,6 @@ function StudentCard({
         <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {student.full_name ?? '—'}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>{subtitle}</div>
         {present && (
           <div style={{ fontSize: 14, fontWeight: 700, color: colors.text, marginTop: 4 }}>
             {place || 'Divers'}
@@ -889,6 +887,9 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans 
   const searchParams = useSearchParams()
   const [query, setQuery] = useState('')
   const [currentlyIn, setCurrentlyIn] = useState<CurrentlyIn[]>(initialCurrentlyIn)
+
+  // Adopt fresh server data on every router.refresh().
+  useEffect(() => setCurrentlyIn(initialCurrentlyIn), [initialCurrentlyIn])
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(() => {
     const wantedId = searchParams.get('studentId')
     return wantedId ? students.find((s) => s.id === wantedId) ?? null : null
@@ -925,6 +926,26 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans 
   const selectedAttendance = selectedStudent ? (attMap[selectedStudent.id] ?? null) : null
 
   const router = useRouter()
+
+  // Live: presence badges reflect scans/checkouts from the kiosk or other
+  // employees without a manual refresh.
+  useEffect(() => {
+    const supabase = createClient()
+    const topic = 'realtime:lookup-presence'
+    const stale = supabase.getChannels().find((c) => c.topic === topic)
+    if (stale) supabase.removeChannel(stale)
+
+    const channel = supabase
+      .channel('lookup-presence')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () =>
+        router.refresh(),
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [router])
 
   function handleCheckin(studentId: string, attendanceId: string) {
     router.refresh()
@@ -995,7 +1016,6 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans 
                   <StudentCard
                     key={s.id}
                     student={s}
-                    subtitle={s.university ?? s.phone ?? '—'}
                     present={!!a}
                     daily={isDailyPlan(a?.planName ?? null)}
                     place={placeLabel(a)}
@@ -1021,7 +1041,6 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans 
                   <StudentCard
                     key={s.id}
                     student={s}
-                    subtitle={s.university ?? s.phone ?? '—'}
                     present={!!a}
                     daily={isDailyPlan(a?.planName ?? null)}
                     place={placeLabel(a)}

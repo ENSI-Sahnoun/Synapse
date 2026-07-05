@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format, parseISO, differenceInMinutes } from 'date-fns'
 import { MagnifyingGlass } from '@phosphor-icons/react'
 import { useAction } from 'next-safe-action/hooks'
 import { checkoutAction } from '@/actions/checkin/checkout-action'
+import { createClient } from '@/supabase-clients/client'
 
 interface Session {
   id: string
@@ -40,6 +42,29 @@ export function AttendanceClient({ sessions: initialSessions }: { sessions: Sess
   const [sessions, setSessions] = useState(initialSessions)
   const [filter, setFilter] = useState<'all' | 'in' | 'out'>('in')
   const [q, setQ] = useState('')
+  const router = useRouter()
+
+  // Adopt fresh server data whenever router.refresh() re-renders this route.
+  useEffect(() => setSessions(initialSessions), [initialSessions])
+
+  // Live: any scan-in / checkout by anyone re-pulls today's sessions.
+  useEffect(() => {
+    const supabase = createClient()
+    const topic = 'realtime:employee-attendance'
+    const stale = supabase.getChannels().find((c) => c.topic === topic)
+    if (stale) supabase.removeChannel(stale)
+
+    const channel = supabase
+      .channel('employee-attendance')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () =>
+        router.refresh(),
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [router])
 
   const { execute: executeCheckout } = useAction(checkoutAction, {
     onSuccess: ({ input }) => {

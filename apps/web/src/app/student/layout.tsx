@@ -8,6 +8,18 @@ import { getMyNotifications, getMyUnreadCount } from '@/data/notifications/list'
 import { StudentNotificationSheet } from '@/components/notifications/StudentNotificationSheet'
 import { PullToRefresh } from '@/components/PullToRefresh'
 import { SecureAccountBanner } from '@/components/student/SecureAccountBanner'
+import { RoutePrefetcher } from '@/components/RoutePrefetcher'
+
+const STUDENT_ROUTES = [
+  '/student/dashboard',
+  '/student/qr',
+  '/student/reservation',
+  '/student/rooms',
+  '/student/history',
+  '/student/loyalty',
+  '/student/rewards',
+  '/student/settings',
+]
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const userId = await getCachedLoggedInUserIdOrNull()
@@ -39,6 +51,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--background)' }}>
+      <RoutePrefetcher routes={STUDENT_ROUTES} />
       {/* Top bar */}
       <header
         className="shrink-0 flex items-center justify-between px-4 border-b"
