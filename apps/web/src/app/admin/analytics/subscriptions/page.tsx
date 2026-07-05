@@ -8,7 +8,9 @@ import { PlanPieChart } from '@/components/admin/dashboard/plan-pie-chart'
 import { SubscriptionStatusCards } from '@/components/admin/analytics/subscription-status-cards'
 import { RevenuePerPlanTable } from '@/components/admin/analytics/revenue-per-plan-table'
 import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
+import { Skeleton } from '@/components/ui/skeleton'
 import { defaultDateRange } from '@/lib/date-range'
+import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -20,6 +22,31 @@ export default async function SubscriptionsAnalyticsPage({ searchParams }: PageP
   const defaults = defaultDateRange()
   const from = params.from ?? defaults.from
   const to = params.to ?? defaults.to
+
+  return (
+    <div className="space-y-6 p-6">
+      <h1 className="text-2xl font-bold">Analyse — Abonnements</h1>
+      <DateRangeFilter from={from} to={to} />
+
+      <Suspense
+        key={`${from}-${to}`}
+        fallback={
+          <div className="space-y-6">
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Skeleton className="h-72 w-full rounded-xl" />
+              <Skeleton className="h-72 w-full rounded-xl" />
+            </div>
+          </div>
+        }
+      >
+        <SubscriptionsAnalyticsContent from={from} to={to} />
+      </Suspense>
+    </div>
+  )
+}
+
+async function SubscriptionsAnalyticsContent({ from, to }: { from: string; to: string }) {
   const asOf = new Date().toISOString().slice(0, 10)
 
   const [planData, statusCounts, planRevenue, avgDiscount] = await Promise.all([
@@ -30,14 +57,12 @@ export default async function SubscriptionsAnalyticsPage({ searchParams }: PageP
   ])
 
   return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">Analyse — Abonnements</h1>
-      <DateRangeFilter from={from} to={to} />
+    <>
       <SubscriptionStatusCards counts={statusCounts} discount={avgDiscount} />
       <div className="grid gap-6 lg:grid-cols-2">
         <PlanPieChart data={planData} />
         <RevenuePerPlanTable data={planRevenue} />
       </div>
-    </div>
+    </>
   )
 }

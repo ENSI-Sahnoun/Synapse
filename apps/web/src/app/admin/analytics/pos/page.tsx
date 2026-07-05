@@ -12,7 +12,9 @@ import { StockSnapshotTable } from '@/components/admin/analytics/stock-snapshot-
 import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { defaultDateRange } from '@/lib/date-range'
+import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -25,6 +27,27 @@ export default async function PosAnalyticsPage({ searchParams }: PageProps) {
   const from = params.from ?? defaults.from
   const to = params.to ?? defaults.to
 
+  return (
+    <div className="space-y-6 p-6">
+      <h1 className="text-2xl font-bold">Analyse — Boutique &amp; produits</h1>
+      <DateRangeFilter from={from} to={to} />
+
+      <Suspense
+        key={`${from}-${to}`}
+        fallback={
+          <div className="space-y-6">
+            <Skeleton className="h-64 w-full rounded-xl" />
+            <Skeleton className="h-72 w-full rounded-xl" />
+          </div>
+        }
+      >
+        <PosAnalyticsContent from={from} to={to} />
+      </Suspense>
+    </div>
+  )
+}
+
+async function PosAnalyticsContent({ from, to }: { from: string; to: string }) {
   const [margin, bestSellers, byCategory, restocks, stockSnapshot] = await Promise.all([
     getProductMargin({ from, to }),
     getBestSellers({ from, to }),
@@ -34,10 +57,7 @@ export default async function PosAnalyticsPage({ searchParams }: PageProps) {
   ])
 
   return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">Analyse — Boutique &amp; produits</h1>
-      <DateRangeFilter from={from} to={to} />
-
+    <>
       <div className="grid gap-6 lg:grid-cols-2">
         <BestSellersTable data={bestSellers} />
         <SalesByCategoryChart data={byCategory} />
@@ -88,6 +108,6 @@ export default async function PosAnalyticsPage({ searchParams }: PageProps) {
         <StockSnapshotTable rows={stockSnapshot} from={from} to={to} />
         <RestockHistoryTable data={restocks} />
       </div>
-    </div>
+    </>
   )
 }

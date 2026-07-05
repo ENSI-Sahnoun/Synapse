@@ -10,7 +10,9 @@ import { StudentBreakdownCards } from '@/components/admin/analytics/student-brea
 import { TopStudentsTable } from '@/components/admin/analytics/top-students-table'
 import { EmployeeRevenueTable } from '@/components/admin/analytics/employee-revenue-table'
 import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
+import { Skeleton } from '@/components/ui/skeleton'
 import { defaultDateRange } from '@/lib/date-range'
+import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -23,6 +25,28 @@ export default async function StudentsStaffAnalyticsPage({ searchParams }: PageP
   const from = params.from ?? defaults.from
   const to = params.to ?? defaults.to
 
+  return (
+    <div className="space-y-6 p-6">
+      <h1 className="text-2xl font-bold">Analyse — Étudiants &amp; personnel</h1>
+      <DateRangeFilter from={from} to={to} />
+
+      <Suspense
+        key={`${from}-${to}`}
+        fallback={
+          <div className="space-y-6">
+            <Skeleton className="h-72 w-full rounded-xl" />
+            <Skeleton className="h-40 w-full rounded-xl" />
+            <Skeleton className="h-64 w-full rounded-xl" />
+          </div>
+        }
+      >
+        <StudentsStaffAnalyticsContent from={from} to={to} />
+      </Suspense>
+    </div>
+  )
+}
+
+async function StudentsStaffAnalyticsContent({ from, to }: { from: string; to: string }) {
   const [studentTypeSeries, breakdown, topLoyalty, topSpend, employeeRevenue, shiftsSummary] =
     await Promise.all([
       getStudentTypeSeries({ from, to }),
@@ -34,14 +58,11 @@ export default async function StudentsStaffAnalyticsPage({ searchParams }: PageP
     ])
 
   return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">Analyse — Étudiants &amp; personnel</h1>
-      <DateRangeFilter from={from} to={to} />
-
+    <>
       <StudentTypeChart data={studentTypeSeries} />
       <StudentBreakdownCards byUniversity={breakdown.byUniversity} byStudyLevel={breakdown.byStudyLevel} />
       <TopStudentsTable byLoyalty={topLoyalty} bySpend={topSpend} />
       <EmployeeRevenueTable revenue={employeeRevenue} shifts={shiftsSummary} />
-    </div>
+    </>
   )
 }
