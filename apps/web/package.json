@@ -82,6 +82,7 @@
     "jsdom": "^29.1.1",
     "konva": "^10.3.0",
     "lucide-react": "^0.577.0",
+    "motion": "^12.42.2",
     "next": "^16.2.6",
     "next-nprogress-bar": "^2.4.7",
     "next-safe-action": "^8.5.2",
