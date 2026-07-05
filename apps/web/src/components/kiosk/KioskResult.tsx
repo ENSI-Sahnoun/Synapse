@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { useAction } from 'next-safe-action/hooks'
+import { checkoutAction } from '@/actions/checkin/checkout-action'
 import type { CheckinResult } from '@/utils/zod-schemas/checkin'
 
 interface KioskResultProps {
@@ -19,12 +21,27 @@ function formatDate(dateStr: string): string {
 }
 
 export function KioskResult({ result, onReset }: KioskResultProps) {
+  const [confirmCheckout, setConfirmCheckout] = useState(false)
+  const [checkedOut, setCheckedOut] = useState(false)
+  const { execute: kioskCheckout, status: checkoutStatus } = useAction(checkoutAction, {
+    onSuccess: () => setCheckedOut(true),
+    onError: () => setConfirmCheckout(false),
+  })
+
   useEffect(() => {
     // Give authorized students longer to read their seat / phone instruction.
-    const delay = result.status === 'AUTHORIZED' ? 6000 : 2500
+    if (confirmCheckout || checkedOut) return // don't auto-dismiss while engaged
+    const delay =
+      result.status === 'AUTHORIZED' ? 6000 : result.status === 'ALREADY_IN' ? 8000 : 2500
     const timer = setTimeout(onReset, delay)
     return () => clearTimeout(timer)
-  }, [result, onReset])
+  }, [result, onReset, confirmCheckout, checkedOut])
+
+  useEffect(() => {
+    if (!checkedOut) return
+    const t = setTimeout(() => onReset(), 2500)
+    return () => clearTimeout(t)
+  }, [checkedOut, onReset])
 
   if (result.status === 'AUTHORIZED') {
     return (
@@ -131,6 +148,38 @@ export function KioskResult({ result, onReset }: KioskResultProps) {
         <p className="text-xl text-[#A08060]">
           Déjà présent depuis {format(parseISO(result.checkedInAt), 'HH:mm', { locale: fr })}
         </p>
+        {checkedOut ? (
+          <p className="mt-4 text-lg font-semibold" style={{ color: 'var(--synapse-green-600, #16a34a)' }}>
+            Sortie enregistrée ✓
+          </p>
+        ) : confirmCheckout ? (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              onClick={() => setConfirmCheckout(false)}
+              disabled={checkoutStatus === 'executing'}
+              className="text-sm font-semibold px-4 py-2 rounded-lg border"
+              style={{ borderColor: 'var(--border-default)' }}
+            >
+              Annuler
+            </button>
+            <button
+              onClick={() => kioskCheckout({ attendanceId: result.attendanceId })}
+              disabled={checkoutStatus === 'executing'}
+              className="text-sm font-semibold px-4 py-2 rounded-lg"
+              style={{ background: 'var(--accent-brand)', color: '#fff' }}
+            >
+              Confirmer la sortie
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmCheckout(true)}
+            className="mt-4 text-sm font-semibold px-5 py-2.5 rounded-lg"
+            style={{ background: 'var(--accent-brand)', color: '#fff' }}
+          >
+            Terminer ma session
+          </button>
+        )}
       </div>
     )
   }
