@@ -14,5 +14,5 @@ export type CheckinResult =
   | { status: 'DENIED_EXPIRED'; studentName: string; endDate: string }
   | { status: 'DENIED_NO_SUB'; studentName: string }
   | { status: 'DENIED_UNKNOWN' }
-  | { status: 'ALREADY_IN'; studentName: string; checkedInAt: string }
+  | { status: 'ALREADY_IN'; studentName: string; checkedInAt: string; attendanceId: string }
   | { status: 'DENIED_NO_RESERVATION'; studentName: string }

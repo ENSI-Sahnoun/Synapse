@@ -45,6 +45,7 @@ export const checkinAction = employeeActionClient
         status: 'ALREADY_IN',
         studentName: profile.full_name,
         checkedInAt: openAttendance.checked_in_at,
+        attendanceId: openAttendance.id,
       }
     }
 

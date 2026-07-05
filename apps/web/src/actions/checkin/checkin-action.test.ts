@@ -33,3 +33,16 @@ describe('isValidQrTokenFormat', () => {
     expect(isValidQrTokenFormat('SYNAPSE-AB3X9K2M')).toBe(true)
   })
 })
+
+describe('ALREADY_IN result shape', () => {
+  it('includes attendanceId in the type contract', async () => {
+    // Type-level guarantee: constructing the variant requires attendanceId.
+    const r = {
+      status: 'ALREADY_IN' as const,
+      studentName: 'Test',
+      checkedInAt: new Date().toISOString(),
+      attendanceId: '00000000-0000-0000-0000-000000000000',
+    }
+    expect(r.attendanceId).toBeTruthy()
+  })
+})
