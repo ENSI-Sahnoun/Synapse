@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { SetRoomStatusDialog } from '@/app/admin/rooms/SetRoomStatusDialog'
 import { GridFour } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
@@ -11,8 +12,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function EmployeeRoomsPage() {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!(await getCachedLoggedInUserIdOrNull())) redirect('/login')
 
   const { data: rooms } = await supabase.from('rooms').select('*').order('name')
 

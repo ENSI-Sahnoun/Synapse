@@ -401,7 +401,11 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
               const isMine = seat.id === highlightSeatId
               // A seat marked occupied but with no open attendance (once loaded)
               // has an unknown owner — render it vacant rather than anonymous.
+              // Students can only read their own attendance rows (RLS), so this
+              // check would misfire for every seat occupied by someone else —
+              // restrict it to staff, who can see all attendance rows.
               const staleOccupied =
+                mode !== 'student' &&
                 seat.status === 'occupied' && attendedSeatIds !== null && !attendedSeatIds.has(seat.id)
               const baseStatus = staleOccupied ? 'free' : seat.status
               const effectiveStatus = isRoomClosed && mode === 'student' ? 'out_of_service' : baseStatus

@@ -2,16 +2,16 @@
 
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
+import { getCachedLoggedInUserId, getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 
 export async function getMyProfile() {
   const supabase = await createSupabaseClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) throw new Error('Non connecté')
+  const userId = await getCachedLoggedInUserId()
 
   const { data, error } = await supabase
     .from('profiles')
     .select('id, full_name, phone, university, study_level, qr_token, student_number, created_at')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single()
 
   if (error) throw error
@@ -20,9 +20,8 @@ export async function getMyProfile() {
 
 export async function getMyActiveSubscription() {
   const supabase = await createSupabaseClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError) throw new Error('Session invalide')
-  if (!user) return null
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) return null
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -32,7 +31,7 @@ export async function getMyActiveSubscription() {
       id, start_date, end_date, paid_amount,
       subscription_plans ( name, duration_days )
     `)
-    .eq('student_id', user.id)
+    .eq('student_id', userId)
     .gte('end_date', today)
     .order('end_date', { ascending: false })
     .limit(1)
@@ -43,14 +42,13 @@ export async function getMyActiveSubscription() {
 
 export async function getMyCheckInHistory(limit = 500) {
   const supabase = await createSupabaseClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) throw new Error('Non connecté')
+  const userId = await getCachedLoggedInUserId()
 
   // attendance.room_id has no FK yet — fetch room names in a separate lookup
   const { data, error } = await supabase
     .from('attendance')
     .select('id, checked_in_at, checked_out_at, room_id')
-    .eq('student_id', user.id)
+    .eq('student_id', userId)
     .order('checked_in_at', { ascending: false })
     .limit(limit)
 
@@ -76,8 +74,7 @@ export async function getMyCheckInHistory(limit = 500) {
 
 export async function getMyCheckInCounts() {
   const supabase = await createSupabaseClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) throw new Error('Non connecté')
+  const userId = await getCachedLoggedInUserId()
 
   const monthStart = new Date()
   monthStart.setDate(1)
@@ -86,7 +83,7 @@ export async function getMyCheckInCounts() {
   const { data } = await supabase
     .from('attendance')
     .select('checked_in_at')
-    .eq('student_id', user.id)
+    .eq('student_id', userId)
 
   const rows = data ?? []
   // Multiple check-ins the same day (left and came back) still count as one visit
@@ -106,15 +103,15 @@ export type MyPresence =
 
 export async function getMyPresence(): Promise<MyPresence> {
   const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { status: 'absent' }
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) return { status: 'absent' }
 
   // attendance.seat_id has no FK constraint, so PostgREST can't embed
   // seats(...)/rooms(...) here — resolve them with separate lookups instead.
   const { data } = await supabase
     .from('attendance')
     .select('id, seat_id')
-    .eq('student_id', user.id)
+    .eq('student_id', userId)
     .is('checked_out_at', null)
     .order('checked_in_at', { ascending: false })
     .limit(1)
@@ -143,14 +140,13 @@ export async function getMyPresence(): Promise<MyPresence> {
 
 export async function getMyLoyaltyBalance() {
   const supabase = await createSupabaseClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError) throw new Error('Session invalide')
-  if (!user) return 0
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) return 0
 
   const { data } = await supabase
     .from('loyalty_ledger')
     .select('points_delta')
-    .eq('student_id', user.id)
+    .eq('student_id', userId)
 
   return data?.reduce((sum, row) => sum + row.points_delta, 0) ?? 0
 }

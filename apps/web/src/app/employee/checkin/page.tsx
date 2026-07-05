@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { startOfDay } from 'date-fns'
 import { CheckinClient } from './CheckinClient'
 

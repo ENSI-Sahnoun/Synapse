@@ -42,11 +42,23 @@ export const getCachedLoggedInUserClaims = cache(async () => {
 
 export const getCachedIsUserLoggedIn = cache(async () => {
   const claims = await getCachedLoggedInUserClaims();
-  console.log('claims', claims);
   return claims.sub !== null;
 });
 
 export const getCachedLoggedInUserId = cache(async () => {
   const claims = await getCachedLoggedInUserClaims();
   return claims.sub;
+});
+
+// Like getCachedLoggedInUserId but returns null instead of throwing when the
+// user isn't logged in — for data fns that degrade gracefully (return
+// null/0/absent) rather than error. Validates the JWT locally (no network
+// round-trip) and is deduped per-request via React cache().
+export const getCachedLoggedInUserIdOrNull = cache(async (): Promise<string | null> => {
+  const supabase = await createSupabaseClient();
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data?.claims?.sub) {
+    return null;
+  }
+  return data.claims.sub;
 });

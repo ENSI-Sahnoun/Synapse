@@ -1,26 +1,36 @@
+import { createSupabaseClient } from '@/supabase-clients/server'
 import { getMyProfile, getMyActiveSubscription, getMyPresence } from '@/data/student/profile'
 import { getMyImportantNotifications } from '@/data/notifications/list'
-import { getLeaderboard, getMyLeaderboardRank, getLeaderboardSettings, getLeaderboardConfig } from '@/data/student/leaderboard'
+import { getMyLeaderboardRank, getLeaderboardSettings, getLeaderboardConfig } from '@/data/student/leaderboard'
+import { getStudentLoyaltyBalance } from '@/data/student/loyalty'
 import { differenceInDays, parseISO, format, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { WarningCircle, ArrowRight, Megaphone } from '@phosphor-icons/react/dist/ssr'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PresenceBanner } from './PresenceBanner'
-import { LeaderboardCard } from './LeaderboardCard'
+import { GamificationTeaser } from '@/components/student/GamificationTeaser'
 
 export default async function StudentDashboardPage() {
-  const [profile, activeSubscription, presence, importantNotifications, lbRows, lbMyRanks, lbSettings, lbConfig] =
+  const supabase = await createSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const [profile, activeSubscription, presence, importantNotifications, lbMyRanks, lbSettings, lbConfig, balance] =
     await Promise.all([
       getMyProfile(),
       getMyActiveSubscription(),
       getMyPresence(),
       getMyImportantNotifications(),
-      getLeaderboard(),
       getMyLeaderboardRank(),
       getLeaderboardSettings(),
       getLeaderboardConfig(),
+      getStudentLoyaltyBalance(user!.id),
     ])
+
+  const enabledCats = lbConfig.filter((c) => c.enabled).sort((a, b) => a.sort_order - b.sort_order)
+  const leaderboardVisible = lbSettings.enabled && enabledCats.length > 0
+  const primaryCategory = enabledCats[0]?.category
+  const myRank = lbMyRanks.find((m) => m.category === primaryCategory)?.rank ?? null
 
   const today = startOfDay(new Date())
 
@@ -185,7 +195,7 @@ export default async function StudentDashboardPage() {
         )}
       </div>
 
-      <LeaderboardCard rows={lbRows} myRanks={lbMyRanks} settings={lbSettings} config={lbConfig} />
+      <GamificationTeaser balance={balance} myRank={myRank} leaderboardVisible={leaderboardVisible} />
     </div>
   )
 }
