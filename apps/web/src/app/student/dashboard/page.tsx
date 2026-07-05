@@ -113,11 +113,6 @@ export default async function StudentDashboardPage() {
             <div className="p-3 bg-white rounded-2xl shadow-sm">
               <QrCodeImage token={profile.qr_token} size={240} />
             </div>
-            {profile.student_number && (
-              <p className="text-xs font-mono font-semibold" style={{ color: 'var(--synapse-brown-700)' }}>
-                #{profile.student_number}
-              </p>
-            )}
           </div>
 
           <div className="px-5 pb-4">
