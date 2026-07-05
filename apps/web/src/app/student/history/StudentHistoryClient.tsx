@@ -177,7 +177,7 @@ export function StudentHistoryClient({ sessions }: { sessions: Session[] }) {
         </div>
       )}
 
-      <div className="flex justify-center" style={{ padding: '12px 4px' }}>
+      <div className="relative isolate flex justify-center" style={{ padding: '12px 4px' }}>
         <Calendar
           mode="single"
           month={new Date(displayYear, displayMonth, 1)}
@@ -197,7 +197,7 @@ export function StudentHistoryClient({ sessions }: { sessions: Session[] }) {
       </div>
 
       {selectedDay && (
-        <div className="rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
+        <div className="relative isolate z-10 mt-4 clear-both rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
           <div className="px-4 py-3 border-b text-sm font-bold capitalize" style={{ borderColor: 'var(--border-subtle)' }}>
             {format(selectedDay, 'EEEE d MMMM yyyy', { locale: fr })}
           </div>

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
 import { Bell, EnvelopeSimple, LockKey, At, CaretDown, ShieldCheck, Trophy } from '@phosphor-icons/react'
 import { Switch } from '@/components/ui/switch'
 import { setupCredentialsAction, updateEmailAction, updatePasswordAction, updateNotificationPrefsAction } from '@/actions/student/account'
 import { setLeaderboardOptOut } from '@/actions/student/leaderboard-optout'
+import { usePushSubscription } from '@/hooks/use-push-subscription'
 
 interface Props {
   initialPush: boolean
@@ -19,10 +20,31 @@ interface Props {
 const inputCls = 'w-full px-3 py-2.5 text-sm rounded-lg border outline-none transition-colors'
 const inputStyle = { borderColor: 'var(--border-default)', fontFamily: 'var(--font-body)', background: 'white' }
 
+function isIosNotInstalledPwa(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  if (!isIos) return false
+  const standalone = (navigator as Navigator & { standalone?: boolean }).standalone
+  const displayModeStandalone =
+    typeof window !== 'undefined' && window.matchMedia?.('(display-mode: standalone)').matches
+  return !standalone && !displayModeStandalone
+}
+
 export function StudentSettingsClient({ initialPush, initialEmailDigest, currentEmail, credentialsSet, initialOptOut }: Props) {
-  const [pushEnabled, setPushEnabled] = useState(initialPush)
+  const [pushPrefEnabled, setPushPrefEnabled] = useState(initialPush)
   const [emailEnabled, setEmailEnabled] = useState(initialEmailDigest)
   const [, startTransition] = useTransition()
+  const { supported: pushSupported, subscribed: pushSubscribed, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushSubscription()
+  const [pushPermissionDenied, setPushPermissionDenied] = useState(false)
+  const [iosNotInstalled, setIosNotInstalled] = useState(false)
+
+  useEffect(() => {
+    setIosNotInstalled(isIosNotInstalledPwa())
+    if (typeof Notification !== 'undefined') setPushPermissionDenied(Notification.permission === 'denied')
+  }, [])
+
+  // Displayed switch state reflects the real device subscription, not just the DB pref.
+  const pushDisplayed = pushSubscribed && pushPrefEnabled
 
   const [inLeaderboard, setInLeaderboard] = useState(!initialOptOut)
   const { execute: execOptOut } = useAction(setLeaderboardOptOut, {
@@ -62,16 +84,41 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
   }
 
   function handlePushToggle(val: boolean) {
-    setPushEnabled(val)
-    startTransition(async () => {
-      await updateNotificationPrefsAction({ push_enabled: val, email_digest: emailEnabled })
-    })
+    if (val) {
+      setPushPrefEnabled(true) // optimistic
+      startTransition(async () => {
+        try {
+          await pushSubscribe()
+          if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+            setPushPrefEnabled(false)
+            setPushPermissionDenied(true)
+            toast.error('Autorisation refusée. Activez les notifications dans les réglages du navigateur.')
+            return
+          }
+          await updateNotificationPrefsAction({ push_enabled: true, email_digest: emailEnabled })
+        } catch {
+          setPushPrefEnabled(false) // revert optimistic update
+          toast.error('Impossible d\'activer les notifications push.')
+        }
+      })
+    } else {
+      setPushPrefEnabled(false) // optimistic
+      startTransition(async () => {
+        try {
+          await pushUnsubscribe()
+          await updateNotificationPrefsAction({ push_enabled: false, email_digest: emailEnabled })
+        } catch {
+          setPushPrefEnabled(true) // revert optimistic update
+          toast.error('Impossible de désactiver les notifications push.')
+        }
+      })
+    }
   }
 
   function handleEmailDigestToggle(val: boolean) {
     setEmailEnabled(val)
     startTransition(async () => {
-      await updateNotificationPrefsAction({ push_enabled: pushEnabled, email_digest: val })
+      await updateNotificationPrefsAction({ push_enabled: pushPrefEnabled, email_digest: val })
     })
   }
 
@@ -145,21 +192,45 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
 
       {/* Notification toggles */}
       <div className="rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
-        {[
-          { Icon: Bell, label: 'Notifications push', sub: 'Rappels & mises à jour', iconBg: '#fef3c7', iconColor: '#d97706', value: pushEnabled, onChange: handlePushToggle },
-          { Icon: EnvelopeSimple, label: 'Résumé email', sub: 'Récapitulatif hebdomadaire', iconBg: '#f0fdf4', iconColor: '#16a34a', value: emailEnabled, onChange: handleEmailDigestToggle },
-        ].map(({ Icon, label, sub, iconBg, iconColor, value, onChange }, i) => (
-          <div key={label} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i === 0 ? '1px solid var(--border-subtle)' : undefined }}>
-            <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: iconBg }}>
-              <Icon size={17} style={{ color: iconColor }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">{label}</p>
-              <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{sub}</p>
-            </div>
-            <Switch checked={value} onCheckedChange={onChange} />
+        <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: '#fef3c7' }}>
+            <Bell size={17} style={{ color: '#d97706' }} />
           </div>
-        ))}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Notifications push</p>
+            {pushSupported && !iosNotInstalled ? (
+              <>
+                <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>Rappels & mises à jour</p>
+                {pushPermissionDenied && (
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--destructive)' }}>
+                    Autorisation refusée — activez-les dans les réglages du navigateur.
+                  </p>
+                )}
+              </>
+            ) : iosNotInstalled ? (
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                Ajoutez Synapse à l'écran d'accueil pour activer les notifications.
+              </p>
+            ) : (
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                Non disponible sur ce navigateur.
+              </p>
+            )}
+          </div>
+          {pushSupported && !iosNotInstalled ? (
+            <Switch checked={pushDisplayed} onCheckedChange={handlePushToggle} disabled={pushPermissionDenied} />
+          ) : null}
+        </div>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: '#f0fdf4' }}>
+            <EnvelopeSimple size={17} style={{ color: '#16a34a' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Résumé email</p>
+            <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>Récapitulatif hebdomadaire</p>
+          </div>
+          <Switch checked={emailEnabled} onCheckedChange={handleEmailDigestToggle} />
+        </div>
       </div>
 
       {/* Leaderboard opt-out */}
