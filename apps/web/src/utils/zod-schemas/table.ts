@@ -18,6 +18,8 @@ export type TableUpsertItem = z.infer<typeof tableUpsertItemSchema>
 export const deleteTableSchema = z.object({
   id: z.string().uuid(),
   room_id: z.string().uuid(),
+  // Required to delete a table whose chairs are occupied or reserved.
+  force: z.boolean().optional().default(false),
 })
 
 export type DeleteTableInput = z.infer<typeof deleteTableSchema>

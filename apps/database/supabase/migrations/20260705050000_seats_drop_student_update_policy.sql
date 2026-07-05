@@ -1,0 +1,11 @@
+-- Security fix: the "seats_update_status_student" RLS policy allowed ANY
+-- authenticated user to UPDATE ANY seat (all columns) — USING (auth.uid() IS
+-- NOT NULL) with no WITH CHECK. Because UPDATE policies are OR'd, this widened
+-- seats_update far beyond staff, letting a student free/occupy/relocate any
+-- seat in the app.
+--
+-- No legitimate flow needs it: staff edits go through the "seats_update"
+-- policy (admin/employee), and the only student-triggered seat write
+-- (createReservation marking a seat 'reserved') now uses the service-role
+-- admin client, which bypasses RLS. So the policy is dropped outright.
+DROP POLICY IF EXISTS "seats_update_status_student" ON public.seats;

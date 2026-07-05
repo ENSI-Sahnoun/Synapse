@@ -19,5 +19,6 @@ export type NotificationType =
   | 'seat_swap_accepted'
   | 'seat_swap_denied'
   | 'announcement_new'
+  | 'seat_removed_by_staff'
 
 export type NotificationChannel = 'email' | 'sms' | 'whatsapp' | 'inapp'

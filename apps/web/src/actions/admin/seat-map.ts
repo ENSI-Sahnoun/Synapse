@@ -2,6 +2,8 @@
 
 import { adminActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { createSupabaseAdminClient } from '@/supabase-clients/admin'
+import { insertInAppNotification } from '@/data/notifications/inapp'
 import { upsertSeatMapSchema, deleteTableSchema } from '@/utils/zod-schemas/table'
 import { deleteSeatSchema } from '@/utils/zod-schemas/seat'
 import { revalidatePath } from 'next/cache'
@@ -79,6 +81,66 @@ export const deleteSeatAction = adminActionClient
   .schema(deleteSeatSchema)
   .action(async ({ parsedInput }) => {
     const supabase = await createSupabaseClient()
+    const admin = createSupabaseAdminClient()
+
+    // Look up live state before deleting. Deleting an occupied seat evicts the
+    // student (attendance.seat_id -> NULL); deleting a reserved seat cascade-
+    // deletes the reservation. Both must be deliberate (force) and notified.
+    const { data: seat } = await admin
+      .from('seats')
+      .select('status, label')
+      .eq('id', parsedInput.id)
+      .eq('room_id', parsedInput.room_id)
+      .maybeSingle()
+
+    // Already gone / never persisted — nothing to guard.
+    if (!seat) {
+      revalidatePath(`/admin/rooms/${parsedInput.room_id}/editor`)
+      revalidatePath(`/employee/rooms/${parsedInput.room_id}/map`)
+      return { deleted: true }
+    }
+
+    const { data: occupant } = await admin
+      .from('attendance')
+      .select('student_id')
+      .eq('seat_id', parsedInput.id)
+      .is('checked_out_at', null)
+      .maybeSingle()
+
+    const { data: reservation } = await admin
+      .from('reservations')
+      .select('student_id')
+      .eq('seat_id', parsedInput.id)
+      .eq('status', 'active')
+      .maybeSingle()
+
+    const hasLiveState = Boolean(occupant) || Boolean(reservation)
+
+    if (hasLiveState && !parsedInput.force) {
+      throw new Error(
+        occupant
+          ? `La place ${seat.label} est occupée par un étudiant. Confirmez pour le libérer.`
+          : `La place ${seat.label} est réservée. Confirmez pour annuler la réservation.`,
+      )
+    }
+
+    // Notify affected students before the delete removes their state.
+    // student_id can be null on staff/anonymous attendance rows — skip those.
+    if (occupant?.student_id) {
+      await insertInAppNotification({
+        userId: occupant.student_id,
+        type: 'seat_removed_by_staff',
+        message: `Votre place (${seat.label}) a été supprimée par le personnel. Vous avez été déplacé vers "Divers".`,
+      })
+    }
+    if (reservation?.student_id) {
+      await insertInAppNotification({
+        userId: reservation.student_id,
+        type: 'seat_removed_by_staff',
+        message: `Votre réservation pour la place ${seat.label} a été annulée : la place a été supprimée par le personnel.`,
+      })
+    }
+
     const { error } = await supabase
       .from('seats')
       .delete()

@@ -32,6 +32,9 @@ export type UpsertSeatsInput = z.infer<typeof upsertSeatsSchema>
 export const deleteSeatSchema = z.object({
   id: z.string().uuid(),
   room_id: z.string().uuid(),
+  // Required to delete a seat that is occupied or reserved (evicts the student
+  // / cancels the reservation). Without it such a delete is rejected.
+  force: z.boolean().optional().default(false),
 })
 
 export type DeleteSeatInput = z.infer<typeof deleteSeatSchema>

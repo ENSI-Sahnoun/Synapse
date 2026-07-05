@@ -3,6 +3,7 @@
 import { z } from 'zod'
 import { studentActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { revalidatePath } from 'next/cache'
 import { insertInAppNotification, notifyAllStaff } from '@/data/notifications/inapp'
 
@@ -202,8 +203,12 @@ export const createReservation = studentActionClient
       throw new Error('Impossible de créer la réservation. Veuillez réessayer.')
     }
 
-    // 5. Mark seat as reserved (secondary guard — DB unique index is the primary)
-    const { data: updatedSeats, error: seatUpdateError } = await supabase
+    // 5. Mark seat as reserved (secondary guard — DB unique index is the primary).
+    // Uses the admin client: students have no direct RLS write access to seats
+    // (that permissive policy was removed for security). The `.eq('status','free')`
+    // guard still keeps this race-safe.
+    const admin = createSupabaseAdminClient()
+    const { data: updatedSeats, error: seatUpdateError } = await admin
       .from('seats')
       .update({ status: 'reserved' })
       .eq('id', seat_id)

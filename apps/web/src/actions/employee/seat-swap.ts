@@ -24,6 +24,30 @@ export const acceptSeatSwapRequest = employeeActionClient
     if (!request) throw new Error('Demande introuvable.')
     if (request.status !== 'pending') throw new Error('Cette demande a déjà été traitée.')
 
+    // The student may have checked out between requesting and staff accepting.
+    // Occupying a seat for an absent student would create a phantom occupied
+    // seat, so cancel the request instead of applying it.
+    const { data: attendance } = await admin
+      .from('attendance')
+      .select('id, checked_out_at')
+      .eq('id', request.attendance_id)
+      .maybeSingle()
+
+    if (!attendance || attendance.checked_out_at !== null) {
+      await admin
+        .from('seat_swap_requests')
+        .update({ status: 'cancelled', resolved_at: new Date().toISOString(), resolved_by: userId })
+        .eq('id', requestId)
+
+      await insertInAppNotification({
+        userId: request.student_id,
+        type: 'seat_swap_denied',
+        message: "Votre demande de changement de place a été annulée : vous n'êtes plus enregistré comme présent.",
+      })
+
+      throw new Error("L'étudiant n'est plus présent — demande annulée.")
+    }
+
     const { data: toSeat } = await admin.from('seats').select('room_id').eq('id', request.to_seat_id).maybeSingle()
     if (!toSeat) throw new Error('Place introuvable.')
 

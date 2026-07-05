@@ -115,8 +115,20 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur suppression table'),
   })
 
+  // Holds a seat optimistically removed from the canvas so it can be restored
+  // if the server rejects the delete (e.g. occupied/reserved without force).
+  const removedSeatRef = useRef<SeatTokenData | null>(null)
   const { execute: execDeleteSeat } = useAction(deleteSeatAction, {
-    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur suppression chaise'),
+    onError: ({ error }) => {
+      if (removedSeatRef.current) {
+        setSeats((prev) => [...prev, removedSeatRef.current as SeatTokenData])
+        removedSeatRef.current = null
+      }
+      toast.error(error.serverError ?? 'Erreur suppression chaise')
+    },
+    onSuccess: () => {
+      removedSeatRef.current = null
+    },
   })
 
   // --- Snap helper ---
@@ -339,10 +351,30 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
 
   const handleDeleteSeat = useCallback(
     (localId: string) => {
+      const seat = seats.find((s) => s.localId === localId)
+
+      // Warn before evicting a live occupant / cancelling a reservation. The
+      // server enforces this too (force flag); this is the UX confirm.
+      if (seat && (seat.status === 'occupied' || seat.status === 'reserved')) {
+        const verb = seat.status === 'occupied' ? 'occupée par un étudiant' : 'réservée'
+        const consequence =
+          seat.status === 'occupied'
+            ? "L'étudiant sera déplacé vers \"Divers\"."
+            : 'La réservation sera annulée.'
+        if (!window.confirm(`Cette place est ${verb}. La supprimer ? ${consequence}`)) {
+          return
+        }
+      }
+
       // localId is the seat's real DB id once saved; always attempt the delete
       // (harmless no-op if it was never persisted) so saved-but-stale seats
       // don't get orphaned in the DB.
-      execDeleteSeat({ id: localId, room_id: roomId })
+      removedSeatRef.current = seat ?? null
+      execDeleteSeat({
+        id: localId,
+        room_id: roomId,
+        force: seat?.status === 'occupied' || seat?.status === 'reserved',
+      })
       setSeats((prev) => prev.filter((s) => s.localId !== localId))
       setSelection(null)
     },
