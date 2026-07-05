@@ -2,8 +2,6 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
-import { FullscreenButton } from '@/components/student/FullscreenButton'
-import { SecretCodeReveal } from '@/components/student/SecretCodeReveal'
 import { SignIn, ShoppingCart, Star, Key } from '@phosphor-icons/react/dist/ssr'
 
 export const metadata = {
@@ -64,10 +62,10 @@ export default async function StudentQrPage() {
       <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
         {/* Left: the QR + secret code */}
         <div
-          className="flex flex-col items-center justify-center gap-5 rounded-2xl border p-6"
+          className="flex flex-col items-center justify-center gap-5 rounded-2xl border p-6 text-center"
           style={{ background: 'var(--synapse-cream-100)', borderColor: 'var(--synapse-cream-300)' }}
         >
-          <div className="text-center">
+          <div>
             <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-display)' }}>
               Mon QR Code
             </h1>
@@ -80,8 +78,17 @@ export default async function StudentQrPage() {
             <QrCodeImage token={profile.qr_token} size={280} />
           </div>
 
-          <SecretCodeReveal token={profile.qr_token} />
-          <FullscreenButton />
+          <div className="w-full max-w-xs">
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--synapse-brown-500)' }}>
+              Code secret
+            </p>
+            <p
+              className="mt-1 text-xs font-mono break-all rounded-lg px-3 py-2 select-all"
+              style={{ background: 'var(--synapse-cream-200)', color: 'var(--synapse-brown-700)' }}
+            >
+              {profile.qr_token}
+            </p>
+          </div>
         </div>
 
         {/* Right: what the QR can do */}
