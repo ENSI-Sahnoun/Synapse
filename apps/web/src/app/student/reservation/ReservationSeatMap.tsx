@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { createClient } from '@/supabase-clients/client'
 import { createReservation } from '@/actions/student/reservations'
-import { requestSeatSwap } from '@/actions/student/seat-swap'
+import { requestSeatSwap, claimSeat } from '@/actions/student/seat-swap'
 import { LiveSeatMap } from '@/components/seat-map/LiveSeatMap'
 import { toast } from 'sonner'
 import type { Seat } from '@/data/admin/seat-map'
@@ -47,10 +47,13 @@ export function ReservationSeatMap({
   rooms,
   mySeatId,
   alreadyCheckedIn,
+  isDivers,
 }: {
   rooms: RoomWithData[]
   mySeatId?: string | null
   alreadyCheckedIn?: boolean
+  /** Present but seatless ("Divers") — can claim a free seat directly, no staff approval. */
+  isDivers?: boolean
 }) {
   const [pendingSeat, setPendingSeat] = useState<PartialSeat | null>(null)
 
@@ -93,7 +96,17 @@ export function ReservationSeatMap({
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur lors de la demande.'),
   })
 
-  const isPending = status === 'executing' || swapStatus === 'executing'
+  const { execute: executeClaim, status: claimStatus } = useAction(claimSeat, {
+    onSuccess: () => {
+      toast.success('Place attribuée.')
+      setPendingSeat(null)
+      window.location.reload()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur lors de la sélection.'),
+  })
+
+  const isPending =
+    status === 'executing' || swapStatus === 'executing' || claimStatus === 'executing'
 
   function handleSeatClick(seat: Seat | PartialSeat) {
     if (seat.status !== 'free') return
@@ -102,7 +115,10 @@ export function ReservationSeatMap({
 
   function handleConfirm() {
     if (!pendingSeat) return
-    if (alreadyCheckedIn) {
+    if (isDivers) {
+      // Present but seatless — claim the free seat directly.
+      executeClaim({ seatId: pendingSeat.id, roomId: pendingSeat.room_id })
+    } else if (alreadyCheckedIn) {
       executeSwap({ toSeatId: pendingSeat.id })
     } else {
       execute({ seat_id: pendingSeat.id })
@@ -147,9 +163,11 @@ export function ReservationSeatMap({
       {pendingSeat && (
         <div className="fixed inset-0 bg-black/40 flex items-end justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="text-lg font-bold mb-2">{alreadyCheckedIn ? 'Demander ce changement' : 'Confirmer la réservation'}</h3>
+            <h3 className="text-lg font-bold mb-2">{isDivers ? 'Confirmer la place' : alreadyCheckedIn ? 'Demander ce changement' : 'Confirmer la réservation'}</h3>
             <p className="text-gray-600 mb-4">
-              {alreadyCheckedIn ? (
+              {isDivers ? (
+                <>Vous asseoir à la place <strong>{pendingSeat.label}</strong> ? Elle vous sera attribuée immédiatement.</>
+              ) : alreadyCheckedIn ? (
                 <>Demander la place <strong>{pendingSeat.label}</strong> ? Un employé doit valider ce changement avant qu&apos;il ne prenne effet.</>
               ) : (
                 <>
@@ -172,7 +190,7 @@ export function ReservationSeatMap({
                 disabled={isPending}
                 className="flex-1 py-2 rounded-lg bg-green-600 text-white font-medium disabled:opacity-60"
               >
-                {isPending ? 'Envoi…' : alreadyCheckedIn ? 'Demander' : 'Confirmer'}
+                {isPending ? 'Envoi…' : isDivers ? 'M\'asseoir ici' : alreadyCheckedIn ? 'Demander' : 'Confirmer'}
               </button>
             </div>
           </div>

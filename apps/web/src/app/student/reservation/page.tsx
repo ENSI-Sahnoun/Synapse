@@ -80,7 +80,7 @@ export default async function ReservationPage() {
       )}
 
       {subscription && !typedReservation && (
-        <ReservationSeatMap rooms={rooms ?? []} mySeatId={mySeatId} alreadyCheckedIn={alreadyCheckedIn} />
+        <ReservationSeatMap rooms={rooms ?? []} mySeatId={mySeatId} alreadyCheckedIn={alreadyCheckedIn} isDivers={presence.status === 'divers'} />
       )}
     </div>
   )

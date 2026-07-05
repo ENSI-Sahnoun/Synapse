@@ -86,6 +86,46 @@ export const undoMoveSelfToDivers = studentActionClient
     return { success: true }
   })
 
+// Student who is present but seatless ("Divers") claims a specific free seat
+// directly — no staff approval. Mirrors moveSelfToDivers; shares the atomic
+// free→occupied flip logic with undoMoveSelfToDivers.
+export const claimSeat = studentActionClient
+  .schema(z.object({ seatId: z.string().uuid(), roomId: z.string().uuid() }))
+  .action(async ({ parsedInput: { seatId, roomId }, ctx: { userId } }) => {
+    const attendance = await getMyOpenAttendance(userId)
+    if (!attendance) throw new Error("Vous devez être enregistré comme présent pour choisir une place.")
+    if (attendance.seat_id) throw new Error('Vous occupez déjà une place.')
+
+    const admin = createSupabaseAdminClient()
+    const { data: updatedSeats, error: seatError } = await admin
+      .from('seats')
+      .update({ status: 'occupied' })
+      .eq('id', seatId)
+      .eq('status', 'free')
+      .select('id')
+    if (seatError) throw new Error(seatError.message)
+    // A 0-row match isn't a Postgres error — verify the row count or a seat
+    // someone else just took would be silently double-claimed here.
+    if (!updatedSeats || updatedSeats.length === 0) {
+      throw new Error('Cette place a été prise entre-temps.')
+    }
+
+    const { error } = await admin
+      .from('attendance')
+      .update({ seat_id: seatId, room_id: roomId })
+      .eq('id', attendance.id)
+    if (error) {
+      await admin.from('seats').update({ status: 'free' }).eq('id', seatId)
+      throw new Error(error.message)
+    }
+
+    revalidatePath(`/employee/rooms/${roomId}/map`)
+    revalidatePath(`/admin/rooms/${roomId}/map`)
+    revalidatePath('/employee/rooms')
+    revalidatePath('/student/dashboard')
+    return { success: true }
+  })
+
 // Student requests to move to a specific free seat without checking out —
 // staff review and either accept (perform the swap) or deny.
 export const requestSeatSwap = studentActionClient

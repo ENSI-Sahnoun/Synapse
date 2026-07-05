@@ -10,6 +10,7 @@ import { WarningCircle, ArrowRight, Megaphone } from '@phosphor-icons/react/dist
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PresenceBanner } from './PresenceBanner'
 import { GamificationTeaser } from '@/components/student/GamificationTeaser'
+import { DiversSeatPrompt } from '@/components/student/DiversSeatPrompt'
 
 export default async function StudentDashboardPage() {
   const userId = await getCachedLoggedInUserId()
@@ -55,6 +56,8 @@ export default async function StudentDashboardPage() {
 
   return (
     <div className="space-y-4">
+      {presence.status === 'divers' && <DiversSeatPrompt />}
+
       {/* Greeting */}
       <div>
         <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>

@@ -5,10 +5,25 @@ import { useAction } from 'next-safe-action/hooks'
 import { QrScanner } from '@/components/checkin/QrScanner'
 import { KioskResult } from '@/components/kiosk/KioskResult'
 import { KioskGuard } from '@/components/kiosk/KioskGuard'
+import { KioskManualEntry } from '@/components/kiosk/KioskManualEntry'
+import { KioskSeatPicker } from '@/components/kiosk/KioskSeatPicker'
 import { checkinAction } from '@/actions/checkin/checkin-action'
 import type { CheckinResult } from '@/utils/zod-schemas/checkin'
+import type { RoomTable, Seat } from '@/data/admin/seat-map'
 
-export function KioskClient() {
+export type KioskRoom = {
+  id: string
+  name: string
+  status: string
+  status_note: string | null
+  tables: RoomTable[]
+  seats: Seat[]
+}
+
+type Mode = 'scanning' | 'selecting' | 'result'
+
+export function KioskClient({ rooms }: { rooms: KioskRoom[] }) {
+  const [mode, setMode] = useState<Mode>('scanning')
   const [scannerReady, setScannerReady] = useState(true)
   const [lastResult, setLastResult] = useState<CheckinResult | null>(null)
 
@@ -16,9 +31,17 @@ export function KioskClient() {
     onSuccess: ({ data }) => {
       if (!data) return
       setLastResult(data)
+      // Authorized walk-ins (no reserved seat) go straight to the seat picker.
+      // Everyone else (reserved seat, or any denial) sees the result screen.
+      if (data.status === 'AUTHORIZED' && !data.seatId) {
+        setMode('selecting')
+      } else {
+        setMode('result')
+      }
     },
     onError: () => {
       setLastResult({ status: 'DENIED_UNKNOWN' })
+      setMode('result')
     },
   })
 
@@ -34,54 +57,67 @@ export function KioskClient() {
   const handleReset = useCallback(() => {
     setLastResult(null)
     setScannerReady(true)
+    setMode('scanning')
   }, [])
+
+  // From the welcome screen a student with a reserved seat can change it.
+  const handleChangeSeat = useCallback(() => setMode('selecting'), [])
+
+  // Seat picker finished (assigned, changed, or skipped) → show welcome.
+  const handlePickerDone = useCallback(() => setMode('result'), [])
+
+  const authorized =
+    lastResult?.status === 'AUTHORIZED' ? lastResult : null
 
   return (
     <div className="w-screen h-screen bg-black text-white flex flex-col">
       <KioskGuard />
 
       {/* Top bar */}
-      <div className="flex items-center justify-between px-8 py-4 border-b border-gray-800">
+      <div className="flex items-center justify-between px-8 py-4 border-b border-gray-800 shrink-0">
         <span className="text-xl font-bold tracking-widest">SYNAPSE</span>
         <span className="text-gray-500 text-sm">Kiosque d&apos;accès</span>
       </div>
 
-      {/* Main area */}
-      <div className="flex-1 flex">
-        {/* Left: scanner */}
-        <div className="w-1/2 flex flex-col items-center justify-center gap-6 border-r border-gray-800 p-8">
-          <p className="text-gray-400 text-sm uppercase tracking-widest">
+      {mode === 'scanning' && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-8 p-8">
+          <p className="text-gray-300 text-2xl uppercase tracking-widest">
             Présentez votre QR code
           </p>
-          <QrScanner onScan={handleScan} ready={scannerReady} />
-          <p className="text-gray-600 text-xs">
+          <div className="w-full max-w-2xl">
+            <QrScanner onScan={handleScan} ready={scannerReady} />
+          </div>
+          <p className="text-gray-600 text-sm">
             Ouvrez l&apos;app Synapse → QR Code
           </p>
+          <KioskManualEntry onSubmit={handleScan} disabled={!scannerReady} />
         </div>
+      )}
 
-        {/* Right: result */}
-        <div className="w-1/2 flex items-center justify-center p-8">
-          {lastResult ? (
-            <KioskResult result={lastResult} onReset={handleReset} />
-          ) : (
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div className="w-24 h-24 rounded-full border-2 border-gray-700 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-12 h-12 text-gray-600">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                </svg>
-              </div>
-              <p className="text-gray-500 text-lg">En attente d&apos;un scan…</p>
-            </div>
-          )}
+      {mode === 'selecting' && authorized && (
+        <KioskSeatPicker
+          rooms={rooms}
+          studentName={authorized.studentName}
+          studentId={authorized.studentId}
+          attendanceId={authorized.attendanceId}
+          deferred={!!authorized.deferred}
+          currentSeatId={authorized.seatId ?? null}
+          onDone={handlePickerDone}
+          // Walk-in who never chooses is NOT marked present → back to scanning.
+          // A reserved student changing seats is already present → back to welcome.
+          onTimeout={authorized.deferred ? handleReset : handlePickerDone}
+        />
+      )}
+
+      {mode === 'result' && lastResult && (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <KioskResult
+            result={lastResult}
+            onReset={handleReset}
+            onChangeSeat={authorized?.seatId ? handleChangeSeat : undefined}
+          />
         </div>
-      </div>
-
-      {/* Bottom */}
-      <div className="border-t border-gray-800 px-8 py-3 flex items-center justify-center">
-        <p className="text-gray-600 text-xs">
-          En cas de problème, contactez l&apos;accueil — ne tentez pas de quitter cette page
-        </p>
-      </div>
+      )}
     </div>
   )
 }

@@ -7,7 +7,10 @@ export const checkinSchema = z.object({
 export type CheckinInput = z.infer<typeof checkinSchema>
 
 export type CheckinResult =
-  | { status: 'AUTHORIZED'; studentName: string; planName: string; endDate: string; daysRemaining: number; reservationFulfilled?: boolean; attendanceId: string }
+  // `deferred: true` means check-in was validated but NO attendance row was
+  // created yet — the student is not marked present until they pick a seat or
+  // explicitly defer at the kiosk. `studentId` lets the picker create it then.
+  | { status: 'AUTHORIZED'; studentName: string; planName: string; endDate: string; daysRemaining: number; reservationFulfilled?: boolean; attendanceId: string; studentId: string; deferred?: boolean; seatId?: string | null; seatLabel?: string | null; roomId?: string | null; roomName?: string | null }
   | { status: 'DENIED_EXPIRED'; studentName: string; endDate: string }
   | { status: 'DENIED_NO_SUB'; studentName: string }
   | { status: 'DENIED_UNKNOWN' }

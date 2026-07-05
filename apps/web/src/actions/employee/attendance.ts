@@ -100,6 +100,50 @@ export const assignSeatAction = employeeActionClient
     return { attendance: data }
   })
 
+// Kiosk deferral: a walk-in student who scanned in but taps "I'm not sure —
+// I'll choose later". Marks them present with no seat (Divers). Attendance is
+// created HERE, not at scan, so students who never make a choice are never
+// marked present. Mirrors the guards in assignSeatAction.
+export const kioskCheckinSeatlessAction = employeeActionClient
+  .schema(z.object({ student_id: z.string().uuid() }))
+  .action(async ({ parsedInput: { student_id } }) => {
+    const supabase = await createSupabaseClient()
+
+    const { data: openAttendance, error: openErr } = await supabase
+      .from('attendance')
+      .select('id')
+      .eq('student_id', student_id)
+      .is('checked_out_at', null)
+      .limit(1)
+    if (openErr) throw new Error(openErr.message)
+    // Already present (e.g. double scan) — treat as success, no duplicate row.
+    if (openAttendance && openAttendance.length > 0) {
+      return { attendanceId: openAttendance[0].id }
+    }
+
+    const today = new Date().toISOString().slice(0, 10)
+    const { data: activeSub, error: subErr } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('student_id', student_id)
+      .gte('end_date', today)
+      .limit(1)
+    if (subErr) throw new Error(subErr.message)
+    if (!activeSub || activeSub.length === 0) {
+      throw new Error("Cet étudiant n'a pas d'abonnement actif.")
+    }
+
+    const { data, error } = await supabase
+      .from('attendance')
+      .insert({ student_id, seat_id: null, room_id: null, entry_method: 'qr_scan' })
+      .select('id')
+      .single()
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/employee/rooms')
+    return { attendanceId: data.id }
+  })
+
 export const unoccupySeatAction = employeeActionClient
   .schema(z.object({ seat_id: z.string().uuid(), room_id: z.string().uuid() }))
   .action(async ({ parsedInput: { seat_id, room_id } }) => {

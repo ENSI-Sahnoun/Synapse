@@ -74,7 +74,8 @@ export async function updateSession(request: NextRequest) {
   // Unauthenticated user on protected route
   if (!isPublicPath && !user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    // Kiosk devices self-enroll via /kiosk/setup, not the standard login page.
+    url.pathname = pathname.startsWith('/kiosk') ? '/kiosk/setup' : '/login'
     return NextResponse.redirect(url)
   }
 

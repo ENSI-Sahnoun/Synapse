@@ -113,26 +113,54 @@ export const checkinAction = employeeActionClient
       .eq('status', 'active')
       .maybeSingle()
 
-    if (activeReservation) {
-      await admin
-        .from('reservations')
-        .update({ status: 'fulfilled' })
-        .eq('id', activeReservation.id)
+    const reservedRoomId = (activeReservation?.seats as { room_id: string } | null)?.room_id ?? null
 
-      await admin
-        .from('seats')
-        .update({ status: 'occupied' })
-        .eq('id', activeReservation.seat_id)
-        .eq('status', 'reserved')
+    const planName =
+      (subscription.subscription_plans as { name: string } | null)?.name ?? 'Abonnement'
+    const daysRemaining = differenceInDays(
+      parseISO(subscription.end_date),
+      startOfDay(new Date())
+    )
+
+    // Walk-in (no reservation): the student is NOT marked present here. We only
+    // validated their access. Attendance is created later, at the kiosk, once
+    // they either pick a seat or explicitly defer — or not at all if they walk
+    // away (the picker times out). This avoids phantom "present" rows.
+    if (!activeReservation) {
+      return {
+        status: 'AUTHORIZED',
+        studentName: profile.full_name,
+        studentId,
+        deferred: true,
+        planName,
+        endDate: subscription.end_date,
+        daysRemaining,
+        reservationFulfilled: false,
+        attendanceId: '',
+        seatId: null,
+        seatLabel: null,
+        roomId: null,
+        roomName: null,
+      }
     }
 
-    const reservedRoomId = (activeReservation?.seats as { room_id: string } | null)?.room_id ?? null
+    // Reserved seat: they already chose it. Mark present immediately.
+    await admin
+      .from('reservations')
+      .update({ status: 'fulfilled' })
+      .eq('id', activeReservation.id)
+
+    await admin
+      .from('seats')
+      .update({ status: 'occupied' })
+      .eq('id', activeReservation.seat_id)
+      .eq('status', 'reserved')
 
     const { data: newAttendance, error: insertError } = await admin
       .from('attendance')
       .insert({
         student_id: studentId,
-        seat_id: activeReservation?.seat_id ?? null,
+        seat_id: activeReservation.seat_id,
         room_id: reservedRoomId,
         entry_method: 'qr_scan',
       })
@@ -144,20 +172,39 @@ export const checkinAction = employeeActionClient
       throw new Error("Erreur lors de l'enregistrement de la présence.")
     }
 
-    const planName =
-      (subscription.subscription_plans as { name: string } | null)?.name ?? 'Abonnement'
-    const daysRemaining = differenceInDays(
-      parseISO(subscription.end_date),
-      startOfDay(new Date())
-    )
+    // Resolve the reserved seat's label + room name for the welcome screen.
+    let seatLabel: string | null = null
+    let roomName: string | null = null
+    if (activeReservation.seat_id) {
+      const { data: seat } = await admin
+        .from('seats')
+        .select('label')
+        .eq('id', activeReservation.seat_id)
+        .maybeSingle()
+      seatLabel = seat?.label ?? null
+      if (reservedRoomId) {
+        const { data: room } = await admin
+          .from('rooms')
+          .select('name')
+          .eq('id', reservedRoomId)
+          .maybeSingle()
+        roomName = room?.name ?? null
+      }
+    }
 
     return {
       status: 'AUTHORIZED',
       studentName: profile.full_name,
+      studentId,
+      deferred: false,
       planName,
       endDate: subscription.end_date,
       daysRemaining,
-      reservationFulfilled: !!activeReservation,
-      attendanceId: newAttendance?.id ?? '',
+      reservationFulfilled: true,
+      attendanceId: newAttendance.id,
+      seatId: activeReservation.seat_id,
+      seatLabel,
+      roomId: reservedRoomId,
+      roomName,
     }
   })
