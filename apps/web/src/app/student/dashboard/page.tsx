@@ -12,6 +12,7 @@ import { PresenceBanner } from './PresenceBanner'
 import { GamificationTeaser } from '@/components/student/GamificationTeaser'
 import { DiversSeatPrompt } from '@/components/student/DiversSeatPrompt'
 import { StudentPresenceSync } from '@/components/student/StudentPresenceSync'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export default async function StudentDashboardPage() {
   const userId = await getCachedLoggedInUserId()
@@ -57,6 +58,7 @@ export default async function StudentDashboardPage() {
 
   return (
     <div className="space-y-4">
+      <LiveRefresher tables={['attendance', 'reservations', 'seats']} />
       <StudentPresenceSync studentId={userId} />
       {presence.status === 'divers' && <DiversSeatPrompt attendanceId={presence.attendanceId} />}
 
