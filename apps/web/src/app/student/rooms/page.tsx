@@ -5,6 +5,7 @@ import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { ActiveReservationBanner } from '@/components/student/ActiveReservationBanner'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 type StatusConfig = {
   label: string
@@ -228,6 +229,7 @@ export default async function StudentRoomsPage() {
         background: 'var(--bg-base)',
       }}
     >
+      <LiveRefresher tables={['rooms', 'seats']} />
       {/* Header */}
       <div style={{ padding: '20px 16px 4px' }}>
         <h1
