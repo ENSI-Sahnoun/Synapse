@@ -15,6 +15,7 @@ import {
 import { getNextReward, weeklyDelta } from '@/lib/rewards'
 import { RewardsHub } from './RewardsHub'
 import type { RedemptionRequest } from './RewardsPanel'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export default async function StudentRewardsPage() {
   const studentId = await getCachedLoggedInUserId()
@@ -33,7 +34,8 @@ export default async function StudentRewardsPage() {
     ])
 
   return (
-    <RewardsHub
+    <>
+    <LiveRefresher tables={['loyalty_ledger', 'loyalty_redemption_requests', 'loyalty_rules', 'profiles']} />
       balance={balance}
       delta={weeklyDelta(ledger)}
       next={getNextReward(balance, rules)}
@@ -46,5 +48,6 @@ export default async function StudentRewardsPage() {
       lbSettings={lbSettings}
       lbConfig={lbConfig}
     />
+    </>
   )
 }
