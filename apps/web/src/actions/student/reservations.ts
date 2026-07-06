@@ -69,6 +69,29 @@ export const createReservation = studentActionClient
       }
     }
 
+    // 2c. Enforce the per-day reservation limit (default 3).
+    // Counts today's reservations that were not student-cancelled.
+    const { data: limitRow } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'max_reservations_per_day')
+      .maybeSingle()
+
+    const maxPerDay = parseInt(limitRow?.value ?? '3', 10)
+
+    const { count: todayCount } = await supabase
+      .from('reservations')
+      .select('id', { count: 'exact', head: true })
+      .eq('student_id', userId)
+      .gte('reserved_at', today)
+      .neq('status', 'cancelled')
+
+    if ((todayCount ?? 0) >= maxPerDay) {
+      return {
+        error: `Vous avez atteint la limite de ${maxPerDay} réservations par jour.`,
+      }
+    }
+
     // 3. Verify the seat is currently free
     const { data: seat, error: seatError } = await supabase
       .from('seats')
