@@ -36,6 +36,7 @@ export default async function StudentRewardsPage() {
   return (
     <>
     <LiveRefresher tables={['loyalty_ledger', 'loyalty_redemption_requests', 'loyalty_rules', 'profiles']} />
+    <RewardsHub
       balance={balance}
       delta={weeklyDelta(ledger)}
       next={getNextReward(balance, rules)}

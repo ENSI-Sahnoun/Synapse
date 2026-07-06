@@ -1,6 +1,7 @@
 import { listLoyaltyRules } from '@/data/admin/loyalty-rules'
 import { LoyaltyRuleDialog } from './loyalty-rule-dialog'
 import { ToggleRuleButton } from './toggle-rule-button'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 const REWARD_TYPE_LABELS: Record<string, string> = {
   free_day: 'Journée gratuite',
@@ -13,6 +14,7 @@ export default async function AdminLoyaltyPage() {
 
   return (
     <div className="space-y-6">
+      <LiveRefresher tables={['loyalty_rules']} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Règles de fidélité</h1>
