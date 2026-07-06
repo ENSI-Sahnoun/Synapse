@@ -40,8 +40,8 @@ export default function StudentSplash() {
             background: 'var(--background)',
           }}
         >
-          {/* Wordmark: per-letter blur/rise reveal + accent underline sweep.
-              Entrance completes ~1s, well inside MIN_DISPLAY_MS. */}
+          {/* Wordmark: per-letter blur/rise reveal. Entrance completes ~1s,
+              well inside MIN_DISPLAY_MS. */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {reducedMotion ? (
               <motion.span
@@ -100,21 +100,6 @@ export default function StudentSplash() {
                 ))}
               </motion.span>
             )}
-            <motion.div
-              initial={reducedMotion ? { opacity: 0 } : { scaleX: 0, opacity: 0 }}
-              animate={reducedMotion ? { opacity: 1 } : { scaleX: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.55, ease: [0.22, 1, 0.36, 1] }}
-              style={{
-                marginTop: 10,
-                height: 3,
-                width: 72,
-                borderRadius: 9999,
-                transformOrigin: 'left',
-                background:
-                  'linear-gradient(90deg, transparent, var(--accent-brand), transparent)',
-                boxShadow: '0 0 12px var(--accent-brand)',
-              }}
-            />
           </div>
         </motion.div>
       )}
