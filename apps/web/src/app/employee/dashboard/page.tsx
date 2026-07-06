@@ -4,6 +4,7 @@ import { QuickLinks } from '@/components/employee/dashboard/quick-links'
 import { createSupabaseClient as createSupabaseServerClient } from '@/supabase-clients/server'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { redirect } from 'next/navigation'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -28,6 +29,7 @@ export default async function EmployeeDashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
+      <LiveRefresher tables={['attendance', 'seats', 'purchases']} />
       <div>
         <h1 className="text-2xl font-bold">
           {greeting}, {profile?.full_name ?? 'Employé'} 👋
