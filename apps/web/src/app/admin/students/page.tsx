@@ -7,6 +7,7 @@ import { HardDeleteButton } from '@/components/admin/HardDeleteButton'
 import { ArchivedToggle } from './ArchivedToggle'
 import { Suspense } from 'react'
 import { SearchInput } from './SearchInput'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export default async function AdminStudentsPage({
   searchParams,
@@ -20,6 +21,7 @@ export default async function AdminStudentsPage({
 
   return (
     <div className="space-y-4">
+      <LiveRefresher tables={['profiles', 'subscriptions']} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">
           Étudiants{showArchived ? ' — Archivés' : ''}
