@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { UnassignedStudents } from './UnassignedStudents'
 import { SwapRequests } from './SwapRequests'
 import { getPendingSwapRequests } from '@/data/employee/seat-swap'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +48,7 @@ export default async function EmployeeRoomsPage() {
 
   return (
     <div className="p-4 pb-24" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <LiveRefresher tables={['seat_swap_requests', 'attendance', 'seats']} />
       <div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>Salles</h1>
         <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 2 }}>
