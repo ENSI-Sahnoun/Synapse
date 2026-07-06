@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 
-const LETTERS = 'Synapse'.split('')
-
 // Module scope: true for the first mount in this JS context only. A PWA cold
 // start creates a fresh context (this resets); client navigations do not.
 let shownThisContext = false
@@ -40,66 +38,25 @@ export default function StudentSplash() {
             background: 'var(--background)',
           }}
         >
-          {/* Wordmark: per-letter blur/rise reveal. Entrance completes ~1s,
-              well inside MIN_DISPLAY_MS. */}
+          {/* Wordmark: plain fade + rise. No filter/blur animation — WebKit's
+              compositor is unreliable animating filter+transform together on
+              staggered children (iOS Safari/Chrome silently drop the reveal). */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {reducedMotion ? (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 40,
-                  fontWeight: 700,
-                  color: 'var(--accent-brand)',
-                }}
-              >
-                Synapse
-              </motion.span>
-            ) : (
-              <motion.span
-                aria-label="Synapse"
-                initial="hidden"
-                animate="show"
-                variants={{
-                  show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
-                }}
-                style={{
-                  display: 'inline-flex',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 40,
-                  fontWeight: 700,
-                  color: 'var(--accent-brand)',
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                {LETTERS.map((letter, i) => (
-                  <motion.span
-                    key={i}
-                    aria-hidden
-                    variants={{
-                      hidden: {
-                        opacity: 0,
-                        y: 18,
-                        scale: 0.92,
-                        filter: 'blur(8px)',
-                      },
-                      show: {
-                        opacity: 1,
-                        y: 0,
-                        scale: 1,
-                        filter: 'blur(0px)',
-                        transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
-                      },
-                    }}
-                    style={{ display: 'inline-block', willChange: 'transform, filter, opacity' }}
-                  >
-                    {letter}
-                  </motion.span>
-                ))}
-              </motion.span>
-            )}
+            <motion.span
+              aria-label="Synapse"
+              initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 40,
+                fontWeight: 700,
+                color: 'var(--accent-brand)',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Synapse
+            </motion.span>
           </div>
         </motion.div>
       )}
