@@ -2,6 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { AnnouncementsClient } from './AnnouncementsClient'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,7 @@ export default async function AnnouncementsPage() {
 
   return (
     <div className="p-4 pb-24">
+      <LiveRefresher tables={['announcements']} />
       <AnnouncementsClient
         announcements={announcements ?? []}
         currentUserId={userId}
