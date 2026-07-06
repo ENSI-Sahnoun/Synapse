@@ -9,6 +9,7 @@ import { StudentNotificationSheet } from '@/components/notifications/StudentNoti
 import { PullToRefresh } from '@/components/PullToRefresh'
 import { SecureAccountBanner } from '@/components/student/SecureAccountBanner'
 import { RoutePrefetcher } from '@/components/RoutePrefetcher'
+import StudentSplash from '@/components/student/StudentSplash'
 
 const STUDENT_ROUTES = [
   '/student/dashboard',
@@ -50,6 +51,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--background)' }}>
+      <StudentSplash />
       <RoutePrefetcher routes={STUDENT_ROUTES} />
       {/* Top bar */}
       <header
