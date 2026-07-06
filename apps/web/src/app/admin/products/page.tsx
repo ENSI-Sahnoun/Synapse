@@ -3,6 +3,7 @@ import { listProductCategories } from '@/data/admin/product-categories'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ProductsTable } from './products-table'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,7 @@ export default async function AdminProductsPage() {
 
   return (
     <div className="space-y-4">
+      <LiveRefresher tables={['products', 'product_categories']} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Produits (POS)</h1>
         <Button asChild>
