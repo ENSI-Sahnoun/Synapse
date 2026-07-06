@@ -1,6 +1,7 @@
 import { getMyCheckInHistory, getMyCheckInCounts } from '@/data/student/profile'
 import { differenceInMinutes, parseISO } from 'date-fns'
 import { StudentHistoryClient } from './StudentHistoryClient'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export default async function StudentHistoryPage() {
   const [sessions, counts] = await Promise.all([getMyCheckInHistory(), getMyCheckInCounts()])
@@ -13,6 +14,7 @@ export default async function StudentHistoryPage() {
 
   return (
     <div className="space-y-4">
+      <LiveRefresher tables={['attendance']} />
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
