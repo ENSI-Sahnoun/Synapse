@@ -3,6 +3,7 @@ import {
   listRecentFulfilledRequests,
 } from '@/data/employee/loyalty-requests'
 import { RequestActions } from './request-actions'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -20,6 +21,7 @@ export default async function EmployeeLoyaltyRequestsPage() {
 
   return (
     <div className="p-4 space-y-8 pb-24">
+      <LiveRefresher tables={['loyalty_redemption_requests']} />
       <div>
         <h1 className="text-2xl font-semibold">Demandes de récompenses</h1>
         <p className="text-sm text-muted-foreground mt-1">
