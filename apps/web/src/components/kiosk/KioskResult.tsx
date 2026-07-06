@@ -29,8 +29,17 @@ export function KioskResult({ result, onReset }: KioskResultProps) {
   })
 
   useEffect(() => {
+    // checkedOut owns its own dismiss timer below.
+    if (checkedOut) return
+    // If the student opened the checkout confirm and walked away, fall back
+    // to resetting to the scanner after an idle timeout so the kiosk never
+    // locks up waiting for a tap that never comes. This must NOT check the
+    // student out — it only calls onReset.
+    if (confirmCheckout) {
+      const timer = setTimeout(onReset, 15000)
+      return () => clearTimeout(timer)
+    }
     // Give authorized students longer to read their seat / phone instruction.
-    if (confirmCheckout || checkedOut) return // don't auto-dismiss while engaged
     const delay =
       result.status === 'AUTHORIZED' ? 6000 : result.status === 'ALREADY_IN' ? 8000 : 2500
     const timer = setTimeout(onReset, delay)

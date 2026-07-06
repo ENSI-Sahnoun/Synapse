@@ -31,32 +31,41 @@ export const checkOutSelf = studentActionClient
 
     const admin = createSupabaseAdminClient()
 
-    let roomId: string | null = null
-    if (attendance.seat_id) {
-      const { data: seat } = await admin
-        .from('seats')
-        .select('room_id')
-        .eq('id', attendance.seat_id)
-        .maybeSingle()
-      roomId = seat?.room_id ?? null
-    }
-
-    const { error } = await admin
+    // Guarded update: only closes the row if it's still open. A 0-row match
+    // isn't a Postgres error, so we must check the returned row before
+    // freeing a seat — otherwise a concurrently-closed/reassigned seat could
+    // get flipped back to free out from under another student.
+    const { data: closed, error } = await admin
       .from('attendance')
       .update({ checked_out_at: new Date().toISOString() })
       .eq('id', attendance.id)
       .is('checked_out_at', null)
+      .select('seat_id')
+      .maybeSingle()
     if (error) throw new Error(error.message)
 
-    if (attendance.seat_id) {
-      await admin.from('seats').update({ status: 'free' }).eq('id', attendance.seat_id)
+    if (!closed) {
+      // Already checked out (race or stale state) — idempotent no-op.
+      return { success: true }
     }
 
-    if (roomId) {
-      revalidatePath(`/employee/rooms/${roomId}/map`)
-      revalidatePath(`/admin/rooms/${roomId}/map`)
+    if (closed.seat_id) {
+      const { data: seat } = await admin
+        .from('seats')
+        .select('room_id')
+        .eq('id', closed.seat_id)
+        .maybeSingle()
+      const roomId = seat?.room_id ?? null
+
+      await admin.from('seats').update({ status: 'free' }).eq('id', closed.seat_id)
+
+      if (roomId) {
+        revalidatePath(`/employee/rooms/${roomId}/map`)
+        revalidatePath(`/admin/rooms/${roomId}/map`)
+      }
+      revalidatePath('/employee/rooms')
     }
-    revalidatePath('/employee/rooms')
+
     return { success: true }
   })
 
