@@ -12,6 +12,7 @@ import { CashFlowChart } from '@/components/admin/accounting/cash-flow-chart'
 import { TopStudentsTable } from '@/components/admin/analytics/top-students-table'
 import { EmployeeRevenueTable } from '@/components/admin/analytics/employee-revenue-table'
 import { defaultDateRange } from '@/lib/date-range'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -33,6 +34,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
+      <LiveRefresher tables={['attendance', 'purchases', 'subscriptions', 'reservations']} />
       <h1 className="text-2xl font-bold">Tableau de bord</h1>
 
       <section>
