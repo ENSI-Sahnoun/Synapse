@@ -2,12 +2,14 @@ import { listSubscriptionPlans } from '@/data/admin/subscription-plans'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { TogglePlanButton } from './toggle-plan-button'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export default async function SubscriptionPlansPage() {
   const plans = await listSubscriptionPlans()
 
   return (
     <div className="space-y-4">
+      <LiveRefresher tables={['subscription_plans']} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Formules d'abonnement</h1>
         <Button asChild>
