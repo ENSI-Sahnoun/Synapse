@@ -5,6 +5,7 @@ import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import { InstallPromptModal } from '@/components/pwa/InstallPromptModal';
 import { NotificationToaster } from '@/components/notifications/NotificationToaster';
 import { PushPromptModal } from '@/components/notifications/PushPromptModal';
+import { DebugErrorOverlay } from '@/components/DebugErrorOverlay';
 
 export function DynamicLayoutProviders({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
@@ -33,6 +34,7 @@ export function DynamicLayoutProviders({ children }: { children: React.ReactNode
         </Suspense>
       )}
       <InstallPromptModal />
+      <DebugErrorOverlay />
     </>
   );
 }
