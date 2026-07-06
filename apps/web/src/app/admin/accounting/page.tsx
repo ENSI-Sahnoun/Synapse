@@ -23,6 +23,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ExportButtons } from '@/components/admin/accounting/export-buttons'
 import { defaultDateRange } from '@/lib/date-range'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -51,6 +52,7 @@ export default async function AccountingPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6 p-6">
+      <LiveRefresher tables={['purchases', 'expenses']} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Comptabilité</h1>
         <div className="flex gap-2">
