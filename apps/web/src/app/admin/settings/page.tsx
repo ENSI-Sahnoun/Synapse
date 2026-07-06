@@ -3,6 +3,7 @@ import { createSupabaseClient as createSupabaseServerClient } from '@/supabase-c
 import { ExamModeCard } from './ExamModeCard';
 import { ReservationHoldCard } from './ReservationHoldCard';
 import { PriorityThresholdCard } from './PriorityThresholdCard';
+import { FreeSwapCard } from './FreeSwapCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,15 +23,17 @@ async function getSetting(
 export default async function AdminSettingsPage() {
   const supabase = await createSupabaseServerClient();
 
-  const [examModeValue, holdMinutesValue, priorityDaysValue] = await Promise.all([
+  const [examModeValue, holdMinutesValue, priorityDaysValue, freeSwapValue] = await Promise.all([
     getSetting(supabase, 'exam_mode', 'false'),
     getSetting(supabase, 'reservation_hold_minutes', '30'),
     getSetting(supabase, 'priority_min_duration_days', '30'),
+    getSetting(supabase, 'free_swap', 'false'),
   ]);
 
   const examMode = examModeValue === 'true';
   const holdMinutes = parseInt(holdMinutesValue, 10);
   const priorityDays = parseInt(priorityDaysValue, 10);
+  const freeSwap = freeSwapValue === 'true';
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-2xl">
@@ -46,6 +49,7 @@ export default async function AdminSettingsPage() {
         <ReservationHoldCard initialMinutes={holdMinutes} />
         <ExamModeCard initialEnabled={examMode} />
         <PriorityThresholdCard initialDays={priorityDays} />
+        <FreeSwapCard initialEnabled={freeSwap} />
       </section>
 
       <section className="flex flex-col gap-4">

@@ -6,33 +6,7 @@ import { toast } from 'sonner'
 import { Bell } from 'lucide-react'
 import { createClient } from '@/supabase-clients/client'
 import type { NotificationRow } from '@/data/notifications/list'
-
-// Only the types that have an obvious, single destination page get an entry.
-// Unknown types (e.g. announcement_new) just dismiss the toast on tap — this
-// is the only place client-side type->route mapping lives; keep it in sync
-// with NotificationType (apps/web/src/lib/notification-types.ts) only for the
-// types that actually need a tap destination.
-const TYPE_ROUTES: Record<string, string> = {
-  expiry_7d: '/student/dashboard',
-  expiry_3d: '/student/dashboard',
-  expiry_1d: '/student/dashboard',
-  expired: '/student/dashboard',
-  renewal_reminder: '/student/dashboard',
-  subscription_new: '/student/dashboard',
-  purchase_completed: '/student/dashboard',
-  reservation_confirmed: '/student/reservation',
-  reservation_cancelled: '/student/reservation',
-  reservation_accepted: '/student/reservation',
-  reservation_new: '/employee/reservations',
-  seat_swap_request_new: '/employee/reservations',
-  seat_swap_accepted: '/student/reservation',
-  seat_swap_denied: '/student/reservation',
-  loyalty_request_new: '/employee/loyalty-requests',
-  loyalty_fulfilled: '/student/loyalty',
-  loyalty_rejected: '/student/loyalty',
-  points_earned: '/student/loyalty',
-  room_almost_full: '/student/rooms',
-}
+import { NOTIFICATION_ROUTES as TYPE_ROUTES } from '@/lib/notification-links'
 
 /** Side-effect-only: raises a top-center toast for realtime notification
  * INSERTs for the current authed user. Renders nothing. Mounted once, high

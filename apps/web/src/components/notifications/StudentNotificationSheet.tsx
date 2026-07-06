@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { AnimatePresence } from 'motion/react'
 import { Bell } from '@phosphor-icons/react/dist/ssr'
 import { createClient } from '@/supabase-clients/client'
+import { notificationHref } from '@/lib/notification-links'
 import {
   Sheet,
   SheetContent,
@@ -26,7 +29,9 @@ export function StudentNotificationSheet({
 }: StudentNotificationSheetProps) {
   const [notifications, setNotifications] = useState(initialNotifications)
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
+  const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   // Live-update the bell for this student. RLS already scopes the stream to
   // their own rows; filter by user_id anyway to be explicit.
@@ -66,6 +71,17 @@ export function StudentNotificationSheet({
     })
   }
 
+  // Actionable notification tapped: mark read, close the sheet, go to its page.
+  function handleOpen(id: string, href: string) {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
+    setUnreadCount((prev) => Math.max(0, prev - 1))
+    setOpen(false)
+    startTransition(async () => {
+      await markNotificationRead({ notificationId: id })
+    })
+    router.push(href)
+  }
+
   function handleMarkAllRead() {
     startTransition(async () => {
       await markAllNotificationsRead({})
@@ -92,7 +108,7 @@ export function StudentNotificationSheet({
   }
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <button
           type="button"
@@ -141,14 +157,18 @@ export function StudentNotificationSheet({
             </p>
           ) : (
             <div className="space-y-2 p-4">
-              {notifications.map((n) => (
-                <NotificationItem
-                  key={n.id}
-                  onClear={handleClear}
-                  notification={n}
-                  onMarkRead={handleMarkRead}
-                />
-              ))}
+              <AnimatePresence initial={false}>
+                {notifications.map((n) => (
+                  <NotificationItem
+                    key={n.id}
+                    onClear={handleClear}
+                    notification={n}
+                    onMarkRead={handleMarkRead}
+                    href={notificationHref(n.type)}
+                    onOpen={handleOpen}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </ScrollArea>

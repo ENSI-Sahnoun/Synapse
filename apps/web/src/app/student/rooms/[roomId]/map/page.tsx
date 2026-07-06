@@ -1,6 +1,7 @@
 import { getRoomById } from '@/data/admin/rooms'
 import { getSeatMap } from '@/data/admin/seat-map'
 import { getMyPresence } from '@/data/student/profile'
+import { createSupabaseClient } from '@/supabase-clients/server'
 import { StudentMapClient } from './StudentMapClient'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -11,16 +12,20 @@ type Props = { params: Promise<{ roomId: string }> }
 
 export default async function StudentSeatMapPage({ params }: Props) {
   const { roomId } = await params
-  const [room, { tables, seats }, presence] = await Promise.all([
+  const supabase = await createSupabaseClient()
+  const [room, { tables, seats }, presence, freeSwapRes] = await Promise.all([
     getRoomById(roomId),
     getSeatMap(roomId),
     getMyPresence(),
+    supabase.from('settings').select('value').eq('key', 'free_swap').maybeSingle(),
   ])
 
   if (!room) notFound()
 
   const mySeatId = presence.status === 'seated' ? presence.seatId : null
   const alreadyCheckedIn = presence.status === 'seated' || presence.status === 'divers'
+  const isDivers = presence.status === 'divers'
+  const freeSwap = freeSwapRes.data?.value === 'true'
 
   return (
     <div className="space-y-6 p-4">
@@ -33,7 +38,7 @@ export default async function StudentSeatMapPage({ params }: Props) {
         </Button>
         <h1 className="text-xl font-semibold">{room.name}</h1>
       </div>
-      <StudentMapClient room={room} initialTables={tables} initialSeats={seats} mySeatId={mySeatId} alreadyCheckedIn={alreadyCheckedIn} />
+      <StudentMapClient room={room} initialTables={tables} initialSeats={seats} mySeatId={mySeatId} alreadyCheckedIn={alreadyCheckedIn} isDivers={isDivers} freeSwap={freeSwap} />
     </div>
   )
 }

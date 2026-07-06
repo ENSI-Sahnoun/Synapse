@@ -69,7 +69,7 @@ export function DiversSeatPrompt({ attendanceId }: { attendanceId: string }) {
                 Plus tard
               </button>
               <Link
-                href="/student/reservation"
+                href="/student/rooms"
                 className="flex-1 rounded-lg bg-[var(--synapse-green-500)] py-2.5 text-center text-sm font-semibold text-white"
               >
                 Choisir ma place

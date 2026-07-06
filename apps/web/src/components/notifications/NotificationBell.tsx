@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { AnimatePresence } from 'motion/react'
 import { Bell, BellPlus } from 'lucide-react'
 import { usePushSubscription } from '@/hooks/use-push-subscription'
 import { createClient } from '@/supabase-clients/client'
+import { notificationHref } from '@/lib/notification-links'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -27,7 +30,9 @@ export function NotificationBell({
 }: NotificationBellProps) {
   const [notifications, setNotifications] = useState(initialNotifications)
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
+  const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
   const { supported: pushSupported, subscribed: pushSubscribed, subscribe: enablePush } = usePushSubscription()
 
   // Live-update the bell: new/changed/removed notifications for this user.
@@ -74,6 +79,16 @@ export function NotificationBell({
     })
   }
 
+  function handleOpen(id: string, href: string) {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
+    setUnreadCount((prev) => Math.max(0, prev - 1))
+    setOpen(false)
+    startTransition(async () => {
+      await markNotificationRead({ notificationId: id })
+    })
+    router.push(href)
+  }
+
   function handleMarkAllRead() {
     startTransition(async () => {
       await markAllNotificationsRead({})
@@ -102,7 +117,7 @@ export function NotificationBell({
   }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
           <Bell className="h-5 w-5" />
@@ -157,14 +172,18 @@ export function NotificationBell({
             </p>
           ) : (
             <div className="p-2 space-y-1">
-              {notifications.map((n) => (
-                <NotificationItem
-                  key={n.id}
-                  notification={n}
-                  onMarkRead={handleMarkRead}
-                  onClear={handleClear}
-                />
-              ))}
+              <AnimatePresence initial={false}>
+                {notifications.map((n) => (
+                  <NotificationItem
+                    key={n.id}
+                    notification={n}
+                    onMarkRead={handleMarkRead}
+                    onClear={handleClear}
+                    href={notificationHref(n.type)}
+                    onOpen={handleOpen}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </ScrollArea>

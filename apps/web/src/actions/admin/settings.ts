@@ -22,6 +22,19 @@ export const setExamMode = adminActionClient
     return { success: true, examMode: enabled }
   })
 
+// Toggle free seat swapping (students move to any free seat without staff approval)
+export const setFreeSwap = adminActionClient
+  .schema(z.object({ enabled: z.boolean() }))
+  .action(async ({ parsedInput: { enabled } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'free_swap', value: enabled ? 'true' : 'false' }, { onConflict: 'key' })
+    if (error) throw new Error('Impossible de mettre à jour la liberté de changement de place.')
+    revalidatePath('/admin/settings')
+    return { success: true, freeSwap: enabled }
+  })
+
 // Update reservation hold duration
 const setReservationHoldSchema = z.object({
   minutes: z.number().int().min(5, { message: 'Minimum 5 minutes' }).max(120, { message: 'Maximum 120 minutes' }),

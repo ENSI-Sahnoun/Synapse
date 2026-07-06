@@ -11,39 +11,42 @@ import {
 import { Button } from '@/components/ui/button'
 import { useAction } from 'next-safe-action/hooks'
 import { useRouter } from 'next/navigation'
-import { requestSeatSwap } from '@/actions/student/seat-swap'
+import { claimSeat } from '@/actions/student/seat-swap'
 import { toast } from 'sonner'
 import type { Seat } from '@/data/admin/seat-map'
 
 type Props = {
   seat: Seat | null
+  roomId: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function SeatSwapRequestDialog({ seat, open, onOpenChange }: Props) {
+// A "Divers" student (present, seatless) claiming a FREE seat: no one to swap
+// with, so it's assigned instantly — no staff approval needed.
+export function ClaimSeatDialog({ seat, roomId, open, onOpenChange }: Props) {
   const router = useRouter()
-  const { execute, isPending } = useAction(requestSeatSwap, {
+  const { execute, isPending } = useAction(claimSeat, {
     onSuccess: () => {
-      toast.success('Demande envoyée — en attente de validation par un employé.')
+      toast.success('Place attribuée. Bonne session !')
       onOpenChange(false)
-      router.push('/student/rooms')
+      router.push('/student/dashboard')
     },
-    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur lors de la demande.'),
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur lors de l\'attribution.'),
   })
 
   function handleConfirm() {
     if (!seat) return
-    execute({ toSeatId: seat.id })
+    execute({ seatId: seat.id, roomId })
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[calc(100%-2rem)] sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Demander la place {seat?.label}</DialogTitle>
+          <DialogTitle>Prendre la place {seat?.label}</DialogTitle>
           <DialogDescription>
-            Un employé doit valider ce changement avant qu&apos;il ne prenne effet.
+            Cette place est libre — elle vous sera attribuée immédiatement.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
@@ -51,7 +54,7 @@ export function SeatSwapRequestDialog({ seat, open, onOpenChange }: Props) {
             Annuler
           </Button>
           <Button onClick={handleConfirm} disabled={isPending || !seat}>
-            {isPending ? 'Envoi…' : 'Demander'}
+            {isPending ? 'Attribution…' : 'Prendre la place'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -206,6 +206,78 @@ export const requestSeatSwap = studentActionClient
     return { success: true }
   })
 
+// Student moves directly to a free seat WITHOUT staff approval. Only allowed
+// when the admin "free_swap" setting is on. Frees the old seat, occupies the
+// new one atomically, updates attendance, and notifies staff of the move.
+export const swapSeatFreely = studentActionClient
+  .schema(z.object({ toSeatId: z.string().uuid(), roomId: z.string().uuid() }))
+  .action(async ({ parsedInput: { toSeatId, roomId }, ctx: { userId } }) => {
+    const supabase = await createSupabaseClient()
+
+    // Gate: setting must be enabled (defence in depth — UI already hides it).
+    const { data: setting } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'free_swap')
+      .maybeSingle()
+    if (setting?.value !== 'true') {
+      throw new Error('Le changement de place libre est désactivé.')
+    }
+
+    const attendance = await getMyOpenAttendance(userId)
+    if (!attendance) throw new Error('Vous devez être enregistré comme présent.')
+    if (!attendance.seat_id) throw new Error("Vous n'occupez aucune place à échanger.")
+    if (attendance.seat_id === toSeatId) throw new Error('Vous occupez déjà cette place.')
+
+    const admin = createSupabaseAdminClient()
+
+    // Atomic claim: only succeeds if the target seat is still free.
+    const { data: claimed, error: claimError } = await admin
+      .from('seats')
+      .update({ status: 'occupied' })
+      .eq('id', toSeatId)
+      .eq('status', 'free')
+      .select('id, label')
+    if (claimError) throw new Error(claimError.message)
+    if (!claimed || claimed.length === 0) {
+      throw new Error('Cette place a été prise entre-temps.')
+    }
+
+    const fromSeatId = attendance.seat_id
+
+    const { error: attError } = await admin
+      .from('attendance')
+      .update({ seat_id: toSeatId, room_id: roomId })
+      .eq('id', attendance.id)
+    if (attError) {
+      // Roll back the seat claim so it doesn't stay occupied by nobody.
+      await admin.from('seats').update({ status: 'free' }).eq('id', toSeatId)
+      throw new Error(attError.message)
+    }
+
+    // Release the old seat.
+    await admin.from('seats').update({ status: 'free' }).eq('id', fromSeatId)
+
+    // Resolve labels + student name for the staff notification.
+    const [{ data: fromSeat }, { data: profile }] = await Promise.all([
+      admin.from('seats').select('label').eq('id', fromSeatId).maybeSingle(),
+      admin.from('profiles').select('full_name').eq('id', userId).maybeSingle(),
+    ])
+    const studentName = profile?.full_name ?? 'Un étudiant'
+    const fromLabel = fromSeat?.label ?? '—'
+    const toLabel = claimed[0].label ?? '—'
+    await notifyAllStaff(
+      'seat_changed_freely',
+      `${studentName} est passé de ${fromLabel} à ${toLabel}.`,
+    )
+
+    revalidatePath(`/employee/rooms/${roomId}/map`)
+    revalidatePath(`/admin/rooms/${roomId}/map`)
+    revalidatePath('/employee/rooms')
+    revalidatePath('/student/dashboard')
+    return { success: true }
+  })
+
 export const cancelSeatSwapRequest = studentActionClient
   .schema(z.object({ requestId: z.string().uuid() }))
   .action(async ({ parsedInput: { requestId }, ctx: { userId } }) => {

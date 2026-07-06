@@ -13,7 +13,6 @@ import { RoutePrefetcher } from '@/components/RoutePrefetcher'
 const STUDENT_ROUTES = [
   '/student/dashboard',
   '/student/qr',
-  '/student/reservation',
   '/student/rooms',
   '/student/history',
   '/student/loyalty',

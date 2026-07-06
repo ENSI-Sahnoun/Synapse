@@ -251,7 +251,7 @@ export const createReservation = studentActionClient
       // ignore notification errors
     }
 
-    revalidatePath('/student/reservation')
+    revalidatePath('/student/rooms')
     return {
       success: true,
       reservationId: reservation.id,

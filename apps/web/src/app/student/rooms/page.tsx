@@ -1,5 +1,9 @@
 import { getRoomsWithSeatCounts } from '@/data/admin/rooms'
 import { getMyPresence } from '@/data/student/profile'
+import { createSupabaseClient } from '@/supabase-clients/server'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
+import { ActiveReservationBanner } from '@/components/student/ActiveReservationBanner'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
 type StatusConfig = {
@@ -35,7 +39,30 @@ const STATUS_MAP: Record<string, StatusConfig> = {
 }
 
 export default async function StudentRoomsPage() {
-  const [rooms, presence] = await Promise.all([getRoomsWithSeatCounts(), getMyPresence()])
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
+
+  const supabase = await createSupabaseClient()
+  const today = new Date().toISOString().split('T')[0]
+
+  const [rooms, presence, subRes, reservationRes, examRes] = await Promise.all([
+    getRoomsWithSeatCounts(),
+    getMyPresence(),
+    supabase.from('subscriptions').select('end_date').eq('student_id', userId).gte('end_date', today).limit(1).maybeSingle(),
+    supabase.from('reservations').select('id, seat_id, expires_at, queue_position, seats(label)').eq('student_id', userId).eq('status', 'active').maybeSingle(),
+    supabase.from('settings').select('value').eq('key', 'exam_mode').maybeSingle(),
+  ])
+
+  const subscription = subRes.data
+  const examMode = examRes.data?.value === 'true'
+  const activeReservation = reservationRes.data as {
+    id: string
+    seat_id: string
+    expires_at: string
+    queue_position: number | null
+    seats: { label: string } | null
+  } | null
+
   const myRoomId = presence.status === 'seated' ? presence.roomId : null
   const openRooms = rooms.filter((r) => r.status === 'open')
   const unavailable = rooms.filter((r) => r.status !== 'open')
@@ -215,6 +242,21 @@ export default async function StudentRoomsPage() {
       </div>
 
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {!subscription && (
+          <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-red-700 text-sm">
+            Vous devez avoir un abonnement actif pour réserver une place.
+          </div>
+        )}
+
+        {activeReservation && <ActiveReservationBanner reservation={activeReservation} examMode={examMode} />}
+
+        {subscription && !activeReservation && examMode && (
+          <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-blue-800 text-sm">
+            <strong>Mode examen activé</strong> — une réservation est obligatoire pour accéder à l&apos;espace.
+            Choisissez une salle puis une place.
+          </div>
+        )}
+
         {/* Open rooms */}
         {openRooms.length > 0 && (
           <>

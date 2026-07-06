@@ -25,6 +25,7 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   seat_swap_denied: 'Changement de place refusé (étudiant)',
   announcement_new: 'Nouvelle annonce publiée',
   seat_removed_by_staff: 'Place supprimée par le personnel (étudiant)',
+  seat_changed_freely: 'Changement de place libre (personnel)',
 }
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {
@@ -51,6 +52,7 @@ const ORDERED_TYPES: NotificationType[] = [
   'loyalty_fulfilled',
   'loyalty_rejected',
   'room_almost_full',
+  'seat_changed_freely',
 ]
 
 const CONFIGURABLE_CHANNELS: NotificationChannel[] = ['email', 'sms', 'whatsapp']
