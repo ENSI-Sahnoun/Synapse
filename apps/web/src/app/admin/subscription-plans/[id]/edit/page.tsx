@@ -12,7 +12,7 @@ export default async function EditSubscriptionPlanPage({
   const supabase = await createSupabaseClient()
   const { data: plan, error } = await supabase
     .from('subscription_plans')
-    .select('id, name, duration_days, price_dt, is_active')
+    .select('id, name, duration_days, price_dt, tax_rate_pct, is_active')
     .eq('id', id)
     .single()
 

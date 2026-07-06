@@ -8,6 +8,7 @@ export const createLoyaltyRuleSchema = z.object({
   reward_type: z.enum(REWARD_TYPES, { error: 'Type de récompense invalide' }),
   points_threshold: z.coerce.number().int().min(1, 'Seuil minimum 1 point'),
   reward_value: z.coerce.number().min(0, 'Valeur invalide').default(0),
+  redemption_cost_dt: z.coerce.number().min(0, 'Coût invalide').default(0),
 })
 
 export type CreateLoyaltyRuleInput = z.infer<typeof createLoyaltyRuleSchema>

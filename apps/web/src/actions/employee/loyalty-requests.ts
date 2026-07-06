@@ -8,56 +8,38 @@ import { insertInAppNotification } from '@/data/notifications/inapp'
 
 export const fulfilRedemptionAction = employeeActionClient
   .schema(handleRedemptionRequestSchema)
-  .action(async ({ parsedInput, ctx }) => {
+  .action(async ({ parsedInput }) => {
     const { request_id } = parsedInput
     const supabase = await createSupabaseClient()
 
+    // Atomic in the DB: deduct points, book the reward expense, flip status.
+    // SECURITY DEFINER RPC — employees can't insert into expenses directly (RLS).
     const { data: request, error: fetchError } = await supabase
       .from('loyalty_redemption_requests')
-      .select('id, student_id, points_used, status')
+      .select('student_id')
       .eq('id', request_id)
       .single()
 
     if (fetchError || !request) throw new Error('Demande introuvable')
-    if (request.status !== 'pending') throw new Error('Cette demande a déjà été traitée')
 
-    const { error: ledgerError } = await supabase
-      .from('loyalty_ledger')
-      .insert({
-        student_id: request.student_id,
-        points_delta: -request.points_used,
-        reason: 'redemption',
-        ref_id: request_id,
-      })
+    const { data: result, error: rpcError } = await supabase.rpc('fulfil_redemption', {
+      p_request_id: request_id,
+    })
 
-    if (ledgerError) {
-      throw new Error('Une erreur est survenue lors de la déduction des points')
-    }
+    if (rpcError) throw new Error(rpcError.message)
 
-    // Known: if this update fails after ledger insert, request stays pending but points are deducted — re-fulfil is blocked by the pending guard above, minimising double-deduction risk
-    const { error: updateError } = await supabase
-      .from('loyalty_redemption_requests')
-      .update({
-        status: 'fulfilled',
-        handled_by: ctx.userId,
-        handled_at: new Date().toISOString(),
-      })
-      .eq('id', request_id)
-
-    if (updateError) {
-      throw new Error('Une erreur est survenue lors de la mise à jour de la demande')
-    }
+    const pointsDeducted = Number((result as { points_used?: number } | null)?.points_used ?? 0)
 
     try {
       await insertInAppNotification({
         userId: request.student_id,
         type: 'loyalty_fulfilled',
-        message: `Votre demande de récompense a été approuvée (${request.points_used} pts déduits).`,
+        message: `Votre demande de récompense a été approuvée (${pointsDeducted} pts déduits).`,
       })
     } catch { /* non-fatal */ }
 
     revalidatePath('/employee/loyalty-requests')
-    return { success: true, pointsDeducted: request.points_used }
+    return { success: true, pointsDeducted }
   })
 
 export const rejectRedemptionAction = employeeActionClient

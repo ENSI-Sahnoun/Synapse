@@ -346,6 +346,7 @@ export type Database = {
           is_active: boolean
           name: string
           points_threshold: number
+          redemption_cost_dt: number
           reward_type: string
           reward_value: number
           updated_at: string
@@ -356,6 +357,7 @@ export type Database = {
           is_active?: boolean
           name: string
           points_threshold: number
+          redemption_cost_dt?: number
           reward_type: string
           reward_value?: number
           updated_at?: string
@@ -366,6 +368,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           points_threshold?: number
+          redemption_cost_dt?: number
           reward_type?: string
           reward_value?: number
           updated_at?: string
@@ -978,6 +981,7 @@ export type Database = {
           is_active: boolean
           name: string
           price_dt: number
+          tax_rate_pct: number
           updated_at: string
         }
         Insert: {
@@ -987,6 +991,7 @@ export type Database = {
           is_active?: boolean
           name: string
           price_dt: number
+          tax_rate_pct?: number
           updated_at?: string
         }
         Update: {
@@ -996,6 +1001,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           price_dt?: number
+          tax_rate_pct?: number
           updated_at?: string
         }
         Relationships: []
@@ -1160,6 +1166,10 @@ export type Database = {
           rank: number | null
           value: number
         }[]
+      }
+      fulfil_redemption: {
+        Args: { p_request_id: string }
+        Returns: Json
       }
       pos_checkout: {
         Args: { p_items: Json; p_student_id: string }

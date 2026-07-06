@@ -14,10 +14,11 @@ type FormValues = {
   name?: string
   duration_days?: number
   price_dt?: number
+  tax_rate_pct?: number
 }
 
 interface EditPlanFormProps {
-  plan: { id: string; name: string; duration_days: number; price_dt: number }
+  plan: { id: string; name: string; duration_days: number; price_dt: number; tax_rate_pct: number }
 }
 
 export function EditPlanForm({ plan }: EditPlanFormProps) {
@@ -28,6 +29,7 @@ export function EditPlanForm({ plan }: EditPlanFormProps) {
       name: plan.name,
       duration_days: plan.duration_days,
       price_dt: plan.price_dt,
+      tax_rate_pct: plan.tax_rate_pct,
     },
   })
 
@@ -56,6 +58,11 @@ export function EditPlanForm({ plan }: EditPlanFormProps) {
       <div className="space-y-1">
         <Label>Prix (DT) *</Label>
         <Input type="number" step="0.5" {...form.register('price_dt', { valueAsNumber: true })} />
+      </div>
+
+      <div className="space-y-1">
+        <Label>TAX (%)</Label>
+        <Input type="number" step="1" min="0" max="100" {...form.register('tax_rate_pct', { valueAsNumber: true })} />
       </div>
 
       <div className="flex gap-2">

@@ -71,7 +71,7 @@ export function RestockDialog({ product }: { product: AdminProduct }) {
             )}
           </div>
           <div className="space-y-1">
-            <Label>TVA (%)</Label>
+            <Label>TAX (%)</Label>
             <Input type="number" step="1" min="0" max="100" {...form.register('tax_rate_pct')} />
           </div>
           <p className="text-sm text-muted-foreground">

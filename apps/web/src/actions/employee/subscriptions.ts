@@ -15,7 +15,7 @@ export const createSubscriptionAction = employeeActionClient
 
     const { data: plan, error: planError } = await supabase
       .from('subscription_plans')
-      .select('duration_days, price_dt, name, is_active')
+      .select('duration_days, price_dt, tax_rate_pct, name, is_active')
       .eq('id', plan_id)
       .single()
 
@@ -44,6 +44,10 @@ export const createSubscriptionAction = employeeActionClient
 
     const endDate = addDays(startDate, plan.duration_days)
 
+    const paidAmount = Number(
+      (plan.price_dt * (1 + (plan.tax_rate_pct ?? 0) / 100)).toFixed(3),
+    )
+
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
       .insert({
@@ -51,7 +55,7 @@ export const createSubscriptionAction = employeeActionClient
         plan_id,
         start_date: format(startDate, 'yyyy-MM-dd'),
         end_date: format(endDate, 'yyyy-MM-dd'),
-        paid_amount: plan.price_dt,
+        paid_amount: paidAmount,
         sold_by: ctx.userId,
       })
       .select()

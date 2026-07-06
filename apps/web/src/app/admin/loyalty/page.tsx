@@ -31,6 +31,7 @@ export default async function AdminLoyaltyPage() {
               <th className="text-left px-4 py-2">Type</th>
               <th className="text-left px-4 py-2">Seuil (pts)</th>
               <th className="text-left px-4 py-2">Valeur</th>
+              <th className="text-left px-4 py-2">Coût (DT)</th>
               <th className="text-left px-4 py-2">Statut</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -38,7 +39,7 @@ export default async function AdminLoyaltyPage() {
           <tbody>
             {rules.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                   Aucune règle définie.
                 </td>
               </tr>
@@ -52,6 +53,9 @@ export default async function AdminLoyaltyPage() {
                 <td className="px-4 py-2">{rule.points_threshold} pts</td>
                 <td className="px-4 py-2">
                   {rule.reward_type === 'discount_pct' ? `${rule.reward_value}%` : '—'}
+                </td>
+                <td className="px-4 py-2">
+                  {rule.redemption_cost_dt > 0 ? `${rule.redemption_cost_dt} DT` : '—'}
                 </td>
                 <td className="px-4 py-2">
                   <span

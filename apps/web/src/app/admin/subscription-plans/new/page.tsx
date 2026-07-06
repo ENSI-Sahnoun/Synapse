@@ -17,7 +17,7 @@ export default function NewSubscriptionPlanPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const form = useForm<CreateSubscriptionPlanInput>({
     resolver: zodResolver(createSubscriptionPlanSchema) as any,
-    defaultValues: { name: '', duration_days: 30, price_dt: 70 },
+    defaultValues: { name: '', duration_days: 30, price_dt: 70, tax_rate_pct: 0 },
   })
 
   const { execute, status } = useAction(createPlanAction, {
@@ -49,6 +49,10 @@ export default function NewSubscriptionPlanPage() {
         <div className="space-y-1">
           <Label>Prix (DT) *</Label>
           <Input type="number" step="0.5" {...form.register('price_dt')} />
+        </div>
+        <div className="space-y-1">
+          <Label>TAX (%)</Label>
+          <Input type="number" step="1" min="0" max="100" {...form.register('tax_rate_pct')} />
         </div>
         <Button type="submit" disabled={status === 'executing'}>
           {status === 'executing' ? 'Création...' : 'Créer la formule'}

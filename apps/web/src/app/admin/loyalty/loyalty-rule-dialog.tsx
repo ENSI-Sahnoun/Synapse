@@ -41,6 +41,7 @@ interface LoyaltyRule {
   reward_type: string
   points_threshold: number
   reward_value: number
+  redemption_cost_dt: number
   is_active: boolean
 }
 
@@ -61,8 +62,9 @@ export function LoyaltyRuleDialog({ mode, rule }: Props) {
             reward_type: rule.reward_type as CreateLoyaltyRuleInput['reward_type'],
             points_threshold: rule.points_threshold,
             reward_value: rule.reward_value,
+            redemption_cost_dt: rule.redemption_cost_dt,
           }
-        : { name: '', reward_type: 'free_day', points_threshold: 30, reward_value: 0 },
+        : { name: '', reward_type: 'free_day', points_threshold: 30, reward_value: 0, redemption_cost_dt: 0 },
   })
 
   const watchedType = form.watch('reward_type')
@@ -144,6 +146,16 @@ export function LoyaltyRuleDialog({ mode, rule }: Props) {
               <p className="text-sm text-destructive">
                 {form.formState.errors.points_threshold.message}
               </p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label>Coût récompense (DT)</Label>
+            <Input type="number" step="0.1" min="0" {...form.register('redemption_cost_dt', { valueAsNumber: true })} />
+            <p className="text-xs text-muted-foreground">
+              Montant déduit en dépense à chaque échange (0 = aucune dépense).
+            </p>
+            {form.formState.errors.redemption_cost_dt && (
+              <p className="text-sm text-destructive">{form.formState.errors.redemption_cost_dt.message}</p>
             )}
           </div>
           {watchedType === 'discount_pct' && (
