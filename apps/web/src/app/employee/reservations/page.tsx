@@ -1,5 +1,6 @@
 import { getActiveReservations } from '@/data/employee/reservations'
 import { ReservationsClient } from './ReservationsClient'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,6 +9,7 @@ export default async function EmployeeReservationsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <LiveRefresher tables={['reservations', 'seats']} />
       <div>
         <h1
           style={{
