@@ -4,10 +4,10 @@ Study space management platform: seat reservations, check-in/check-out, subscrip
 
 ## Stack
 
-- **Framework:** Next.js 15 (App Router)
+- **Framework:** Next.js 16 (App Router)
 - **Database & Auth:** Supabase (Postgres, RLS, Auth)
 - **Server actions:** `next-safe-action` + Zod
-- **UI:** shadcn/ui, Tailwind CSS
+- **UI:** shadcn/ui, Tailwind CSS & Framer Motion
 - **Monorepo:** Turborepo + pnpm workspaces
 - **Notifications:** Resend (email), Twilio (SMS), WhatsApp Cloud API
 
