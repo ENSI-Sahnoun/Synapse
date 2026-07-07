@@ -1,14 +1,15 @@
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { QrCode, CreditCard, ShoppingCart, ClipboardList, Users, LayoutGrid } from 'lucide-react'
 
 const QUICK_LINKS = [
-  { label: 'Scanner un QR', href: '/employee/checkin', description: 'Check-in / check-out étudiant' },
-  { label: 'Vendre un abonnement', href: '/employee/students', description: 'Choisir un étudiant pour vendre un abonnement' },
-  { label: 'Caisse (POS)', href: '/employee/pos', description: 'Vente en magasin' },
-  { label: 'Présences', href: '/employee/attendance', description: 'Gérer les présences du jour' },
-  { label: 'Étudiants', href: '/employee/students', description: 'Rechercher ou créer un étudiant' },
-  { label: 'Plan des places', href: '/employee/seats', description: 'Vue en direct des places' },
+  { label: 'Scanner un QR', href: '/employee/checkin', icon: QrCode },
+  { label: 'Vendre un abonnement', href: '/employee/students', icon: CreditCard },
+  { label: 'Caisse (POS)', href: '/employee/pos', icon: ShoppingCart },
+  { label: 'Présences', href: '/employee/attendance', icon: ClipboardList },
+  { label: 'Étudiants', href: '/employee/students', icon: Users },
+  { label: 'Plan des places', href: '/employee/rooms', icon: LayoutGrid },
 ] as const
 
 export function QuickLinks() {
@@ -23,12 +24,12 @@ export function QuickLinks() {
             <Button
               key={link.href}
               variant="outline"
-              className="h-auto flex-col items-start gap-1 p-4 text-left"
+              className="h-auto flex-col items-center gap-1 p-4 text-center"
               asChild
             >
               <Link href={link.href}>
+                <link.icon className="size-5" />
                 <span className="font-semibold">{link.label}</span>
-                <span className="text-xs text-muted-foreground">{link.description}</span>
               </Link>
             </Button>
           ))}

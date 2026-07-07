@@ -4,11 +4,10 @@ import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 
 export const dynamic = 'force-dynamic'
 
-function formatShiftTime(iso: string) {
-  return new Date(iso).toLocaleString('fr-FR', {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
+const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+
+function formatTime(time: string) {
+  return time.slice(0, 5)
 }
 
 export default async function ShiftsPage() {
@@ -16,28 +15,25 @@ export default async function ShiftsPage() {
   const userId = await getCachedLoggedInUserIdOrNull()
   if (!userId) redirect('/login')
 
-  const { data: shifts } = await (supabase.from('shifts' as never) as any)
-    .select('id, start_time, end_time, role, notes')
+  const { data: schedule } = await supabase
+    .from('weekly_schedules')
+    .select('day_of_week, start_time, end_time, role')
     .eq('employee_id', userId)
-    .order('start_time', { ascending: false })
-    .limit(20)
+    .order('day_of_week', { ascending: true })
+
+  const days = schedule ?? []
 
   const now = new Date()
-  const allShifts: any[] = shifts ?? []
-
-  const currentShift = allShifts.find(s =>
-    new Date(s.start_time) <= now && new Date(s.end_time) >= now
-  )
-  const upcomingShifts = allShifts
-    .filter(s => new Date(s.start_time) > now)
-    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-  const pastShifts = allShifts.filter(s => new Date(s.end_time) < now)
+  const todayDow = (now.getDay() + 6) % 7 // JS: 0=Sun..6=Sat -> 0=Mon..6=Sun
+  const nowTime = now.toTimeString().slice(0, 8)
+  const today = days.find((d) => d.day_of_week === todayDow)
+  const onShiftNow = !!today && nowTime >= today.start_time && nowTime < today.end_time
 
   return (
     <div className="p-4 pb-24" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>Mes horaires</h1>
 
-      {currentShift && (
+      {onShiftNow && today && (
         <div style={{
           background: 'var(--synapse-green-500)',
           borderRadius: 'var(--radius-xl)',
@@ -51,61 +47,41 @@ export default async function ShiftsPage() {
             }}>En service</span>
           </div>
           <div style={{ fontSize: 14, fontWeight: 600 }}>
-            {formatShiftTime(currentShift.start_time)} → {formatShiftTime(currentShift.end_time)}
+            {formatTime(today.start_time)} → {formatTime(today.end_time)}
           </div>
-          {currentShift.notes && (
-            <div style={{ fontSize: 12, opacity: 0.85, marginTop: 4 }}>{currentShift.notes}</div>
-          )}
+          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 4 }}>{today.role}</div>
         </div>
       )}
 
-      {upcomingShifts.length > 0 && (
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: 8 }}>À venir</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {upcomingShifts.map((s: any) => (
-              <div key={s.id} style={{
-                background: '#fff', border: '1px solid var(--border-subtle)',
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: 8 }}>Semaine</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {DAY_LABELS.map((label, i) => {
+            const d = days.find((row) => row.day_of_week === i)
+            const isToday = i === todayDow
+            return (
+              <div key={i} style={{
+                background: isToday ? '#fff' : '#fafafa',
+                border: isToday ? '1px solid var(--synapse-green-500)' : '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-lg)', padding: '14px 16px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>
-                  {formatShiftTime(s.start_time)}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>
-                  → {formatShiftTime(s.end_time)}
-                </div>
-                {s.notes && (
-                  <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>{s.notes}</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{label}</div>
+                {d ? (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 14 }}>{formatTime(d.start_time)} → {formatTime(d.end_time)}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{d.role}</div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Repos</div>
                 )}
               </div>
-            ))}
-          </div>
+            )
+          })}
         </div>
-      )}
+      </div>
 
-      {pastShifts.length > 0 && (
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: 8 }}>Passés</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {pastShifts.map((s: any) => (
-              <div key={s.id} style={{
-                background: '#fafafa', border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-lg)', padding: '14px 16px',
-                opacity: 0.7,
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>
-                  {formatShiftTime(s.start_time)} → {formatShiftTime(s.end_time)}
-                </div>
-                {s.notes && (
-                  <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>{s.notes}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {allShifts.length === 0 && (
+      {days.length === 0 && (
         <div style={{
           background: '#fff', border: '1px solid var(--border-subtle)',
           borderRadius: 'var(--radius-lg)', padding: '32px 16px',

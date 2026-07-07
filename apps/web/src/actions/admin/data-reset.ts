@@ -65,6 +65,25 @@ export const resetAttendancePeriod = adminActionClient
 
     const supabase = await createSupabaseClient()
 
+    // Free seats still held by rows about to be deleted — otherwise the seat
+    // is left status='occupied' with no attendance row left to back it.
+    const { data: openRows } = await supabase
+      .from('attendance')
+      .select('seat_id')
+      .gte('checked_in_at', from + 'T00:00:00')
+      .lte('checked_in_at', to + 'T23:59:59')
+      .is('checked_out_at', null)
+      .not('seat_id', 'is', null)
+
+    const seatIds = [...new Set((openRows ?? []).map((r) => r.seat_id).filter(Boolean))] as string[]
+    if (seatIds.length > 0) {
+      const { error: freeSeatsError } = await supabase
+        .from('seats')
+        .update({ status: 'free' })
+        .in('id', seatIds)
+      if (freeSeatsError) throw new Error(freeSeatsError.message)
+    }
+
     const { error: attendanceError } = await supabase
       .from('attendance')
       .delete()

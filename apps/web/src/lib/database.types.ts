@@ -935,9 +935,10 @@ export type Database = {
         }
         Relationships: []
       }
-      shifts: {
+      weekly_schedules: {
         Row: {
-          created_at: string | null
+          created_at: string
+          day_of_week: number
           employee_id: string
           end_time: string
           id: string
@@ -946,7 +947,8 @@ export type Database = {
           start_time: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
+          day_of_week: number
           employee_id: string
           end_time: string
           id?: string
@@ -955,7 +957,8 @@ export type Database = {
           start_time: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
+          day_of_week?: number
           employee_id?: string
           end_time?: string
           id?: string
@@ -965,7 +968,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "shifts_employee_id_fkey"
+            foreignKeyName: "weekly_schedules_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "profiles"

@@ -5,6 +5,10 @@ export type EmployeeDashboardData = {
   currentlyInside: number
   subscriptionsSoldToday: number
   subscriptionsRevenueToday: number
+  posSalesToday: number
+  posRevenueToday: number
+  seatOccupancy: { occupied: number; total: number }
+  lowStockCount: number
 }
 
 export async function getEmployeeDashboardData(): Promise<EmployeeDashboardData> {
@@ -37,10 +41,42 @@ export async function getEmployeeDashboardData(): Promise<EmployeeDashboardData>
   const subscriptionsSoldToday = subs?.length ?? 0
   const subscriptionsRevenueToday = subs?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0
 
+  // POS sales today
+  const { data: purchases } = await supabase
+    .from('purchases')
+    .select('total_dt')
+    .gte('created_at', start)
+    .lte('created_at', end)
+
+  const posSalesToday = purchases?.length ?? 0
+  const posRevenueToday = purchases?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0
+
+  // Seat occupancy
+  const { count: totalSeats } = await supabase
+    .from('seats')
+    .select('*', { count: 'exact', head: true })
+    .neq('status', 'out_of_service')
+
+  const { count: occupiedSeats } = await supabase
+    .from('seats')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'occupied')
+
+  // Low-stock products (stock <= 5)
+  const { count: lowStockCount } = await supabase
+    .from('products')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_active', true)
+    .lte('stock_quantity', 5)
+
   return {
     todayCheckIns: todayCheckIns ?? 0,
     currentlyInside: currentlyInside ?? 0,
     subscriptionsSoldToday,
     subscriptionsRevenueToday,
+    posSalesToday,
+    posRevenueToday,
+    seatOccupancy: { occupied: occupiedSeats ?? 0, total: totalSeats ?? 0 },
+    lowStockCount: lowStockCount ?? 0,
   }
 }

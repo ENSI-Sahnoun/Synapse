@@ -44,32 +44,41 @@ export async function getEmployeeRevenue(range: { from: string; to: string }): P
     .sort((a, b) => b.revenue - a.revenue)
 }
 
+function countMatchingDays(from: string, to: string, daysOfWeek: Set<number>): number {
+  const start = new Date(from + 'T00:00:00')
+  const end = new Date(to + 'T00:00:00')
+  let count = 0
+  for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dow = (d.getDay() + 6) % 7 // JS: 0=Sun..6=Sat -> 0=Mon..6=Sun
+    if (daysOfWeek.has(dow)) count++
+  }
+  return count
+}
+
 export async function getShiftsSummary(range: { from: string; to: string }): Promise<ShiftsSummary[]> {
   const supabase = await createSupabaseClient()
 
-  const [{ data: shifts }, revenue] = await Promise.all([
+  const [{ data: schedules }, revenue] = await Promise.all([
     supabase
-      .from('shifts')
-      .select('employee_id, start_time, profiles!shifts_employee_id_fkey(full_name)')
-      .gte('start_time', range.from + 'T00:00:00')
-      .lte('start_time', range.to + 'T23:59:59'),
+      .from('weekly_schedules')
+      .select('employee_id, day_of_week, profiles!weekly_schedules_employee_id_fkey(full_name)'),
     getEmployeeRevenue(range),
   ])
 
   const revenueMap = new Map(revenue.map((r) => [r.employeeId, r.revenue]))
-  const shiftMap = new Map<string, { fullName: string; shiftsWorked: number }>()
+  const scheduleMap = new Map<string, { fullName: string; daysOfWeek: Set<number> }>()
 
-  shifts?.forEach((r) => {
+  schedules?.forEach((r) => {
     const fullName = (r.profiles as unknown as { full_name: string }).full_name
-    const existing = shiftMap.get(r.employee_id) ?? { fullName, shiftsWorked: 0 }
-    existing.shiftsWorked += 1
-    shiftMap.set(r.employee_id, existing)
+    const existing = scheduleMap.get(r.employee_id) ?? { fullName, daysOfWeek: new Set<number>() }
+    existing.daysOfWeek.add(r.day_of_week)
+    scheduleMap.set(r.employee_id, existing)
   })
 
-  return Array.from(shiftMap.entries()).map(([employeeId, v]) => ({
+  return Array.from(scheduleMap.entries()).map(([employeeId, v]) => ({
     employeeId,
     fullName: v.fullName,
-    shiftsWorked: v.shiftsWorked,
-    salesPerShift: salesPerShift(revenueMap.get(employeeId) ?? 0, v.shiftsWorked),
+    shiftsWorked: countMatchingDays(range.from, range.to, v.daysOfWeek),
+    salesPerShift: salesPerShift(revenueMap.get(employeeId) ?? 0, countMatchingDays(range.from, range.to, v.daysOfWeek)),
   }))
 }
