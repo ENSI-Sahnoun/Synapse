@@ -38,3 +38,9 @@ nextbase-nextjs-supabase-starter/
 apps/web/next-env.d.ts
 .vercel
 .env*
+
+# duplicate lockfile (pnpm workspace only)
+apps/web/package-lock.json
+
+# Supabase SQL editor scratch files, not real migrations
+apps/database/supabase/snippets/
