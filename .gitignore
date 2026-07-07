@@ -49,3 +49,6 @@ apps/database/supabase/snippets/
 .claude/
 .superpowers/
 .cursor/
+
+# design/planning docs, not shipped with project
+docs/superpowers/
