@@ -4,6 +4,9 @@ import { ExamModeCard } from './ExamModeCard';
 import { ReservationHoldCard } from './ReservationHoldCard';
 import { PriorityThresholdCard } from './PriorityThresholdCard';
 import { FreeSwapCard } from './FreeSwapCard';
+import { FinancialsResetCard } from './FinancialsResetCard';
+import { AttendanceResetCard } from './AttendanceResetCard';
+import { NotificationsResetCard } from './NotificationsResetCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +81,16 @@ export default async function AdminSettingsPage() {
           </div>
           <span className="text-muted-foreground">→</span>
         </Link>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold text-destructive">Zone de danger — purge de données</h2>
+        <p className="text-sm text-muted-foreground -mt-2">
+          Suppression définitive et irréversible. Les comptes étudiants ne sont jamais touchés.
+        </p>
+        <FinancialsResetCard />
+        <AttendanceResetCard />
+        <NotificationsResetCard />
       </section>
     </div>
   );

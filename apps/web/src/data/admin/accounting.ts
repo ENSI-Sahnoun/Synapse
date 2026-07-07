@@ -155,6 +155,68 @@ export async function getPnl(filters: { from: string; to: string }): Promise<Pnl
   return { rows, totalRevenue, totalExpenses, profit: totalRevenue - totalExpenses }
 }
 
+export type TransactionRow = {
+  date: string
+  description: string
+  type: 'income' | 'expense'
+  amount: number
+}
+
+export async function getTransactions(filters: { from: string; to: string }): Promise<TransactionRow[]> {
+  const supabase = await createSupabaseClient()
+
+  const [{ data: subs }, { data: purchases }, { data: expenses }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('paid_amount, created_at, subscription_plans(name)')
+      .gte('created_at', filters.from + 'T00:00:00')
+      .lte('created_at', filters.to + 'T23:59:59'),
+    supabase
+      .from('purchases')
+      .select('total_dt, created_at')
+      .gte('created_at', filters.from + 'T00:00:00')
+      .lte('created_at', filters.to + 'T23:59:59'),
+    supabase
+      .from('expenses')
+      .select('amount_dt, date, description, account_categories!inner(name)')
+      .gte('date', filters.from)
+      .lte('date', filters.to),
+  ])
+
+  const rows: TransactionRow[] = []
+
+  subs?.forEach((r) => {
+    const plan = r.subscription_plans as unknown as { name: string } | null
+    rows.push({
+      date: r.created_at,
+      description: `Abonnement — ${plan?.name ?? 'N/A'}`,
+      type: 'income',
+      amount: Number(r.paid_amount),
+    })
+  })
+
+  purchases?.forEach((r) => {
+    rows.push({
+      date: r.created_at,
+      description: 'Vente comptoir',
+      type: 'income',
+      amount: Number(r.total_dt),
+    })
+  })
+
+  expenses?.forEach((r) => {
+    const cat = r.account_categories as unknown as { name: string }
+    rows.push({
+      date: r.date,
+      description: `${cat.name} — ${r.description}`,
+      type: 'expense',
+      amount: Number(r.amount_dt),
+    })
+  })
+
+  return rows.sort((a, b) => a.date.localeCompare(b.date))
+}
+
 export async function getExpenseCategories(): Promise<AccountCategory[]> {
   const supabase = await createSupabaseClient()
   const { data } = await supabase

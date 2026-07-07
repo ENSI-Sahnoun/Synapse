@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
-import { getPnl } from '@/data/admin/accounting'
-import { PnlPdfDocument } from '@/lib/exports/pnl-pdf'
+import { getAttendanceExport } from '@/data/admin/attendance-export'
+import { AttendancePdfDocument } from '@/lib/exports/attendance-pdf'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { issueExportToken } from '@/lib/exports/export-token'
 import React from 'react'
@@ -28,13 +28,13 @@ export async function GET(req: NextRequest) {
   if (!from || !to)
     return NextResponse.json({ error: 'Paramètres from et to requis' }, { status: 400 })
 
-  const pnl = await getPnl({ from, to })
+  const rows = await getAttendanceExport({ from, to })
   const buffer = await renderToBuffer(
-    React.createElement(PnlPdfDocument, { pnl, from, to }) as any,
+    React.createElement(AttendancePdfDocument, { rows, from, to }) as any,
   )
 
-  const filename = `synapse-pnl-${from}-${to}.pdf`
-  const token = issueExportToken('financials', from, to, user.id)
+  const filename = `synapse-attendance-${from}-${to}.pdf`
+  const token = issueExportToken('attendance', from, to, user.id)
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,
