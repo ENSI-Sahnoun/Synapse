@@ -30,7 +30,17 @@ function initials(name: string) {
   return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
 }
 
-export function PosClient({ products, categoryEmojis, categoryOrder }: { products: Product[]; categoryEmojis: Record<string, string>; categoryOrder: string[] }) {
+export function PosClient({
+  products,
+  categoryEmojis,
+  categoryOrder,
+  currentUser,
+}: {
+  products: Product[]
+  categoryEmojis: Record<string, string>
+  categoryOrder: string[]
+  currentUser: { id: string; fullName: string }
+}) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [assignOpen, setAssignOpen] = useState(false)
   const [assignStep, setAssignStep] = useState<AssignStep>('choose')
@@ -120,6 +130,11 @@ export function PosClient({ products, categoryEmojis, categoryOrder }: { product
   function pickStudent(student: StudentInfo) {
     setPendingStudent(student)
     setAssignStep('confirm')
+  }
+
+  function purchaseForSelf() {
+    setPendingStudent({ studentId: currentUser.id, fullName: currentUser.fullName, phone: null, loyaltyBalance: 0 })
+    confirmPurchase(currentUser.id)
   }
 
   if (receiptData) {
@@ -371,19 +386,21 @@ export function PosClient({ products, categoryEmojis, categoryOrder }: { product
       />
       <div style={{
         position: 'fixed',
-        bottom: 0,
+        top: '50%',
         left: '50%',
         width: '100%',
-        maxWidth: 480,
+        maxWidth: 440,
+        maxHeight: '85vh',
+        overflowY: 'auto',
         background: '#fff',
-        borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
+        borderRadius: 'var(--radius-xl)',
         zIndex: 51,
-        padding: '0 0 env(safe-area-inset-bottom, 20px)',
-        transition: 'transform 0.25s ease',
-        transform: `translateX(-50%) translateY(${assignOpen ? '0' : '100%'})`,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+        transition: 'transform 0.2s ease, opacity 0.2s ease',
+        transform: `translate(-50%, -50%) scale(${assignOpen ? 1 : 0.95})`,
+        opacity: assignOpen ? 1 : 0,
+        pointerEvents: assignOpen ? 'auto' : 'none',
       }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border-default)', margin: '12px auto 0' }} />
-
         {assignStep === 'choose' && (
           <div style={{ padding: '20px 20px 24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -428,22 +445,42 @@ export function PosClient({ products, categoryEmojis, categoryOrder }: { product
               >
                 Rechercher par nom
               </button>
-              <button
-                disabled={status === 'executing'}
-                onClick={() => confirmPurchase(null)}
-                style={{
-                  padding: '12px 0',
-                  border: '1.5px solid var(--border-default)',
-                  borderRadius: 'var(--radius-lg)',
-                  background: 'transparent',
-                  color: 'var(--muted-foreground)',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 14,
-                }}
-              >
-                {status === 'executing' ? 'Enregistrement...' : 'Valider anonymement'}
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  disabled={status === 'executing'}
+                  onClick={() => confirmPurchase(null)}
+                  style={{
+                    flex: 1,
+                    padding: '12px 0',
+                    border: '1.5px solid var(--border-default)',
+                    borderRadius: 'var(--radius-lg)',
+                    background: 'transparent',
+                    color: 'var(--muted-foreground)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: 14,
+                  }}
+                >
+                  {status === 'executing' ? 'Enregistrement...' : 'Valider anonymement'}
+                </button>
+                <button
+                  disabled={status === 'executing'}
+                  onClick={purchaseForSelf}
+                  style={{
+                    flex: 1,
+                    padding: '12px 0',
+                    border: '1.5px solid var(--accent-brand)',
+                    borderRadius: 'var(--radius-lg)',
+                    background: 'transparent',
+                    color: 'var(--accent-brand)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: 14,
+                  }}
+                >
+                  Pour moi
+                </button>
+              </div>
             </div>
           </div>
         )}
