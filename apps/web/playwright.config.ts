@@ -78,24 +78,7 @@ const config: PlaywrightTestConfig = {
   },
   projects: [
     {
-      name: 'with-user-setup',
-      testMatch: '_setups/user.setup.ts',
-    },
-    {
-      name: 'logged-in-users',
-      testMatch: 'user/**/*.spec.ts',
-      grepInvert: /Anonymous user/,
-      retries: 0,
-      dependencies: ['with-user-setup'],
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user_1.json',
-      },
-    },
-    {
-      name: 'anon-users',
-      testMatch: 'anon/**/*.spec.ts',
-      grep: /Anonymous user/,
+      name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
       },
