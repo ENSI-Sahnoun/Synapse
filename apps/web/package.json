@@ -117,7 +117,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@nextbase/typescript-config": "file:../../packages/typescript-config",
+    "@synapse/typescript-config": "file:../../packages/typescript-config",
     "@types/qrcode": "^1.5.6",
     "@types/web-push": "^3.6.4",
     "oxlint": "^1.65.0",
