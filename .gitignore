@@ -44,3 +44,8 @@ apps/web/package-lock.json
 
 # Supabase SQL editor scratch files, not real migrations
 apps/database/supabase/snippets/
+
+# local AI tool config/state, not project config
+.claude/
+.superpowers/
+.cursor/
