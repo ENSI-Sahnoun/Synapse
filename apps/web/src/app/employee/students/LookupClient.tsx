@@ -8,6 +8,7 @@ import { checkinAction } from '@/actions/checkin/checkin-action'
 import { checkoutAction } from '@/actions/checkin/checkout-action'
 import { getStudentDetailAction, createStudentAction, updateStudentInfoAction, getStudentAttendanceHistoryAction } from '@/actions/employee/students'
 import { createSubscriptionAction } from '@/actions/employee/subscriptions'
+import { archiveUserAction, restoreUserAction, hardDeleteUserAction } from '@/actions/admin/students'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PostCheckinSeatDialog } from '@/components/checkin/PostCheckinSeatDialog'
 import { createClient } from '@/supabase-clients/client'
@@ -87,6 +88,83 @@ function Avatar({ name, size = 36 }: { name: string | null; size?: number }) {
     >
       {getInitials(name)}
     </div>
+  )
+}
+
+function ArchiveButtonWithRefresh({ id, onDone }: { id: string; onDone: () => void }) {
+  const { execute, status } = useAction(archiveUserAction, {
+    onSuccess: () => {
+      toast.success('Utilisateur archivé')
+      onDone()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
+  })
+  function handleClick() {
+    if (!window.confirm('Archiver cet étudiant ? Il ne pourra plus se connecter.')) return
+    execute({ id })
+  }
+  return (
+    <button
+      onClick={handleClick}
+      disabled={status === 'executing'}
+      style={{
+        border: '1px solid #fed7aa', color: '#c2410c', background: 'none', borderRadius: 'var(--radius-lg)',
+        padding: '13px', fontWeight: 600, fontSize: 14, cursor: status === 'executing' ? 'not-allowed' : 'pointer', flex: 1,
+      }}
+    >
+      {status === 'executing' ? '…' : 'Archiver'}
+    </button>
+  )
+}
+
+function RestoreButtonWithRefresh({ id, onDone }: { id: string; onDone: () => void }) {
+  const { execute, status } = useAction(restoreUserAction, {
+    onSuccess: () => {
+      toast.success('Utilisateur restauré')
+      onDone()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
+  })
+  return (
+    <button
+      onClick={() => execute({ id })}
+      disabled={status === 'executing'}
+      style={{
+        border: '1px solid #bbf7d0', color: '#15803d', background: 'none', borderRadius: 'var(--radius-lg)',
+        padding: '13px', fontWeight: 600, fontSize: 14, cursor: status === 'executing' ? 'not-allowed' : 'pointer', flex: 1,
+      }}
+    >
+      {status === 'executing' ? '…' : 'Restaurer'}
+    </button>
+  )
+}
+
+function HardDeleteButtonWithRefresh({ id, name, onDone }: { id: string; name: string; onDone: () => void }) {
+  const { execute, status } = useAction(hardDeleteUserAction, {
+    onSuccess: () => {
+      toast.success('Utilisateur supprimé définitivement')
+      onDone()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
+  })
+  function handleClick() {
+    const confirmed = window.confirm(
+      `Supprimer définitivement "${name}" ?\n\nCette action est IRRÉVERSIBLE. Toutes les données (présences, abonnements) seront perdues.`
+    )
+    if (!confirmed) return
+    execute({ id })
+  }
+  return (
+    <button
+      onClick={handleClick}
+      disabled={status === 'executing'}
+      style={{
+        border: '1px solid var(--destructive)', color: 'var(--destructive)', background: 'none', borderRadius: 'var(--radius-lg)',
+        padding: '13px', fontWeight: 600, fontSize: 14, cursor: status === 'executing' ? 'not-allowed' : 'pointer', flex: 1,
+      }}
+    >
+      {status === 'executing' ? '…' : 'Supprimer'}
+    </button>
   )
 }
 
@@ -393,6 +471,11 @@ function DetailView({
   const [fullHistory, setFullHistory] = useState<AttendanceHistoryRow[] | null>(null)
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
   const router = useRouter()
+
+  function handleDestructiveSuccess() {
+    router.refresh()
+    onBack()
+  }
 
   const { execute: fetchDetail } = useAction(getStudentDetailAction, {
     onSuccess: ({ data }) => {
@@ -730,6 +813,17 @@ function DetailView({
           >
             Modifier le profil
           </button>
+        )}
+
+        {role === 'admin' && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {showArchived ? (
+              <RestoreButtonWithRefresh id={student.id} onDone={handleDestructiveSuccess} />
+            ) : (
+              <ArchiveButtonWithRefresh id={student.id} onDone={handleDestructiveSuccess} />
+            )}
+            <HardDeleteButtonWithRefresh id={student.id} name={student.full_name ?? 'cet étudiant'} onDone={handleDestructiveSuccess} />
+          </div>
         )}
 
         {editing && (
