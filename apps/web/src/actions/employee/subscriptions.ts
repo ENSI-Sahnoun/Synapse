@@ -91,7 +91,6 @@ export const createSubscriptionAction = employeeActionClient
     } catch { /* non-fatal */ }
 
     revalidatePath(`/employee/students/${student_id}`)
-    revalidatePath(`/admin/students/${student_id}`)
 
     return {
       subscriptionId: subscription.id,

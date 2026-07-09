@@ -18,8 +18,7 @@ export const updateStudentAction = adminActionClient
       .update(updates)
       .eq('id', id)
     if (error) throw new Error(error.message)
-    revalidatePath('/admin/students')
-    revalidatePath(`/admin/students/${id}`)
+    revalidatePath('/employee/students')
     return { success: true }
   })
 
@@ -40,7 +39,7 @@ export const archiveUserAction = adminActionClient
       .eq('id', id)
     if (profileError) throw new Error(`Erreur profil: ${profileError.message}`)
 
-    revalidatePath('/admin/students')
+    revalidatePath('/employee/students')
     revalidatePath('/admin/employees')
     return { success: true }
   })
@@ -62,7 +61,7 @@ export const restoreUserAction = adminActionClient
       .eq('id', id)
     if (profileError) throw new Error(`Erreur profil: ${profileError.message}`)
 
-    revalidatePath('/admin/students')
+    revalidatePath('/employee/students')
     revalidatePath('/admin/employees')
     return { success: true }
   })
@@ -76,7 +75,7 @@ export const hardDeleteUserAction = adminActionClient
     const { error } = await adminSupabase.auth.admin.deleteUser(id)
     if (error) throw new Error(`Erreur suppression: ${error.message}`)
 
-    revalidatePath('/admin/students')
+    revalidatePath('/employee/students')
     revalidatePath('/admin/employees')
     return { success: true }
   })
@@ -98,7 +97,7 @@ export const adminResetEmailAction = adminActionClient
     const adminSupabase = createSupabaseAdminClient()
     const { error } = await adminSupabase.auth.admin.updateUserById(id, { email })
     if (error) throw new Error(`Erreur: ${error.message}`)
-    revalidatePath('/admin/students')
+    revalidatePath('/employee/students')
     revalidatePath('/admin/employees')
     return { success: true }
   })

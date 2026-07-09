@@ -47,7 +47,6 @@ export const createStudentAction = employeeActionClient
       .single()
 
     revalidatePath('/employee/students')
-    revalidatePath('/admin/students')
 
     return { studentId: userId, qrToken: withToken?.qr_token ?? null }
   })

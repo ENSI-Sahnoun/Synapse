@@ -57,7 +57,6 @@ const EMPLOYEE_NAV_FOR_EMPLOYEE = [
 const ADMIN_DASHBOARD_ITEM = { href: '/admin/dashboard', label: 'Vue d\'ensemble', icon: 'ChartBar' }
 
 const ADMIN_NAV = [
-  { href: '/admin/students',               label: 'Gérer les étudiants', icon: 'Users' },
   { href: '/admin/employees',              label: 'Employés',       icon: 'UserCircle' },
   { href: '/admin/subscription-plans',     label: 'Formules',       icon: 'CreditCard' },
   { href: '/admin/rooms',                  label: 'Disposition salles', icon: 'Buildings' },

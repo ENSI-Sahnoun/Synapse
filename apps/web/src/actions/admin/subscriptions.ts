@@ -40,7 +40,6 @@ export const adminUpdateSubscriptionAction = adminActionClient
       .eq('id', subscription_id)
     if (error) throw new Error(error.message)
 
-    revalidatePath(`/admin/students/${sub.student_id}`)
     revalidatePath(`/employee/students/${sub.student_id}`)
     return { success: true }
   })
