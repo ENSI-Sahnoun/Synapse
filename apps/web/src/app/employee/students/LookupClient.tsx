@@ -14,6 +14,7 @@ import { createClient } from '@/supabase-clients/client'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ArchivedToggle } from './ArchivedToggle'
+import { EditProfileDialog } from './EditProfileDialog'
 
 interface Student {
   id: string
@@ -390,6 +391,8 @@ function DetailView({
   const [showQr, setShowQr] = useState(false)
   const [showFullHistory, setShowFullHistory] = useState(false)
   const [fullHistory, setFullHistory] = useState<AttendanceHistoryRow[] | null>(null)
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false)
+  const router = useRouter()
 
   const { execute: fetchDetail } = useAction(getStudentDetailAction, {
     onSuccess: ({ data }) => {
@@ -717,6 +720,18 @@ function DetailView({
           {editing ? 'Annuler' : "Modifier l'étudiant"}
         </button>
 
+        {role === 'admin' && (
+          <button
+            onClick={() => setProfileDialogOpen(true)}
+            style={{
+              background: 'none', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)',
+              padding: '13px', fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', cursor: 'pointer',
+            }}
+          >
+            Modifier le profil
+          </button>
+        )}
+
         {editing && (
           <div style={{ background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -763,6 +778,19 @@ function DetailView({
           onOpenChange={setSeatDialogOpen}
           attendanceId={checkedInAttendanceId}
           studentName={student.full_name ?? ''}
+        />
+      )}
+
+      {role === 'admin' && (
+        <EditProfileDialog
+          open={profileDialogOpen}
+          onOpenChange={setProfileDialogOpen}
+          student={student}
+          studyLevel={stats?.studyLevel ?? null}
+          onSaved={() => {
+            fetchDetail({ studentId: student.id })
+            router.refresh()
+          }}
         />
       )}
     </div>
