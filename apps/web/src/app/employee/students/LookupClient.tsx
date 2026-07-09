@@ -13,6 +13,7 @@ import { PostCheckinSeatDialog } from '@/components/checkin/PostCheckinSeatDialo
 import { createClient } from '@/supabase-clients/client'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { ArchivedToggle } from './ArchivedToggle'
 
 interface Student {
   id: string
@@ -57,6 +58,8 @@ interface LookupClientProps {
   students: Student[]
   currentlyIn: CurrentlyIn[]
   plans: Plan[]
+  role: string
+  showArchived: boolean
 }
 
 function getInitials(name: string | null): string {
@@ -366,12 +369,16 @@ function DetailView({
   onBack,
   onCheckin,
   onCheckout,
+  role,
+  showArchived,
 }: {
   student: Student
   attendance: CurrentlyIn | null
   onBack: () => void
   onCheckin: (studentId: string, attendanceId: string) => void
   onCheckout: (studentId: string) => void
+  role: string
+  showArchived: boolean
 }) {
   const [stats, setStats] = useState<DetailStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
@@ -883,7 +890,7 @@ function QuickAddPanel({ plans, onCreated }: { plans: Plan[]; onCreated: () => v
   )
 }
 
-export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans }: LookupClientProps) {
+export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans, role, showArchived }: LookupClientProps) {
   const searchParams = useSearchParams()
   const [query, setQuery] = useState('')
   const [currentlyIn, setCurrentlyIn] = useState<CurrentlyIn[]>(initialCurrentlyIn)
@@ -965,6 +972,8 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans 
         onBack={() => setSelectedStudent(null)}
         onCheckin={handleCheckin}
         onCheckout={handleCheckout}
+        role={role}
+        showArchived={showArchived}
       />
     )
   }
@@ -1003,7 +1012,10 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans 
 
       {query.trim() === '' ? (
         <div>
-          <SectionHeader label={`Tous les étudiants (${students.length})`} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <SectionHeader label={`${showArchived ? 'Étudiants archivés' : 'Tous les étudiants'} (${students.length})`} />
+            {role === 'admin' && <ArchivedToggle showArchived={showArchived} />}
+          </div>
           {students.length === 0 ? (
             <div style={{ color: 'var(--text-tertiary)', fontSize: 13, padding: '12px 0' }}>
               Aucun étudiant

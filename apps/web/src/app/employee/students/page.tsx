@@ -7,16 +7,31 @@ import { LookupClient } from './LookupClient'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EmployeeStudentsPage() {
+export default async function EmployeeStudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ archived?: string }>
+}) {
   const supabase = await createSupabaseClient()
-  if (!(await getCachedLoggedInUserIdOrNull())) redirect('/login')
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single()
+  const role = profile?.role ?? 'employee'
+
+  const params = await searchParams
+  const showArchived = role === 'admin' && params.archived === '1'
 
   const [studentsResult, openAttResult, plansResult, roomsResult] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, full_name, phone, university, qr_token, student_number')
       .eq('role', 'student')
-      .eq('is_archived', false)
+      .eq('is_archived', showArchived)
       .order('full_name'),
     supabase
       .from('attendance')
@@ -79,7 +94,13 @@ export default async function EmployeeStudentsPage() {
   return (
     <div className="p-4 pb-24">
       <Suspense>
-        <LookupClient students={students} currentlyIn={currentlyIn} plans={plans} />
+        <LookupClient
+          students={students}
+          currentlyIn={currentlyIn}
+          plans={plans}
+          role={role}
+          showArchived={showArchived}
+        />
       </Suspense>
     </div>
   )
