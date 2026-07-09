@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { format, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 import { AttendanceClient } from './AttendanceClient'
 
 export const dynamic = 'force-dynamic'
@@ -56,6 +57,7 @@ export default async function EmployeeAttendancePage() {
 
   return (
     <div className="p-4 space-y-4 pb-24">
+      <LiveRefresher tables={['attendance']} />
       <div>
         <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
           Présences du jour

@@ -2,6 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { startOfDay } from 'date-fns'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 import { CheckinClient } from './CheckinClient'
 
 export const metadata = {
@@ -29,6 +30,7 @@ export default async function EmployeeCheckinPage() {
 
   return (
     <div className="p-4 space-y-4 pb-24">
+      <LiveRefresher tables={['attendance']} />
       <div>
         <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
           Contrôle d&apos;accès

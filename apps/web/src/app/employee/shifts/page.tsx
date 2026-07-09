@@ -1,6 +1,7 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +32,7 @@ export default async function ShiftsPage() {
 
   return (
     <div className="p-4 pb-24" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <LiveRefresher tables={['weekly_schedules']} />
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>Mes horaires</h1>
 
       {onShiftNow && today && (

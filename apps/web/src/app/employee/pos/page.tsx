@@ -1,6 +1,7 @@
 import { listActiveProducts } from '@/data/employee/products'
 import { listProductCategories } from '@/data/admin/product-categories'
 import { getLoggedInUserProfile } from '@/data/user/user'
+import { LiveRefresher } from '@/components/live/LiveRefresher'
 import { PosClient } from './pos-client'
 
 export default async function PosPage() {
@@ -14,11 +15,14 @@ export default async function PosPage() {
   )
   const categoryOrder = categories.map((c) => c.name)
   return (
-    <PosClient
-      products={products}
-      categoryEmojis={categoryEmojis}
-      categoryOrder={categoryOrder}
-      currentUser={{ id: profile.id, fullName: profile.full_name }}
-    />
+    <>
+      <LiveRefresher tables={['products', 'product_categories']} />
+      <PosClient
+        products={products}
+        categoryEmojis={categoryEmojis}
+        categoryOrder={categoryOrder}
+        currentUser={{ id: profile.id, fullName: profile.full_name }}
+      />
+    </>
   )
 }
