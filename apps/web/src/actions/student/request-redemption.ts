@@ -51,7 +51,7 @@ export const requestRedemptionAction = studentActionClient
     }
 
     // Insert redemption request (does NOT deduct points — employee confirms physically)
-    const { error: insertError } = await supabase
+    const { data: insertedRequest, error: insertError } = await supabase
       .from('loyalty_redemption_requests')
       .insert({
         student_id: studentId,
@@ -59,6 +59,8 @@ export const requestRedemptionAction = studentActionClient
         status: 'pending',
         points_used: rule.points_threshold,
       })
+      .select('id')
+      .single()
 
     if (insertError) throw new Error('Erreur lors de la demande. Veuillez réessayer.')
 
@@ -69,16 +71,6 @@ export const requestRedemptionAction = studentActionClient
         .eq('id', studentId)
         .maybeSingle()
 
-      const { data: insertedRequest } = await supabase
-        .from('loyalty_redemption_requests')
-        .select('id')
-        .eq('student_id', studentId)
-        .eq('rule_id', rule_id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
       await notifyAllStaff(
         'loyalty_request_new',
         buildLoyaltyRequestMessage({
@@ -86,7 +78,7 @@ export const requestRedemptionAction = studentActionClient
           ruleName: rule.name,
           points: rule.points_threshold,
         }),
-        insertedRequest ? { link: `/employee/loyalty-requests?highlight=${insertedRequest.id}` } : undefined,
+        { link: `/employee/loyalty-requests?highlight=${insertedRequest.id}` },
       )
     } catch { /* non-fatal */ }
 
