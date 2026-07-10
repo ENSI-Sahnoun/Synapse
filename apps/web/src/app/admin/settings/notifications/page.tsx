@@ -55,7 +55,7 @@ const ORDERED_TYPES: NotificationType[] = [
   'seat_changed_freely',
 ]
 
-const CONFIGURABLE_CHANNELS: NotificationChannel[] = ['email', 'sms', 'whatsapp']
+const CONFIGURABLE_CHANNELS: NotificationChannel[] = ['email', 'sms', 'whatsapp', 'inapp']
 
 function buildConfigMap(rows: ChannelConfigRow[]): Map<string, boolean> {
   const map = new Map<string, boolean>()
@@ -75,7 +75,6 @@ export default async function NotificationConfigPage() {
         <h1 className="text-2xl font-bold">Canaux de notification</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Configurez quels canaux sont actifs pour chaque type de notification.
-          Les notifications in-app sont toujours activées.
         </p>
       </div>
 
@@ -91,9 +90,6 @@ export default async function NotificationConfigPage() {
                   {CHANNEL_LABELS[channel]}
                 </th>
               ))}
-              <th className="text-center p-4 font-medium text-muted-foreground w-24">
-                In-app
-              </th>
             </tr>
           </thead>
           <tbody>
@@ -116,15 +112,6 @@ export default async function NotificationConfigPage() {
                     </div>
                   </td>
                 ))}
-                <td className="p-4 text-center">
-                  <div className="flex justify-center">
-                    {/* In-app is always on — not configurable */}
-                    <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
-                      <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
-                      Toujours actif
-                    </span>
-                  </div>
-                </td>
               </tr>
             ))}
           </tbody>
