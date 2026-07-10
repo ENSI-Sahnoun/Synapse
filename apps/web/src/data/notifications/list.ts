@@ -8,13 +8,14 @@ export interface NotificationRow {
   message: string
   is_read: boolean
   created_at: string
+  link: string | null
 }
 
 export async function getMyNotifications(limit = 20): Promise<NotificationRow[]> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, message, is_read, created_at')
+    .select('id, type, message, is_read, created_at, link')
     .order('created_at', { ascending: false })
     .limit(limit)
   if (error) throw error
@@ -35,7 +36,7 @@ export async function getMyImportantNotifications(): Promise<NotificationRow[]> 
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, message, is_read, created_at')
+    .select('id, type, message, is_read, created_at, link')
     .eq('is_important', true)
     .gt('important_until', new Date().toISOString())
     .order('created_at', { ascending: false })
@@ -56,7 +57,7 @@ export async function getNotificationsForUser(
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, message, is_read, created_at')
+    .select('id, type, message, is_read, created_at, link')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit)
