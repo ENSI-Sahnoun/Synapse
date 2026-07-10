@@ -2,7 +2,30 @@ import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { sendPushToUsers } from '@/lib/notifications/push'
 import type { NotificationType } from '@/lib/notification-types'
 
-export async function notifyAllStaff(type: NotificationType, message: string): Promise<void> {
+/**
+ * Whether in-app delivery is enabled for a notification type. Reuses the same
+ * `notification_channel_config` table the admin settings page uses for
+ * email/SMS/WhatsApp — a missing row means "never explicitly configured",
+ * which defaults to enabled so existing behavior doesn't change until an
+ * admin flips a type off.
+ */
+export async function isInAppNotificationEnabled(type: NotificationType): Promise<boolean> {
+  const supabase = createSupabaseAdminClient()
+  const { data } = await supabase
+    .from('notification_channel_config')
+    .select('is_enabled')
+    .eq('notification_type', type)
+    .eq('channel', 'inapp')
+    .maybeSingle()
+  return data?.is_enabled ?? true
+}
+
+export async function notifyAllStaff(
+  type: NotificationType,
+  message: string,
+  opts?: { link?: string },
+): Promise<void> {
+  if (!(await isInAppNotificationEnabled(type))) return
   const supabase = createSupabaseAdminClient()
   const { data: staff } = await supabase
     .from('profiles')
@@ -10,7 +33,7 @@ export async function notifyAllStaff(type: NotificationType, message: string): P
     .in('role', ['admin', 'employee'])
   if (!staff?.length) return
   await supabase.from('notifications').insert(
-    staff.map((p) => ({ user_id: p.id, type, message })),
+    staff.map((p) => ({ user_id: p.id, type, message, link: opts?.link ?? null })),
   )
   await sendPushToUsers(staff.map((p) => p.id), { title: 'Synapse', body: message })
 }
@@ -20,6 +43,7 @@ export async function notifyAllUsers(
   message: string,
   opts?: { important?: boolean; onlyUserId?: string },
 ): Promise<void> {
+  if (!(await isInAppNotificationEnabled(type))) return
   const supabase = createSupabaseAdminClient()
   let query = supabase.from('profiles').select('id')
   if (opts?.onlyUserId) query = query.eq('id', opts.onlyUserId)
@@ -43,18 +67,22 @@ export interface InsertInAppNotificationOpts {
   userId: string
   type: NotificationType
   message: string
+  link?: string
 }
 
 export async function insertInAppNotification({
   userId,
   type,
   message,
+  link,
 }: InsertInAppNotificationOpts): Promise<void> {
+  if (!(await isInAppNotificationEnabled(type))) return
   const supabase = createSupabaseAdminClient()
   const { error } = await supabase.from('notifications').insert({
     user_id: userId,
     type,
     message,
+    link: link ?? null,
   })
   if (error) throw error
   await sendPushToUsers([userId], { title: 'Synapse', body: message })
