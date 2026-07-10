@@ -81,10 +81,14 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
     else setDragX(0)
   }
 
-  function handleClick() {
+  function handleRowClick() {
     if (dragging.current || dragX !== 0) return
-    if (actionable) onOpen!(notification.id, href!)
-    else if (isUnread) onMarkRead(notification.id)
+    if (isUnread) onMarkRead(notification.id)
+  }
+
+  function handleVoirClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    onOpen!(notification.id, href!)
   }
 
   return (
@@ -110,7 +114,7 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
           transform: `translateX(${dragX}px)`,
           transition: dragging.current ? 'none' : 'transform 0.15s ease',
         }}
-        onClick={handleClick}
+        onClick={handleRowClick}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -142,7 +146,13 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
         </div>
 
         {actionable && (
-          <CaretRight size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
+          <button
+            onClick={handleVoirClick}
+            className="mt-0.5 shrink-0 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-100"
+          >
+            Voir
+            <CaretRight size={12} />
+          </button>
         )}
       </div>
     </motion.div>
