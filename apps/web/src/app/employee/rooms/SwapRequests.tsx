@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAction } from 'next-safe-action/hooks'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { acceptSeatSwapRequest, denySeatSwapRequest } from '@/actions/employee/seat-swap'
 import type { PendingSwapRequest } from '@/data/employee/seat-swap'
@@ -10,6 +10,17 @@ import type { PendingSwapRequest } from '@/data/employee/seat-swap'
 export function SwapRequests({ requests }: { requests: PendingSwapRequest[] }) {
   const router = useRouter()
   const [hidden, setHidden] = useState<string[]>([])
+  const searchParams = useSearchParams()
+  const highlightId = searchParams.get('highlight')
+  const [flashId, setFlashId] = useState<string | null>(highlightId)
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  useEffect(() => {
+    if (!highlightId) return
+    rowRefs.current[highlightId]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const t = setTimeout(() => setFlashId(null), 2500)
+    return () => clearTimeout(t)
+  }, [highlightId])
 
   const { execute: accept, status: acceptStatus } = useAction(acceptSeatSwapRequest, {
     onSuccess: ({ input }) => {
@@ -57,9 +68,12 @@ export function SwapRequests({ requests }: { requests: PendingSwapRequest[] }) {
         {visible.map((r) => (
           <div
             key={r.id}
+            ref={(el) => { rowRefs.current[r.id] = el }}
             style={{
               border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
               padding: '10px 12px',
+              background: flashId === r.id ? '#fef9c3' : undefined,
+              transition: 'background 0.6s ease',
             }}
           >
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{r.studentName}</div>

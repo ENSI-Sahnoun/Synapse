@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
@@ -144,7 +145,11 @@ export default async function EmployeeRoomsPage() {
         </div>
       )}
 
-      {swapRequests.length > 0 && <SwapRequests requests={swapRequests} />}
+      {swapRequests.length > 0 && (
+        <Suspense>
+          <SwapRequests requests={swapRequests} />
+        </Suspense>
+      )}
 
       {unassigned.length > 0 && <UnassignedStudents students={unassigned} />}
     </div>
