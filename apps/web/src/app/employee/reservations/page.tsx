@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { getActiveReservations } from '@/data/employee/reservations'
 import { ReservationsClient } from './ReservationsClient'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
@@ -25,7 +26,9 @@ export default async function EmployeeReservationsPage() {
         </p>
       </div>
 
-      <ReservationsClient initialReservations={reservations} />
+      <Suspense>
+        <ReservationsClient initialReservations={reservations} />
+      </Suspense>
     </div>
   )
 }
