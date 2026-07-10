@@ -3,35 +3,17 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChartBar, Users, UserCircle, CreditCard, Buildings, Armchair, ShoppingCart, QrCode, Gear, Star, Gift, ClipboardText, CalendarBlank, Megaphone, Export, Wallet } from '@phosphor-icons/react'
-import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
-
-const ICON_MAP: Record<string, PhosphorIcon> = {
-  ChartBar,
-  Users,
-  UserCircle,
-  CreditCard,
-  Buildings,
-  Armchair,
-  ShoppingCart,
-  QrCode,
-  Gear,
-  Star,
-  Gift,
-  ClipboardText,
-  CalendarBlank,
-  Megaphone,
-  Export,
-  Wallet,
-}
+import { ChartBar } from '@phosphor-icons/react'
+import { ICON_MAP } from '@/lib/nav-items'
 
 interface SidebarNavLinkProps {
   href: string
   label: string
   icon: string
+  count?: number
 }
 
-export function SidebarNavLink({ href, label, icon }: SidebarNavLinkProps) {
+export function SidebarNavLink({ href, label, icon, count }: SidebarNavLinkProps) {
   const Icon = ICON_MAP[icon] ?? ChartBar
   const [hovered, setHovered] = useState(false)
   const pathname = usePathname()
@@ -50,7 +32,26 @@ export function SidebarNavLink({ href, label, icon }: SidebarNavLinkProps) {
       }}
     >
       <Icon size={20} weight={active ? 'bold' : 'regular'} />
-      {label}
+      <span style={{ flex: 1 }}>{label}</span>
+      {!!count && (
+        <span
+          style={{
+            minWidth: 18,
+            height: 18,
+            padding: '0 5px',
+            borderRadius: 9,
+            background: '#dc2626',
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
     </Link>
   )
 }
