@@ -508,6 +508,7 @@ export type Database = {
           important_until: string | null
           is_important: boolean
           is_read: boolean
+          link: string | null
           message: string
           type: string
           user_id: string
@@ -518,6 +519,7 @@ export type Database = {
           important_until?: string | null
           is_important?: boolean
           is_read?: boolean
+          link?: string | null
           message: string
           type: string
           user_id: string
@@ -528,6 +530,7 @@ export type Database = {
           important_until?: string | null
           is_important?: boolean
           is_read?: boolean
+          link?: string | null
           message?: string
           type?: string
           user_id?: string
