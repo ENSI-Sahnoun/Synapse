@@ -5,6 +5,7 @@ import { requestRedemptionSchema } from '@/utils/zod-schemas/loyalty-redemption'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
 import { notifyAllStaff } from '@/data/notifications/inapp'
+import { buildLoyaltyRequestMessage } from '@/lib/notification-message-builders'
 
 export const requestRedemptionAction = studentActionClient
   .schema(requestRedemptionSchema)
@@ -62,9 +63,30 @@ export const requestRedemptionAction = studentActionClient
     if (insertError) throw new Error('Erreur lors de la demande. Veuillez réessayer.')
 
     try {
+      const { data: studentProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', studentId)
+        .maybeSingle()
+
+      const { data: insertedRequest } = await supabase
+        .from('loyalty_redemption_requests')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('rule_id', rule_id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
       await notifyAllStaff(
         'loyalty_request_new',
-        `Nouvelle demande de récompense : "${rule.name}" (${rule.points_threshold} pts).`,
+        buildLoyaltyRequestMessage({
+          studentName: studentProfile?.full_name ?? 'Un étudiant',
+          ruleName: rule.name,
+          points: rule.points_threshold,
+        }),
+        insertedRequest ? { link: `/employee/loyalty-requests?highlight=${insertedRequest.id}` } : undefined,
       )
     } catch { /* non-fatal */ }
 
