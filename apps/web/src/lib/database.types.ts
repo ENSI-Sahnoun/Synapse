@@ -114,6 +114,108 @@ export type Database = {
           },
         ]
       }
+      cash_movements: {
+        Row: {
+          actor_id: string
+          amount_dt: number
+          created_at: string
+          id: string
+          reason: string
+          session_id: string
+          type: string
+        }
+        Insert: {
+          actor_id: string
+          amount_dt: number
+          created_at?: string
+          id?: string
+          reason: string
+          session_id: string
+          type: string
+        }
+        Update: {
+          actor_id?: string
+          amount_dt?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          session_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_movements_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_movements_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_register_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_register_sessions: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          closing_amount_dt: number | null
+          discrepancy_dt: number | null
+          expected_amount_dt: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string
+          opening_amount_dt: number
+          status: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_amount_dt?: number | null
+          discrepancy_dt?: number | null
+          expected_amount_dt?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by: string
+          opening_amount_dt: number
+          status?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_amount_dt?: number | null
+          discrepancy_dt?: number | null
+          expected_amount_dt?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string
+          opening_amount_dt?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_register_sessions_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_register_sessions_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_metrics: {
         Row: {
           created_at: string
@@ -1174,9 +1276,53 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: Json
       }
+      pos_add_cash_movement: {
+        Args: { p_amount: number; p_reason: string; p_session_id: string; p_type: string }
+        Returns: {
+          actor_id: string
+          amount_dt: number
+          created_at: string
+          id: string
+          reason: string
+          session_id: string
+          type: string
+        }[]
+      }
       pos_checkout: {
         Args: { p_items: Json; p_student_id: string }
         Returns: Json
+      }
+      pos_close_session: {
+        Args: { p_closing_amount: number; p_notes: string | null; p_session_id: string }
+        Returns: {
+          closed_at: string | null
+          closed_by: string | null
+          closing_amount_dt: number | null
+          discrepancy_dt: number | null
+          expected_amount_dt: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string
+          opening_amount_dt: number
+          status: string
+        }[]
+      }
+      pos_open_session: {
+        Args: { p_opening_amount: number }
+        Returns: {
+          closed_at: string | null
+          closed_by: string | null
+          closing_amount_dt: number | null
+          discrepancy_dt: number | null
+          expected_amount_dt: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string
+          opening_amount_dt: number
+          status: string
+        }[]
       }
       pos_restock: {
         Args: {

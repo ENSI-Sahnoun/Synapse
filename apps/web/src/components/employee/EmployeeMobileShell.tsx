@@ -6,7 +6,7 @@ import { useState } from 'react'
 import {
   QrCode, ClipboardText, Users, ShoppingCart, DotsThree,
   ChartBar, Buildings, CalendarBlank,
-  Megaphone, Export, UserCircle, X, Armchair, CaretDown,
+  Megaphone, UserCircle, X, Armchair, CaretDown,
 } from '@phosphor-icons/react'
 import { signOutAction } from '@/data/auth/sign-out'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
@@ -28,7 +28,6 @@ const MORE_ITEMS = [
   { href: '/employee/rooms',         label: 'Salles',        Icon: Buildings },
   { href: '/employee/shifts',        label: 'Mes horaires',  Icon: CalendarBlank },
   { href: '/employee/announcements', label: 'Annonces',      Icon: Megaphone },
-  { href: '/employee/export',        label: 'Export',        Icon: Export },
   { href: '/employee/profile',       label: 'Mon profil',    Icon: UserCircle },
 ]
 
@@ -43,7 +42,6 @@ const EMPLOYEE_NAV = [
   { href: '/employee/loyalty-requests', label: 'Récompenses',      icon: 'Gift' },
   { href: '/employee/reports',          label: 'Rapports',         icon: 'ChartBar' },
   { href: '/employee/announcements',    label: 'Annonces',         icon: 'Megaphone' },
-  { href: '/employee/export',           label: 'Export',           icon: 'Export' },
   { href: '/employee/profile',          label: 'Mon profil',       icon: 'UserCircle' },
 ]
 
@@ -61,6 +59,7 @@ const ADMIN_NAV = [
   { href: '/admin/subscription-plans',     label: 'Formules',       icon: 'CreditCard' },
   { href: '/admin/rooms',                  label: 'Disposition salles', icon: 'Buildings' },
   { href: '/admin/products',               label: 'Produits (POS)', icon: 'ShoppingCart' },
+  { href: '/admin/pos/sessions',            label: 'Sessions caisse', icon: 'Wallet' },
   { href: '/admin/loyalty',                label: 'Fidélité',       icon: 'Star' },
   { href: '/admin/notifications/trigger',  label: 'Notifications',  icon: 'Bell' },
   { href: '/admin/settings',                label: 'Paramètres',     icon: 'Gear' },
@@ -207,7 +206,7 @@ export function EmployeeMobileShell({ fullName, role, initialNotifications, init
                   ADMIN_DASHBOARD_ITEM,
                   // ponytail: hide these for admins for now, add back when needed
                   ...EMPLOYEE_NAV.slice(1).filter(
-                    (item) => !['/employee/profile', '/employee/export', '/employee/reports'].includes(item.href),
+                    (item) => !['/employee/profile', '/employee/reports'].includes(item.href),
                   ),
                 ].map(({ href, label, icon }) => (
                   <SidebarNavLink key={href} href={href} label={label} icon={icon} />

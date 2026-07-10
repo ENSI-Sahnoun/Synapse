@@ -1,12 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
 import { createPurchaseAction } from '@/actions/employee/purchases'
 import { searchStudentsByNameAction } from '@/actions/employee/search-students-by-name'
+import {
+  addCashMovementAction,
+  closeCashSessionAction,
+} from '@/actions/employee/cash-sessions'
 import { QrScanDialog } from './qr-scan-dialog'
 import { type Product } from '@/data/employee/products'
+import { type OpenCashSession } from '@/data/employee/cash-sessions'
 
 interface CartItem {
   product: Product
@@ -30,17 +36,24 @@ function initials(name: string) {
   return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
 }
 
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
 export function PosClient({
   products,
   categoryEmojis,
   categoryOrder,
   currentUser,
+  cashSession,
 }: {
   products: Product[]
   categoryEmojis: Record<string, string>
   categoryOrder: string[]
   currentUser: { id: string; fullName: string }
+  cashSession: OpenCashSession
 }) {
+  const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
   const [assignOpen, setAssignOpen] = useState(false)
   const [assignStep, setAssignStep] = useState<AssignStep>('choose')
@@ -49,6 +62,84 @@ export function PosClient({
   const [nameQuery, setNameQuery] = useState('')
   const [nameResults, setNameResults] = useState<StudentInfo[]>([])
   const [search, setSearch] = useState('')
+
+  const [movementOpen, setMovementOpen] = useState(false)
+  const [movementType, setMovementType] = useState<'in' | 'out'>('in')
+  const [movementAmount, setMovementAmount] = useState('')
+  const [movementReason, setMovementReason] = useState('')
+
+  const [closeOpen, setCloseOpen] = useState(false)
+  const [closingAmount, setClosingAmount] = useState('')
+  const [closingNotes, setClosingNotes] = useState('')
+  const [closeResult, setCloseResult] = useState<{
+    countedDt: number
+    expectedDt: number
+    discrepancyDt: number
+  } | null>(null)
+
+  const { execute: executeMovement, status: movementStatus } = useAction(addCashMovementAction, {
+    onSuccess: () => {
+      toast.success('Mouvement de caisse enregistré')
+      setMovementOpen(false)
+      setMovementAmount('')
+      setMovementReason('')
+      router.refresh()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
+  })
+
+  const { execute: executeClose, status: closeStatus } = useAction(closeCashSessionAction, {
+    onSuccess: ({ data }) => {
+      if (!data) return
+      setCloseResult({
+        countedDt: Number(data.closing_amount_dt ?? 0),
+        expectedDt: Number(data.expected_amount_dt ?? 0),
+        discrepancyDt: Number(data.discrepancy_dt ?? 0),
+      })
+      setCloseOpen(false)
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
+  })
+
+  function submitMovement(e: React.FormEvent) {
+    e.preventDefault()
+    const amount = Number(movementAmount)
+    if (Number.isNaN(amount) || amount <= 0) {
+      toast.error('Montant invalide')
+      return
+    }
+    if (movementReason.trim() === '') {
+      toast.error('Motif requis')
+      return
+    }
+    executeMovement({
+      session_id: cashSession.id,
+      type: movementType,
+      amount_dt: amount,
+      reason: movementReason.trim(),
+    })
+  }
+
+  function submitClose(e: React.FormEvent) {
+    e.preventDefault()
+    const amount = Number(closingAmount)
+    if (Number.isNaN(amount) || amount < 0) {
+      toast.error('Montant invalide')
+      return
+    }
+    executeClose({
+      session_id: cashSession.id,
+      closing_amount_dt: amount,
+      notes: closingNotes.trim() || null,
+    })
+  }
+
+  function finishClosing() {
+    setCloseResult(null)
+    setClosingAmount('')
+    setClosingNotes('')
+    router.refresh()
+  }
 
   const { execute: searchByName, status: searchStatus } = useAction(searchStudentsByNameAction, {
     onSuccess: ({ data }) => setNameResults(data ?? []),
@@ -137,6 +228,70 @@ export function PosClient({
     confirmPurchase(currentUser.id)
   }
 
+  if (closeResult) {
+    const hasDiscrepancy = Math.abs(closeResult.discrepancyDt) > 0.001
+    return (
+      <div style={{ padding: '16px 16px 100px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{
+          width: '100%',
+          maxWidth: 380,
+          marginTop: 40,
+          background: '#fff',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-xl)',
+          padding: 24,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Caisse clôturée</h2>
+            <p style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>Résultat du comptage</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+              <span>Compté</span>
+              <span style={{ fontWeight: 700 }}>{formatDt(closeResult.countedDt)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+              <span>Attendu</span>
+              <span style={{ fontWeight: 700 }}>{formatDt(closeResult.expectedDt)}</span>
+            </div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: 14,
+              paddingTop: 10,
+              borderTop: '1px solid var(--border-subtle)',
+            }}>
+              <span>Écart</span>
+              <span style={{ fontWeight: 700, color: hasDiscrepancy ? '#dc2626' : 'var(--accent-brand)' }}>
+                {closeResult.discrepancyDt > 0 ? '+' : ''}
+                {formatDt(closeResult.discrepancyDt)}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={finishClosing}
+            style={{
+              width: '100%',
+              padding: '14px 0',
+              borderRadius: 'var(--radius-lg)',
+              background: 'var(--accent-brand)',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 15,
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Nouvelle session
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (receiptData) {
     return (
       <div style={{ padding: '16px 16px 100px' }}>
@@ -220,7 +375,7 @@ export function PosClient({
         onClick={() => addToCart(product)}
         style={{
           background: '#fff',
-          border: cartItem ? '1.5px solid var(--accent-brand)' : '1px solid var(--border-subtle)',
+          border: cartItem ? '1px solid var(--accent-brand)' : '1px solid var(--border-subtle)',
           borderRadius: 'var(--radius-lg)',
           overflow: 'hidden',
           position: 'relative',
@@ -282,6 +437,61 @@ export function PosClient({
 
   return (
     <div style={{ padding: '16px 16px 100px' }}>
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          background: 'var(--synapse-green-50, #f0faf4)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '10px 14px',
+          marginBottom: 16,
+          fontSize: 13,
+        }}
+      >
+        <span style={{ fontWeight: 600 }}>
+          Caisse ouverte · fond initial {formatDt(cashSession.openingAmountDt)} · depuis{' '}
+          {formatTime(cashSession.openedAt)} ({cashSession.openedByName})
+        </span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setMovementOpen(true)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-default)',
+              background: '#fff',
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            Mouvement de caisse
+          </button>
+          <button
+            onClick={() => setCloseOpen(true)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--accent-brand)',
+              background: 'transparent',
+              color: 'var(--accent-brand)',
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            Clôturer la caisse
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <input
@@ -672,6 +882,235 @@ export function PosClient({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Mouvement de caisse dialog */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.4)',
+          zIndex: 50,
+          display: movementOpen ? 'block' : 'none',
+        }}
+        onClick={() => setMovementOpen(false)}
+      />
+      <div style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        width: '100%',
+        maxWidth: 380,
+        background: '#fff',
+        borderRadius: 'var(--radius-xl)',
+        zIndex: 51,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+        transition: 'transform 0.2s ease, opacity 0.2s ease',
+        transform: `translate(-50%, -50%) scale(${movementOpen ? 1 : 0.95})`,
+        opacity: movementOpen ? 1 : 0,
+        pointerEvents: movementOpen ? 'auto' : 'none',
+      }}>
+        <form onSubmit={submitMovement} style={{ padding: '20px 20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <span style={{ fontWeight: 700, fontSize: 17 }}>Mouvement de caisse</span>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setMovementType('in')}
+              style={{
+                flex: 1,
+                padding: '10px 0',
+                borderRadius: 'var(--radius-md)',
+                border: movementType === 'in' ? '1.5px solid var(--accent-brand)' : '1px solid var(--border-default)',
+                background: movementType === 'in' ? 'var(--synapse-green-50, #f0faf4)' : '#fff',
+                color: movementType === 'in' ? 'var(--accent-brand)' : 'inherit',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: 'pointer',
+              }}
+            >
+              Entrée
+            </button>
+            <button
+              type="button"
+              onClick={() => setMovementType('out')}
+              style={{
+                flex: 1,
+                padding: '10px 0',
+                borderRadius: 'var(--radius-md)',
+                border: movementType === 'out' ? '1.5px solid var(--accent-brand)' : '1px solid var(--border-default)',
+                background: movementType === 'out' ? 'var(--synapse-green-50, #f0faf4)' : '#fff',
+                color: movementType === 'out' ? 'var(--accent-brand)' : 'inherit',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: 'pointer',
+              }}
+            >
+              Sortie
+            </button>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Montant (DT)</label>
+            <input
+              type="number"
+              step="0.001"
+              min="0"
+              inputMode="decimal"
+              value={movementAmount}
+              onChange={(e) => setMovementAmount(e.target.value)}
+              placeholder="0.000"
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 14 }}
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Motif</label>
+            <input
+              value={movementReason}
+              onChange={(e) => setMovementReason(e.target.value)}
+              placeholder="Ex: dépôt en banque, paiement fournisseur…"
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 14 }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setMovementOpen(false)}
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                border: '1.5px solid var(--border-default)',
+                borderRadius: 'var(--radius-lg)',
+                background: 'transparent',
+                color: 'var(--muted-foreground)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 14,
+              }}
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={movementStatus === 'executing'}
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--accent-brand)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 14,
+                border: 'none',
+                cursor: movementStatus === 'executing' ? 'not-allowed' : 'pointer',
+                opacity: movementStatus === 'executing' ? 0.7 : 1,
+              }}
+            >
+              {movementStatus === 'executing' ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Clôturer la caisse dialog */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.4)',
+          zIndex: 50,
+          display: closeOpen ? 'block' : 'none',
+        }}
+        onClick={() => setCloseOpen(false)}
+      />
+      <div style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        width: '100%',
+        maxWidth: 380,
+        background: '#fff',
+        borderRadius: 'var(--radius-xl)',
+        zIndex: 51,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+        transition: 'transform 0.2s ease, opacity 0.2s ease',
+        transform: `translate(-50%, -50%) scale(${closeOpen ? 1 : 0.95})`,
+        opacity: closeOpen ? 1 : 0,
+        pointerEvents: closeOpen ? 'auto' : 'none',
+      }}>
+        <form onSubmit={submitClose} style={{ padding: '20px 20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <span style={{ fontWeight: 700, fontSize: 17 }}>Clôturer la caisse</span>
+            <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>
+              Comptez le contenu du tiroir-caisse et indiquez le total.
+            </p>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Total compté (DT)</label>
+            <input
+              autoFocus
+              type="number"
+              step="0.001"
+              min="0"
+              inputMode="decimal"
+              value={closingAmount}
+              onChange={(e) => setClosingAmount(e.target.value)}
+              placeholder="0.000"
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 14 }}
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Notes (optionnel)</label>
+            <textarea
+              value={closingNotes}
+              onChange={(e) => setClosingNotes(e.target.value)}
+              rows={2}
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 14, resize: 'vertical' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setCloseOpen(false)}
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                border: '1.5px solid var(--border-default)',
+                borderRadius: 'var(--radius-lg)',
+                background: 'transparent',
+                color: 'var(--muted-foreground)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 14,
+              }}
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={closeStatus === 'executing'}
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--accent-brand)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 14,
+                border: 'none',
+                cursor: closeStatus === 'executing' ? 'not-allowed' : 'pointer',
+                opacity: closeStatus === 'executing' ? 0.7 : 1,
+              }}
+            >
+              {closeStatus === 'executing' ? 'Clôture...' : 'Clôturer'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
