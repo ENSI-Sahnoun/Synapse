@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence } from 'motion/react'
 import { Bell, BellPlus } from 'lucide-react'
 import { usePushSubscription } from '@/hooks/use-push-subscription'
-import { createClient } from '@/supabase-clients/client'
-import { notificationHref } from '@/lib/notification-links'
+import { resolveNotificationHref } from '@/lib/notification-links'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -20,68 +19,36 @@ import { markNotificationRead, markAllNotificationsRead, clearNotification, clea
 import type { NotificationRow } from '@/data/notifications/list'
 
 interface NotificationBellProps {
-  initialNotifications: NotificationRow[]
-  initialUnreadCount: number
+  notifications: NotificationRow[]
+  unreadCount: number
+  onMarkRead: (id: string) => void
+  onMarkAllRead: () => void
+  onClear: (id: string) => void
+  onClearAll: () => void
 }
 
 export function NotificationBell({
-  initialNotifications,
-  initialUnreadCount,
+  notifications,
+  unreadCount,
+  onMarkRead,
+  onMarkAllRead,
+  onClear,
+  onClearAll,
 }: NotificationBellProps) {
-  const [notifications, setNotifications] = useState(initialNotifications)
-  const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
   const { supported: pushSupported, subscribed: pushSubscribed, subscribe: enablePush } = usePushSubscription()
 
-  // Live-update the bell: new/changed/removed notifications for this user.
-  // RLS scopes the stream, but filter by user_id too so admins (who can read
-  // all) only get their own bell events.
-  useEffect(() => {
-    const supabase = createClient()
-    let channel: ReturnType<typeof supabase.channel> | null = null
-    supabase.auth.getUser().then(({ data }) => {
-      const uid = data.user?.id
-      if (!uid) return
-      channel = supabase
-        // Unique suffix: the same bell can be mounted more than once (e.g. two
-        // nav bars), and Supabase reuses a channel by topic — a shared topic
-        // throws "cannot add postgres_changes callbacks after subscribe()".
-        .channel(`notifications:${uid}:${Math.random().toString(36).slice(2, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const row = payload.new as NotificationRow
-            setNotifications((prev) => (prev.find((n) => n.id === row.id) ? prev : [row, ...prev]))
-            if (!row.is_read) setUnreadCount((c) => c + 1)
-          } else if (payload.eventType === 'UPDATE') {
-            const row = payload.new as NotificationRow
-            setNotifications((prev) => prev.map((n) => (n.id === row.id ? row : n)))
-          } else if (payload.eventType === 'DELETE') {
-            const old = payload.old as { id: string }
-            setNotifications((prev) => prev.filter((n) => n.id !== old.id))
-          }
-        })
-        .subscribe()
-    })
-    return () => { if (channel) void supabase.removeChannel(channel) }
-  }, [])
-
   function handleMarkRead(id: string) {
+    onMarkRead(id)
     startTransition(async () => {
       await markNotificationRead({ notificationId: id })
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, is_read: true } : n,
-        ),
-      )
-      setUnreadCount((prev) => Math.max(0, prev - 1))
     })
   }
 
   function handleOpen(id: string, href: string) {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
-    setUnreadCount((prev) => Math.max(0, prev - 1))
+    onMarkRead(id)
     setOpen(false)
     startTransition(async () => {
       await markNotificationRead({ notificationId: id })
@@ -90,27 +57,21 @@ export function NotificationBell({
   }
 
   function handleMarkAllRead() {
+    onMarkAllRead()
     startTransition(async () => {
       await markAllNotificationsRead({})
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, is_read: true })),
-      )
-      setUnreadCount(0)
     })
   }
 
   function handleClear(id: string) {
-    const wasUnread = notifications.find((n) => n.id === id)?.is_read === false
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
-    if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1))
+    onClear(id)
     startTransition(async () => {
       await clearNotification({ notificationId: id })
     })
   }
 
   function handleClearAll() {
-    setNotifications([])
-    setUnreadCount(0)
+    onClearAll()
     startTransition(async () => {
       await clearAllNotifications({})
     })
@@ -179,7 +140,7 @@ export function NotificationBell({
                     notification={n}
                     onMarkRead={handleMarkRead}
                     onClear={handleClear}
-                    href={notificationHref(n.type)}
+                    href={resolveNotificationHref(n)}
                     onOpen={handleOpen}
                   />
                 ))}
