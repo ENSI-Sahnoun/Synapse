@@ -7,6 +7,7 @@ import { createStudentSchema, updateStudentSchema } from '@/utils/zod-schemas/st
 import { revalidatePath } from 'next/cache'
 import { assignQrToken } from '@/actions/student/assign-qr-token'
 import { z } from 'zod'
+import { format } from 'date-fns'
 
 export const createStudentAction = employeeActionClient
   .schema(createStudentSchema)
@@ -57,12 +58,15 @@ export const getStudentDetailAction = employeeActionClient
     const { studentId } = parsedInput
     const supabase = await createSupabaseClient()
 
+    const today = format(new Date(), 'yyyy-MM-dd')
+
     const [subResult, historyResult, pointsResult, visitsResult, profileResult] = await Promise.all([
       supabase
         .from('subscriptions')
         .select('end_date, subscription_plans(name)')
         .eq('student_id', studentId)
-        .gte('end_date', new Date().toISOString().split('T')[0])
+        .lte('start_date', today)
+        .gte('end_date', today)
         .order('end_date', { ascending: false })
         .limit(1)
         .maybeSingle(),

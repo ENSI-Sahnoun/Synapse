@@ -1,7 +1,7 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
-import { startOfDay } from 'date-fns'
+import { format } from 'date-fns'
 import { Suspense } from 'react'
 import { LookupClient } from './LookupClient'
 
@@ -54,18 +54,23 @@ export default async function EmployeeStudentsPage({
   const subsResult = presentStudentIds.length > 0
     ? await supabase
         .from('subscriptions')
-        .select('student_id, end_date, subscription_plans(name)')
+        .select('student_id, start_date, end_date, subscription_plans(name)')
         .in('student_id', presentStudentIds)
-        .order('end_date', { ascending: false })
+        .order('end_date', { ascending: true })
     : { data: [] }
 
-  // Pick each present student's most recent subscription, then check it's
-  // still active in JS (avoids date/timezone string-comparison pitfalls).
-  const today = startOfDay(new Date())
+  // Subscriptions stack: buying a new plan while one is active starts it the
+  // day after the current one ends, so a student can have future-dated rows.
+  // Pick the one actually covering today (start_date <= today <= end_date),
+  // not just the row with the furthest end_date. Compare as local calendar-
+  // date strings — parsing date-only columns as Date instants and comparing
+  // against a UTC-shifted "now" breaks near midnight in positive UTC offsets.
+  const today = format(new Date(), 'yyyy-MM-dd')
   const planNameByStudent: Record<string, string> = {}
   for (const s of subsResult.data ?? []) {
     if (!s.student_id || planNameByStudent[s.student_id]) continue
-    if (new Date(s.end_date) < today) continue
+    if (s.end_date < today) continue
+    if (s.start_date > today) continue
     const name = (s.subscription_plans as { name: string } | null)?.name
     if (name) planNameByStudent[s.student_id] = name
   }

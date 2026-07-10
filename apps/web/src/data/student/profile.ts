@@ -3,6 +3,7 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { getCachedLoggedInUserId, getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
+import { format } from 'date-fns'
 
 export async function getMyProfile() {
   const supabase = await createSupabaseClient()
@@ -23,7 +24,7 @@ export async function getMyActiveSubscription() {
   const userId = await getCachedLoggedInUserIdOrNull()
   if (!userId) return null
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = format(new Date(), 'yyyy-MM-dd')
 
   const { data } = await supabase
     .from('subscriptions')
@@ -32,6 +33,7 @@ export async function getMyActiveSubscription() {
       subscription_plans ( name, duration_days )
     `)
     .eq('student_id', userId)
+    .lte('start_date', today)
     .gte('end_date', today)
     .order('end_date', { ascending: false })
     .limit(1)

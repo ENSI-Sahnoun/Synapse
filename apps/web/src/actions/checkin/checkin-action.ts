@@ -4,7 +4,7 @@ import { employeeActionClient } from '@/lib/safe-action'
 import { checkinSchema, type CheckinResult } from '@/utils/zod-schemas/checkin'
 import { isValidQrTokenFormat } from '@/lib/qr-token'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
-import { differenceInDays, parseISO, startOfDay } from 'date-fns'
+import { differenceInDays, format, parseISO, startOfDay } from 'date-fns'
 
 export const checkinAction = employeeActionClient
   .schema(checkinSchema)
@@ -49,12 +49,16 @@ export const checkinAction = employeeActionClient
       }
     }
 
-    const today = startOfDay(new Date()).toISOString().slice(0, 10)
+    // date columns (start_date/end_date) are calendar dates — use the local
+    // calendar day, not a UTC-shifted ISO truncation (that runs a day behind
+    // whenever the server's UTC offset is positive).
+    const today = format(new Date(), 'yyyy-MM-dd')
 
     const { data: subscription } = await admin
       .from('subscriptions')
       .select('id, end_date, plan_id, subscription_plans(name)')
       .eq('student_id', studentId)
+      .lte('start_date', today)
       .gte('end_date', today)
       .order('end_date', { ascending: false })
       .limit(1)
