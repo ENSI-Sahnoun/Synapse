@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useAction } from 'next-safe-action/hooks'
 import { formatDistanceToNow, parseISO, isPast, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -48,6 +49,19 @@ function ExpiryBadge({ expiresAt }: { expiresAt: string }) {
 
 export function ReservationsClient({ initialReservations }: { initialReservations: ActiveReservation[] }) {
   const [reservations, setReservations] = useState(initialReservations)
+
+  const searchParams = useSearchParams()
+  const highlightId = searchParams.get('highlight')
+  const [flashId, setFlashId] = useState<string | null>(highlightId)
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({})
+
+  useEffect(() => {
+    if (!highlightId) return
+    const row = rowRefs.current[highlightId]
+    row?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const t = setTimeout(() => setFlashId(null), 2500)
+    return () => clearTimeout(t)
+  }, [highlightId])
 
   const { execute: cancel, status: cancelStatus } = useAction(cancelReservation, {
     onSuccess: ({ data, input }) => {
@@ -122,12 +136,14 @@ export function ReservationsClient({ initialReservations }: { initialReservation
             {reservations.map((r, i) => (
               <tr
                 key={r.id}
+                ref={(el) => { rowRefs.current[r.id] = el }}
                 style={{
                   borderBottom: i < reservations.length - 1 ? '1px solid var(--border-subtle)' : undefined,
-                  transition: 'background 0.15s',
+                  background: flashId === r.id ? '#fef9c3' : undefined,
+                  transition: 'background 0.6s ease',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--synapse-cream-50, #fafaf8)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                onMouseEnter={(e) => { if (flashId !== r.id) e.currentTarget.style.background = 'var(--synapse-cream-50, #fafaf8)' }}
+                onMouseLeave={(e) => { if (flashId !== r.id) e.currentTarget.style.background = 'transparent' }}
               >
                 {/* Student */}
                 <td style={{ padding: '12px 16px' }}>
