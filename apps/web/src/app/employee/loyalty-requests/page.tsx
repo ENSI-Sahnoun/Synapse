@@ -1,17 +1,12 @@
+import { Suspense } from 'react'
 import {
   listPendingRedemptionRequests,
   listRecentFulfilledRequests,
 } from '@/data/employee/loyalty-requests'
-import { RequestActions } from './request-actions'
+import { PendingRequestRow, type PendingRequestRowData } from './PendingRequestRow'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-
-const REWARD_TYPE_LABELS: Record<string, string> = {
-  free_day: 'Journée gratuite',
-  free_coffee: 'Café offert',
-  discount_pct: 'Réduction %',
-}
 
 export default async function EmployeeLoyaltyRequestsPage() {
   const [pending, recent] = await Promise.all([
@@ -46,35 +41,20 @@ export default async function EmployeeLoyaltyRequestsPage() {
           </div>
         )}
 
-        {pending.map((req) => {
-          const student = req.student as { id: string; full_name: string; phone: string | null } | null
-          const rule = req.rule as { id: string; name: string; reward_type: string; reward_value: number } | null
-          return (
-            <div
+        <Suspense>
+          {pending.map((req) => (
+            <PendingRequestRow
               key={req.id}
-              className="border rounded-lg p-4 flex items-start justify-between gap-4"
-            >
-              <div className="space-y-1">
-                <p className="font-medium text-sm">{student?.full_name ?? 'Étudiant inconnu'}</p>
-                {student?.phone && (
-                  <p className="text-xs text-muted-foreground">{student.phone}</p>
-                )}
-                <p className="text-sm">
-                  <span className="font-medium">{rule?.name ?? 'Récompense'}</span>
-                  <span className="text-muted-foreground ml-2 text-xs">
-                    {REWARD_TYPE_LABELS[rule?.reward_type ?? ''] ?? rule?.reward_type}
-                    {rule?.reward_type === 'discount_pct' && ` — ${rule.reward_value}%`}
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {req.points_used} pts · Demandé le{' '}
-                  {format(new Date(req.created_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
-                </p>
-              </div>
-              <RequestActions requestId={req.id} />
-            </div>
-          )
-        })}
+              request={{
+                id: req.id,
+                points_used: req.points_used,
+                created_at: req.created_at,
+                student: req.student as PendingRequestRowData['student'],
+                rule: req.rule as PendingRequestRowData['rule'],
+              }}
+            />
+          ))}
+        </Suspense>
       </section>
 
       {/* Recent handled */}
