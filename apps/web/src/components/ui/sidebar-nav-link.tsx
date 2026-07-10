@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChartBar } from '@phosphor-icons/react'
-import { ICON_MAP } from '@/lib/nav-items'
+import { ICON_MAP } from '@/lib/nav-icon-map'
 
 interface SidebarNavLinkProps {
   href: string
