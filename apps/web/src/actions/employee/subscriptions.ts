@@ -6,6 +6,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { addDays, format, parseISO } from 'date-fns'
 import { revalidatePath } from 'next/cache'
 import { insertInAppNotification, notifyAllStaff } from '@/data/notifications/inapp'
+import { buildSubscriptionMessage } from '@/lib/notification-message-builders'
 
 export const createSubscriptionAction = employeeActionClient
   .schema(createSubscriptionSchema)
@@ -84,9 +85,20 @@ export const createSubscriptionAction = employeeActionClient
     }
 
     try {
+      const { data: studentProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', student_id)
+        .maybeSingle()
+
       await notifyAllStaff(
         'subscription_new',
-        `Nouvel abonnement créé : plan "${plan.name}" jusqu'au ${format(endDate, 'dd/MM/yyyy')}.`,
+        buildSubscriptionMessage({
+          studentName: studentProfile?.full_name ?? 'Un étudiant',
+          planName: plan.name,
+          endDateFormatted: format(endDate, 'dd/MM/yyyy'),
+        }),
+        { link: `/employee/students?studentId=${student_id}` },
       )
     } catch { /* non-fatal */ }
 
