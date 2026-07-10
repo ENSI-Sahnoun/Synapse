@@ -29,3 +29,12 @@ export const NOTIFICATION_ROUTES: Record<string, string> = {
 export function notificationHref(type: string): string | null {
   return NOTIFICATION_ROUTES[type] ?? null
 }
+
+/**
+ * Resolves where a notification should navigate to: a stored per-notification
+ * deep link (set at creation time, e.g. `/employee/reservations?highlight=<id>`)
+ * takes priority over the static per-type fallback above.
+ */
+export function resolveNotificationHref(notification: { type: string; link?: string | null }): string | null {
+  return notification.link ?? notificationHref(notification.type)
+}
