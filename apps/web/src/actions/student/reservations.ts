@@ -6,6 +6,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { revalidatePath } from 'next/cache'
 import { insertInAppNotification, notifyAllStaff } from '@/data/notifications/inapp'
+import { buildReservationMessage } from '@/lib/notification-message-builders'
 
 const createReservationSchema = z.object({
   seat_id: z.string({ message: 'seat_id est requis' }).uuid({ message: 'seat_id doit être un UUID valide' }),
@@ -245,6 +246,12 @@ export const createReservation = studentActionClient
 
     // 6. Notify student + all staff (non-fatal)
     try {
+      const { data: studentProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .maybeSingle()
+
       await Promise.all([
         insertInAppNotification({
           userId,
@@ -253,7 +260,11 @@ export const createReservation = studentActionClient
         }),
         notifyAllStaff(
           'reservation_new',
-          `Nouvelle réservation : place ${seat.label} réservée (expire dans ${holdMinutes} min).`,
+          buildReservationMessage({
+            studentName: studentProfile?.full_name ?? 'Un étudiant',
+            seatLabel: seat.label,
+          }),
+          { link: `/employee/reservations?highlight=${reservation.id}` },
         ),
       ])
 
