@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { Bell } from 'lucide-react'
 import { createClient } from '@/supabase-clients/client'
 import type { NotificationRow } from '@/data/notifications/list'
-import { NOTIFICATION_ROUTES as TYPE_ROUTES } from '@/lib/notification-links'
+import { resolveNotificationHref } from '@/lib/notification-links'
 
 /** Side-effect-only: raises a top-center toast for realtime notification
  * INSERTs for the current authed user. Renders nothing. Mounted once, high
@@ -32,7 +32,7 @@ export function NotificationToaster() {
           { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` },
           (payload) => {
             const row = payload.new as NotificationRow
-            const route = TYPE_ROUTES[row.type]
+            const route = resolveNotificationHref(row)
             toast(row.message, {
               position: 'top-center',
               icon: <Bell className="h-4 w-4" />,
