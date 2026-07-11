@@ -23,7 +23,7 @@ export const setLeaderboardFlags = adminActionClient
       const { error } = await supabase.from('settings').upsert(rows, { onConflict: 'key' })
       if (error) throw new Error('Impossible de mettre à jour les paramètres du classement.')
     }
-    revalidatePath('/admin/settings/leaderboard')
+    revalidatePath('/admin/loyalty')
     return { success: true }
   })
 
@@ -47,6 +47,6 @@ export const updateLeaderboardCategory = adminActionClient
       .update(fields)
       .eq('category', category)
     if (error) throw new Error('Impossible de mettre à jour la catégorie.')
-    revalidatePath('/admin/settings/leaderboard')
+    revalidatePath('/admin/loyalty')
     return { success: true }
   })

@@ -1,6 +1,8 @@
 import { listLoyaltyRules } from '@/data/admin/loyalty-rules'
+import { getLeaderboardSettings, getLeaderboardConfig } from '@/data/student/leaderboard'
 import { LoyaltyRuleDialog } from './loyalty-rule-dialog'
 import { ToggleRuleButton } from './toggle-rule-button'
+import { LeaderboardSettingsCards } from './LeaderboardSettingsCards'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
 
 const REWARD_TYPE_LABELS: Record<string, string> = {
@@ -9,8 +11,14 @@ const REWARD_TYPE_LABELS: Record<string, string> = {
   discount_pct: 'Réduction %',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminLoyaltyPage() {
-  const rules = await listLoyaltyRules()
+  const [rules, leaderboardSettings, leaderboardConfig] = await Promise.all([
+    listLoyaltyRules(),
+    getLeaderboardSettings(),
+    getLeaderboardConfig(),
+  ])
 
   return (
     <div className="space-y-6">
@@ -79,6 +87,14 @@ export default async function AdminLoyaltyPage() {
           </tbody>
         </table>
       </div>
+
+      <div>
+        <h2 className="text-lg font-semibold">Classement mensuel</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Configuration du classement mensuel des étudiants et des récompenses.
+        </p>
+      </div>
+      <LeaderboardSettingsCards initialSettings={leaderboardSettings} initialConfig={leaderboardConfig} />
     </div>
   )
 }
