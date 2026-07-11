@@ -34,7 +34,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <LiveRefresher tables={['attendance', 'purchases', 'subscriptions', 'reservations']} />
+      <LiveRefresher tables={['attendance', 'purchases', 'subscriptions', 'reservations', 'lockers', 'locker_payments']} />
       <h1 className="text-2xl font-bold">Tableau de bord</h1>
 
       <section>

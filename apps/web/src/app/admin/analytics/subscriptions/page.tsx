@@ -4,9 +4,11 @@ import {
   getRevenuePerPlan,
   getAvgDiscount,
 } from '@/data/admin/analytics/subscriptions'
+import { getLockerStats } from '@/data/admin/analytics/lockers'
 import { PlanPieChart } from '@/components/admin/dashboard/plan-pie-chart'
 import { SubscriptionStatusCards } from '@/components/admin/analytics/subscription-status-cards'
 import { RevenuePerPlanTable } from '@/components/admin/analytics/revenue-per-plan-table'
+import { LockerStatsCards } from '@/components/admin/analytics/locker-stats-cards'
 import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
 import { Skeleton } from '@/components/ui/skeleton'
 import { defaultDateRange } from '@/lib/date-range'
@@ -49,11 +51,12 @@ export default async function SubscriptionsAnalyticsPage({ searchParams }: PageP
 async function SubscriptionsAnalyticsContent({ from, to }: { from: string; to: string }) {
   const asOf = new Date().toISOString().slice(0, 10)
 
-  const [planData, statusCounts, planRevenue, avgDiscount] = await Promise.all([
+  const [planData, statusCounts, planRevenue, avgDiscount, lockerStats] = await Promise.all([
     getPlanPopularity(),
     getSubscriptionStatusCounts(asOf),
     getRevenuePerPlan({ from, to }),
     getAvgDiscount({ from, to }),
+    getLockerStats({ from, to }),
   ])
 
   return (
@@ -62,6 +65,12 @@ async function SubscriptionsAnalyticsContent({ from, to }: { from: string; to: s
       <div className="grid gap-6 lg:grid-cols-2">
         <PlanPieChart data={planData} />
         <RevenuePerPlanTable data={planRevenue} />
+      </div>
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+          Casiers
+        </h2>
+        <LockerStatsCards stats={lockerStats} />
       </div>
     </>
   )

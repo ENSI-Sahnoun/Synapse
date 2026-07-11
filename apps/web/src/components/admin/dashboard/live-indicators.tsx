@@ -53,6 +53,11 @@ export function LiveIndicators({ initial }: Props) {
         { event: 'INSERT', schema: 'public', table: 'subscriptions' },
         refresh,
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lockers' },
+        refresh,
+      )
       .subscribe()
 
     return () => {
@@ -65,8 +70,13 @@ export function LiveIndicators({ initial }: Props) {
       ? Math.round((snapshot.seatOccupancy.occupied / snapshot.seatOccupancy.total) * 100)
       : 0
 
+  const lockerOccupancyPct =
+    snapshot.lockerOccupancy.total > 0
+      ? Math.round((snapshot.lockerOccupancy.occupied / snapshot.lockerOccupancy.total) * 100)
+      : 0
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -92,6 +102,20 @@ export function LiveIndicators({ initial }: Props) {
             {snapshot.seatOccupancy.occupied}/{snapshot.seatOccupancy.total}
           </p>
           <p className="text-sm text-muted-foreground">{occupancyPct}% occupé</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Casiers occupés
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold">
+            {snapshot.lockerOccupancy.occupied}/{snapshot.lockerOccupancy.total}
+          </p>
+          <p className="text-sm text-muted-foreground">{lockerOccupancyPct}% occupé</p>
         </CardContent>
       </Card>
 
