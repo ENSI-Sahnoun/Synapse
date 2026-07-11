@@ -193,15 +193,30 @@ export const requestSeatSwap = studentActionClient
       .maybeSingle()
     if (existing) throw new Error('Vous avez déjà une demande en attente.')
 
-    const { error } = await supabase.from('seat_swap_requests').insert({
-      student_id: userId,
-      attendance_id: attendance.id,
-      from_seat_id: attendance.seat_id,
-      to_seat_id: toSeatId,
-    })
+    const { data: inserted, error } = await supabase
+      .from('seat_swap_requests')
+      .insert({
+        student_id: userId,
+        attendance_id: attendance.id,
+        from_seat_id: attendance.seat_id,
+        to_seat_id: toSeatId,
+      })
+      .select('id')
+      .single()
     if (error) throw new Error(error.message)
 
-    await notifyAllStaff('seat_swap_request_new', 'Un étudiant demande un changement de place.')
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', userId)
+      .maybeSingle()
+    const studentName = profile?.full_name ?? 'Un étudiant'
+
+    await notifyAllStaff(
+      'seat_swap_request_new',
+      `${studentName} demande un changement de place.`,
+      { link: `/employee/rooms?highlight=${inserted.id}` },
+    )
 
     return { success: true }
   })

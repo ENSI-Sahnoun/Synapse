@@ -119,7 +119,7 @@ export function StudentNotificationSheet({
           <Bell size={20} weight="regular" />
           {unreadCount > 0 && (
             <span
-              className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white"
+              className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-semibold text-white"
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
@@ -134,7 +134,7 @@ export function StudentNotificationSheet({
               <button
                 onClick={handleMarkAllRead}
                 disabled={isPending}
-                className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                className="text-xs text-primary hover:underline disabled:opacity-50"
               >
                 Tout lire
               </button>

@@ -32,11 +32,16 @@ export async function getMyUnreadCount(): Promise<number> {
   return count ?? 0
 }
 
-export async function getMyImportantNotifications(): Promise<NotificationRow[]> {
+export interface ImportantNotificationRow extends NotificationRow {
+  is_important: boolean
+  important_until: string
+}
+
+export async function getMyImportantNotifications(): Promise<ImportantNotificationRow[]> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, message, is_read, created_at, link')
+    .select('id, type, message, is_read, created_at, link, is_important, important_until')
     .eq('is_important', true)
     .gt('important_until', new Date().toISOString())
     .order('created_at', { ascending: false })
@@ -47,7 +52,7 @@ export async function getMyImportantNotifications(): Promise<NotificationRow[]> 
     console.error('getMyImportantNotifications failed, hiding banner:', error)
     return []
   }
-  return (data ?? []) as NotificationRow[]
+  return (data ?? []) as ImportantNotificationRow[]
 }
 
 export async function getNotificationsForUser(

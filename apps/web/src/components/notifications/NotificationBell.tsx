@@ -99,7 +99,7 @@ export function NotificationBell({
             {pushSupported && !pushSubscribed && (
               <button
                 onClick={() => void enablePush()}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
                 title="Recevoir les notifications sur ce téléphone"
               >
                 <BellPlus className="h-3.5 w-3.5" />
@@ -110,7 +110,7 @@ export function NotificationBell({
               <button
                 onClick={handleMarkAllRead}
                 disabled={isPending}
-                className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                className="text-xs text-primary hover:underline disabled:opacity-50"
               >
                 Tout marquer comme lu
               </button>

@@ -4,7 +4,7 @@ import { employeeActionClient } from '@/lib/safe-action'
 import { handleRedemptionRequestSchema } from '@/utils/zod-schemas/loyalty-handle-request'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
-import { insertInAppNotification } from '@/data/notifications/inapp'
+import { insertInAppNotification, resolveStaffNotificationsByLink } from '@/data/notifications/inapp'
 
 export const fulfilRedemptionAction = employeeActionClient
   .schema(handleRedemptionRequestSchema)
@@ -37,6 +37,8 @@ export const fulfilRedemptionAction = employeeActionClient
         message: `Votre demande de récompense a été approuvée (${pointsDeducted} pts déduits).`,
       })
     } catch { /* non-fatal */ }
+
+    await resolveStaffNotificationsByLink(`/employee/loyalty-requests?highlight=${request_id}`)
 
     revalidatePath('/employee/loyalty-requests')
     return { success: true, pointsDeducted }
@@ -75,6 +77,8 @@ export const rejectRedemptionAction = employeeActionClient
         message: `Votre demande de récompense a été refusée.`,
       })
     } catch { /* non-fatal */ }
+
+    await resolveStaffNotificationsByLink(`/employee/loyalty-requests?highlight=${request_id}`)
 
     revalidatePath('/employee/loyalty-requests')
     return { success: true }

@@ -21,11 +21,11 @@ interface NotificationItemProps {
   onOpen?: (id: string, href: string) => void
 }
 
-type Tone = 'green' | 'amber' | 'red' | 'orange' | 'blue' | 'neutral'
+type Tone = 'green' | 'amber' | 'red' | 'orange' | 'brand' | 'neutral'
 
 // Context drives the whole look: each notification kind gets its own icon,
 // friendly label and colour — so a cancelled reservation reads red, points
-// earned glow amber, an announcement is blue, etc. No more raw type strings.
+// earned glow amber, an announcement reads brand brown, etc. No more raw type strings.
 function metaFor(type: string): { Icon: PhosphorIcon; label: string; tone: Tone } {
   if (type === 'reservation_cancelled' || type === 'seat_swap_denied') return { Icon: XCircle, label: 'Réservation refusée', tone: 'red' }
   if (type === 'seat_removed_by_staff') return { Icon: WarningCircle, label: 'Place retirée', tone: 'red' }
@@ -38,16 +38,16 @@ function metaFor(type: string): { Icon: PhosphorIcon; label: string; tone: Tone 
   if (type.startsWith('expiry') || type === 'renewal_reminder') return { Icon: Clock, label: 'Expiration proche', tone: 'orange' }
   if (type === 'subscription_new' || type === 'purchase_completed') return { Icon: CreditCard, label: 'Paiement', tone: 'green' }
   if (type === 'room_almost_full') return { Icon: Users, label: 'Salle presque pleine', tone: 'orange' }
-  if (type === 'broadcast' || type === 'manual' || type === 'announcement_new') return { Icon: Megaphone, label: 'Annonce', tone: 'blue' }
+  if (type === 'broadcast' || type === 'manual' || type === 'announcement_new') return { Icon: Megaphone, label: 'Annonce', tone: 'brand' }
   return { Icon: Bell, label: 'Notification', tone: 'neutral' }
 }
 
 const TONE: Record<Tone, { fg: string; bg: string }> = {
-  green: { fg: 'var(--synapse-green-600, #16a34a)', bg: 'var(--synapse-green-50, #f0faf4)' },
-  amber: { fg: '#d97706', bg: '#fffbeb' },
-  red: { fg: '#dc2626', bg: '#fee2e2' },
-  orange: { fg: '#ea580c', bg: '#fff7ed' },
-  blue: { fg: '#2563eb', bg: '#eff6ff' },
+  green: { fg: 'var(--synapse-green-700)', bg: 'var(--synapse-green-50)' },
+  amber: { fg: 'var(--synapse-orange-500)', bg: 'var(--synapse-orange-50)' },
+  red: { fg: 'var(--destructive)', bg: '#fee2e2' },
+  orange: { fg: 'var(--synapse-orange-700)', bg: 'var(--synapse-orange-100)' },
+  brand: { fg: 'var(--synapse-brown-600)', bg: 'var(--synapse-brown-50)' },
   neutral: { fg: 'var(--muted-foreground)', bg: 'var(--muted)' },
 }
 
@@ -108,7 +108,7 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
       <div
         className={cn(
           'relative flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-[background-color,transform] active:scale-[0.99]',
-          isUnread ? 'bg-blue-50 hover:bg-blue-100' : 'bg-background hover:bg-muted',
+          isUnread ? 'bg-primary/5 hover:bg-primary/10' : 'bg-background hover:bg-muted',
         )}
         style={{
           transform: `translateX(${dragX}px)`,
@@ -148,7 +148,7 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
         {actionable && (
           <button
             onClick={handleVoirClick}
-            className="mt-0.5 shrink-0 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-100"
+            className="mt-0.5 shrink-0 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
           >
             Voir
             <CaretRight size={12} />

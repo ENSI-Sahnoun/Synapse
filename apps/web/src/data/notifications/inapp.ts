@@ -63,6 +63,17 @@ export async function notifyAllUsers(
   await sendPushToUsers(users.map((p) => p.id), { title: 'Synapse', body: message })
 }
 
+/**
+ * Staff broadcasts insert one row per staff member (see notifyAllStaff), so
+ * marking one recipient's copy read (e.g. by acting on the request) leaves
+ * every other admin/employee's copy unread forever. Call this when a request
+ * is resolved to close out every staff copy sharing the same deep link.
+ */
+export async function resolveStaffNotificationsByLink(link: string): Promise<void> {
+  const supabase = createSupabaseAdminClient()
+  await supabase.from('notifications').update({ is_read: true }).eq('link', link).eq('is_read', false)
+}
+
 export interface InsertInAppNotificationOpts {
   userId: string
   type: NotificationType

@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { employeeActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
-import { insertInAppNotification } from '@/data/notifications/inapp'
+import { insertInAppNotification, resolveStaffNotificationsByLink } from '@/data/notifications/inapp'
 import { revalidatePath } from 'next/cache'
 
 // Accepting a swap request performs the exact same seat change an employee
@@ -44,6 +44,8 @@ export const acceptSeatSwapRequest = employeeActionClient
         type: 'seat_swap_denied',
         message: "Votre demande de changement de place a été annulée : vous n'êtes plus enregistré comme présent.",
       })
+
+      await resolveStaffNotificationsByLink(`/employee/rooms?highlight=${requestId}`)
 
       throw new Error("L'étudiant n'est plus présent — demande annulée.")
     }
@@ -85,6 +87,8 @@ export const acceptSeatSwapRequest = employeeActionClient
       message: 'Votre demande de changement de place a été acceptée.',
     })
 
+    await resolveStaffNotificationsByLink(`/employee/rooms?highlight=${requestId}`)
+
     if (toSeat.room_id) {
       revalidatePath(`/employee/rooms/${toSeat.room_id}/map`)
       revalidatePath(`/admin/rooms/${toSeat.room_id}/map`)
@@ -119,6 +123,8 @@ export const denySeatSwapRequest = employeeActionClient
       type: 'seat_swap_denied',
       message: 'Votre demande de changement de place a été refusée.',
     })
+
+    await resolveStaffNotificationsByLink(`/employee/rooms?highlight=${requestId}`)
 
     return { success: true }
   })

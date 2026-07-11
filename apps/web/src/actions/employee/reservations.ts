@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { employeeActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
-import { insertInAppNotification } from '@/data/notifications/inapp'
+import { insertInAppNotification, resolveStaffNotificationsByLink } from '@/data/notifications/inapp'
 import { revalidatePath } from 'next/cache'
 
 const schema = z.object({ reservationId: z.string().uuid() })
@@ -46,6 +46,8 @@ export const cancelReservation = employeeActionClient
         message: `Votre réservation pour la place ${seatLabel} a été annulée par le personnel.`,
       })
     } catch { /* non-fatal */ }
+
+    await resolveStaffNotificationsByLink(`/employee/reservations?highlight=${reservationId}`)
 
     revalidatePath('/employee/reservations')
     return { success: true }
@@ -110,6 +112,8 @@ export const acceptReservation = employeeActionClient
         message: `Votre réservation pour la place ${seatLabel} a été confirmée par le personnel.`,
       })
     } catch { /* non-fatal */ }
+
+    await resolveStaffNotificationsByLink(`/employee/reservations?highlight=${reservationId}`)
 
     revalidatePath('/employee/reservations')
     return { success: true }
