@@ -108,7 +108,7 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
       <div
         className={cn(
           'relative flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-[background-color,transform] active:scale-[0.99]',
-          isUnread ? 'bg-primary/5 hover:bg-primary/10' : 'bg-background hover:bg-muted',
+          isUnread ? 'bg-blue-50 hover:bg-blue-100' : 'bg-background hover:bg-muted',
         )}
         style={{
           transform: `translateX(${dragX}px)`,
@@ -134,8 +134,7 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
             </p>
             {isUnread && (
               <motion.span
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ background: colors.fg }}
+                className="h-1.5 w-1.5 rounded-full bg-blue-500"
                 animate={{ opacity: [1, 0.35, 1], scale: [1, 0.8, 1] }}
                 transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
               />
