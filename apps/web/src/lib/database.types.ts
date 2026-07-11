@@ -351,6 +351,51 @@ export type Database = {
         }
         Relationships: []
       }
+      lockers: {
+        Row: {
+          assigned_student_id: string | null
+          assigned_subscription_id: string | null
+          created_at: string
+          id: string
+          is_unavailable: boolean
+          number: number
+          updated_at: string
+        }
+        Insert: {
+          assigned_student_id?: string | null
+          assigned_subscription_id?: string | null
+          created_at?: string
+          id?: string
+          is_unavailable?: boolean
+          number: number
+          updated_at?: string
+        }
+        Update: {
+          assigned_student_id?: string | null
+          assigned_subscription_id?: string | null
+          created_at?: string
+          id?: string
+          is_unavailable?: boolean
+          number?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lockers_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lockers_assigned_subscription_id_fkey"
+            columns: ["assigned_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_ledger: {
         Row: {
           created_at: string
