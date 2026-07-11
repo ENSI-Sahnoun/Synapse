@@ -1,14 +1,17 @@
 import { getCachedLoggedInUserId } from '@/rsc-data/supabase'
 import { getMyProfile, getMyActiveSubscription, getMyPresence } from '@/data/student/profile'
+import { getMyLocker } from '@/data/student/lockers'
 import { getMyImportantNotifications } from '@/data/notifications/list'
 import { getMyLeaderboardRank, getLeaderboardSettings, getLeaderboardConfig } from '@/data/student/leaderboard'
 import { getStudentLoyaltyBalance } from '@/data/student/loyalty'
 import { differenceInDays, parseISO, format, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { WarningCircle, ArrowRight, Megaphone } from '@phosphor-icons/react/dist/ssr'
+import { WarningCircle, ArrowRight } from '@phosphor-icons/react/dist/ssr'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PresenceBanner } from './PresenceBanner'
+import { ImportantAnnouncements } from './ImportantAnnouncements'
+import { LockerStatus } from './LockerStatus'
 import { GamificationTeaser } from '@/components/student/GamificationTeaser'
 import { DiversSeatPrompt } from '@/components/student/DiversSeatPrompt'
 import { StudentPresenceSync } from '@/components/student/StudentPresenceSync'
@@ -17,7 +20,7 @@ import { LiveRefresher } from '@/components/live/LiveRefresher'
 export default async function StudentDashboardPage() {
   const userId = await getCachedLoggedInUserId()
 
-  const [profile, activeSubscription, presence, importantNotifications, lbMyRanks, lbSettings, lbConfig, balance] =
+  const [profile, activeSubscription, presence, importantNotifications, lbMyRanks, lbSettings, lbConfig, balance, locker] =
     await Promise.all([
       getMyProfile(),
       getMyActiveSubscription(),
@@ -27,6 +30,7 @@ export default async function StudentDashboardPage() {
       getLeaderboardSettings(),
       getLeaderboardConfig(),
       getStudentLoyaltyBalance(userId),
+      getMyLocker(),
     ])
 
   const enabledCats = lbConfig.filter((c) => c.enabled).sort((a, b) => a.sort_order - b.sort_order)
@@ -75,17 +79,8 @@ export default async function StudentDashboardPage() {
       {/* Presence banner */}
       <PresenceBanner presence={presence} />
 
-      {/* Important announcements — visible for 24h after being marked important */}
-      {importantNotifications.map((n) => (
-        <div
-          key={n.id}
-          className="rounded-xl flex items-start gap-3 px-4 py-3"
-          style={{ background: '#fee2e2', border: '1px solid #fecaca' }}
-        >
-          <Megaphone size={18} weight="fill" style={{ color: '#dc2626', flexShrink: 0, marginTop: 2 }} />
-          <p className="text-sm font-semibold" style={{ color: '#991b1b' }}>{n.message}</p>
-        </div>
-      ))}
+      {/* Important announcements — visible for 24h after being marked important, live via realtime, dismissible */}
+      <ImportantAnnouncements initial={importantNotifications} />
 
       {/* QR Card */}
       {profile.qr_token ? (
@@ -195,6 +190,8 @@ export default async function StudentDashboardPage() {
           </div>
         )}
       </div>
+
+      <LockerStatus locker={locker} />
 
       <GamificationTeaser balance={balance} myRank={myRank} leaderboardVisible={leaderboardVisible} />
     </div>
