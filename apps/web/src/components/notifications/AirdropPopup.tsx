@@ -38,7 +38,10 @@ export function AirdropPopup() {
     dismiss(drop.id)
   }
 
-  if (pathname?.startsWith('/kiosk')) return null
+  // CheckinClient (employee/checkin and admin/checkin) already listens to the
+  // same feed and auto-fills the code inline — showing the popup there too
+  // makes every airdrop look like it fired twice.
+  if (pathname?.startsWith('/kiosk') || pathname?.endsWith('/checkin')) return null
 
   if (drops.length === 0) return null
 

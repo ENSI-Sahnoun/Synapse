@@ -28,7 +28,6 @@ export const EMPLOYEE_NAV_ITEMS: NavRegistryItem[] = [
   { key: '/employee/reservations',     href: '/employee/reservations',     label: 'Réservations',     icon: 'Armchair',      group: 'employee' },
   { key: '/employee/pos',              href: '/employee/pos',              label: 'Caisse',           icon: 'ShoppingCart',  group: 'employee' },
   { key: '/employee/loyalty-requests', href: '/employee/loyalty-requests', label: 'Récompenses',      icon: 'Gift',          group: 'employee' },
-  { key: '/employee/reports',          href: '/employee/reports',          label: 'Rapports',         icon: 'ChartBar',      group: 'employee' },
   { key: '/employee/announcements',    href: '/employee/announcements',    label: 'Annonces',         icon: 'Megaphone',     group: 'employee' },
   { key: '/employee/profile',          href: '/employee/profile',          label: 'Mon profil',       icon: 'UserCircle',    group: 'employee' },
 ]

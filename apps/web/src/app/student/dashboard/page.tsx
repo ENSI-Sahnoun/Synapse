@@ -8,7 +8,7 @@ import { differenceInDays, parseISO, format, startOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { WarningCircle, ArrowRight } from '@phosphor-icons/react/dist/ssr'
-import { QrCodeImage } from '@/components/student/QrCodeImage'
+import { HoldToSendQr } from '@/components/student/HoldToSendQr'
 import { PresenceBanner } from './PresenceBanner'
 import { ImportantAnnouncements } from './ImportantAnnouncements'
 import { LockerStatus } from './LockerStatus'
@@ -107,9 +107,7 @@ export default async function StudentDashboardPage() {
           </div>
 
           <div className="flex flex-col items-center px-5 py-5 gap-3">
-            <div className="p-3 bg-white rounded-2xl shadow-sm">
-              <QrCodeImage token={profile.qr_token} size={240} />
-            </div>
+            <HoldToSendQr token={profile.qr_token} size={240} />
           </div>
 
           <div className="px-5 pb-4">
@@ -122,7 +120,7 @@ export default async function StudentDashboardPage() {
                 color: 'var(--synapse-brown-700)',
               }}
             >
-              Agrandir le QR
+              Plus de détails
               <ArrowRight size={14} />
             </Link>
           </div>
