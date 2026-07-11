@@ -28,6 +28,8 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   seat_removed_by_staff: 'Place supprimée par le personnel (étudiant)',
   seat_changed_freely: 'Changement de place libre (personnel)',
   qr_airdrop: 'Envoi QR en direct (interne, non configurable)',
+  kiosk_qr_drop: 'Envoi QR au kiosque (interne, non configurable)',
+  kiosk_qr_drop_cancel: 'Annulation envoi QR kiosque (interne, non configurable)',
 }
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {

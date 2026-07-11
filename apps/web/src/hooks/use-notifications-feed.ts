@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/supabase-clients/client'
 import type { NotificationRow } from '@/data/notifications/list'
+import { INTERNAL_NOTIFICATION_TYPES } from '@/lib/notification-types'
 
 /**
  * Owns the live notification list for the current user: one realtime
@@ -25,7 +26,7 @@ export function useNotificationsFeed(initialNotifications: NotificationRow[], in
         .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` }, (payload) => {
           if (payload.eventType === 'INSERT') {
             const row = payload.new as NotificationRow
-            if (row.type === 'qr_airdrop') return
+            if ((INTERNAL_NOTIFICATION_TYPES as readonly string[]).includes(row.type)) return
             setNotifications((prev) => (prev.find((n) => n.id === row.id) ? prev : [row, ...prev]))
             if (!row.is_read) setUnreadCount((c) => c + 1)
           } else if (payload.eventType === 'UPDATE') {

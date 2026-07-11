@@ -24,6 +24,8 @@ export const notificationTypeSchema = z.enum([
   'seat_removed_by_staff',
   'seat_changed_freely',
   'qr_airdrop',
+  'kiosk_qr_drop',
+  'kiosk_qr_drop_cancel',
 ])
 
 export const notificationChannelSchema = z.enum(['email', 'sms', 'whatsapp', 'inapp'])

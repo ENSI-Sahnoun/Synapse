@@ -7,6 +7,7 @@ import { Bell } from 'lucide-react'
 import { createClient } from '@/supabase-clients/client'
 import type { NotificationRow } from '@/data/notifications/list'
 import { resolveNotificationHref } from '@/lib/notification-links'
+import { INTERNAL_NOTIFICATION_TYPES } from '@/lib/notification-types'
 
 /** Side-effect-only: raises a top-center toast for realtime notification
  * INSERTs for the current authed user. Renders nothing. Mounted once, high
@@ -32,7 +33,7 @@ export function NotificationToaster() {
           { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` },
           (payload) => {
             const row = payload.new as NotificationRow
-            if (row.type === 'qr_airdrop') return
+            if ((INTERNAL_NOTIFICATION_TYPES as readonly string[]).includes(row.type)) return
             const route = resolveNotificationHref(row)
             toast(row.message, {
               position: 'top-center',
