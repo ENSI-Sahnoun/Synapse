@@ -25,6 +25,7 @@ export function useNotificationsFeed(initialNotifications: NotificationRow[], in
         .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` }, (payload) => {
           if (payload.eventType === 'INSERT') {
             const row = payload.new as NotificationRow
+            if (row.type === 'qr_airdrop') return
             setNotifications((prev) => (prev.find((n) => n.id === row.id) ? prev : [row, ...prev]))
             if (!row.is_read) setUnreadCount((c) => c + 1)
           } else if (payload.eventType === 'UPDATE') {

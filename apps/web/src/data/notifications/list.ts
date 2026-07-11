@@ -16,6 +16,7 @@ export async function getMyNotifications(limit = 20): Promise<NotificationRow[]>
   const { data, error } = await supabase
     .from('notifications')
     .select('id, type, message, is_read, created_at, link')
+    .neq('type', 'qr_airdrop')
     .order('created_at', { ascending: false })
     .limit(limit)
   if (error) throw error
@@ -28,6 +29,7 @@ export async function getMyUnreadCount(): Promise<number> {
     .from('notifications')
     .select('id', { count: 'exact', head: true })
     .eq('is_read', false)
+    .neq('type', 'qr_airdrop')
   if (error) throw error
   return count ?? 0
 }
@@ -64,6 +66,7 @@ export async function getNotificationsForUser(
     .from('notifications')
     .select('id, type, message, is_read, created_at, link')
     .eq('user_id', userId)
+    .neq('type', 'qr_airdrop')
     .order('created_at', { ascending: false })
     .limit(limit)
   if (error) throw error

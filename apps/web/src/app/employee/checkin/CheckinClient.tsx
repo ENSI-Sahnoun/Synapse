@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAction } from 'next-safe-action/hooks'
 import { QrScanner } from '@/components/checkin/QrScanner'
+import { useQrAirdropFeed } from '@/hooks/use-qr-airdrop-feed'
 import { checkinAction } from '@/actions/checkin/checkin-action'
 import { PostCheckinSeatDialog } from '@/components/checkin/PostCheckinSeatDialog'
 import type { CheckinResult as CheckinResultType } from '@/utils/zod-schemas/checkin'
@@ -38,6 +39,26 @@ export function CheckinClient({
   const [seatDialogOpen, setSeatDialogOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+
+  const [airdropFlash, setAirdropFlash] = useState(false)
+
+  const applyAirdroppedToken = useCallback((token: string) => {
+    setManualCode(token)
+    setAirdropFlash(true)
+    inputRef.current?.focus()
+    setTimeout(() => setAirdropFlash(false), 1200)
+  }, [])
+
+  useQrAirdropFeed((drop) => applyAirdroppedToken(drop.qrToken))
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('airdropQrToken')
+    if (stored) {
+      sessionStorage.removeItem('airdropQrToken')
+      applyAirdroppedToken(stored)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { execute: executeCheckin, isPending } = useAction(checkinAction, {
     onSuccess: ({ data }) => {
@@ -337,14 +358,15 @@ export function CheckinClient({
               autoCapitalize="characters"
               style={{
                 flex: 1,
-                border: '1px solid var(--border-default)',
+                border: airdropFlash ? '1px solid var(--synapse-green-500)' : '1px solid var(--border-default)',
                 borderRadius: 'var(--radius-lg)',
                 padding: '8px 10px',
                 fontSize: 13,
                 fontFamily: 'monospace',
-                background: 'transparent',
+                background: airdropFlash ? 'var(--synapse-green-50)' : 'transparent',
                 outline: 'none',
                 minWidth: 0,
+                transition: 'background-color 0.3s ease, border-color 0.3s ease',
               }}
             />
             <button

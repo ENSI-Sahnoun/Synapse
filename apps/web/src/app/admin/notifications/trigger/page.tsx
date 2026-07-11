@@ -27,6 +27,7 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   announcement_new: 'Nouvelle annonce publiée',
   seat_removed_by_staff: 'Place supprimée par le personnel (étudiant)',
   seat_changed_freely: 'Changement de place libre (personnel)',
+  qr_airdrop: 'Envoi QR en direct (interne, non configurable)',
 }
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {

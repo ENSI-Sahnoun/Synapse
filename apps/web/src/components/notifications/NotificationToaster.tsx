@@ -32,6 +32,7 @@ export function NotificationToaster() {
           { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` },
           (payload) => {
             const row = payload.new as NotificationRow
+            if (row.type === 'qr_airdrop') return
             const route = resolveNotificationHref(row)
             toast(row.message, {
               position: 'top-center',

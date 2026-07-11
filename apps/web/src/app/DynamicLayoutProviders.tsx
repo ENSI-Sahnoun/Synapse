@@ -4,6 +4,7 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import { InstallPromptModal } from '@/components/pwa/InstallPromptModal';
 import { NotificationToaster } from '@/components/notifications/NotificationToaster';
+import { AirdropPopup } from '@/components/notifications/AirdropPopup';
 import { PushPromptModal } from '@/components/notifications/PushPromptModal';
 
 export function DynamicLayoutProviders({ children }: { children: React.ReactNode }) {
@@ -27,8 +28,18 @@ export function DynamicLayoutProviders({ children }: { children: React.ReactNode
             options={{ showSpinner: false }}
             shallowRouting
           />
-          <SonnerToaster richColors theme="light" />
+          <SonnerToaster
+            richColors
+            theme="light"
+            toastOptions={{
+              classNames: {
+                actionButton: '!bg-primary !text-primary-foreground !font-semibold hover:!bg-[var(--primary-hover)]',
+                cancelButton: '!bg-muted !text-muted-foreground',
+              },
+            }}
+          />
           <NotificationToaster />
+          <AirdropPopup />
           <PushPromptModal />
         </Suspense>
       )}

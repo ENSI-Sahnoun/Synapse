@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { SignIn, ShoppingCart, Star, Key } from '@phosphor-icons/react/dist/ssr'
+import { SendCodeButton } from './SendCodeButton'
 
 export const metadata = {
   title: 'Mon QR Code — Synapse',
@@ -79,9 +80,12 @@ export default async function StudentQrPage() {
           </div>
 
           <div className="w-full max-w-xs">
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--synapse-brown-500)' }}>
-              Code secret
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--synapse-brown-500)' }}>
+                Code secret
+              </p>
+              <SendCodeButton />
+            </div>
             <p
               className="mt-1 text-xs font-mono break-all rounded-lg px-3 py-2 select-all"
               style={{ background: 'var(--synapse-cream-200)', color: 'var(--synapse-brown-700)' }}

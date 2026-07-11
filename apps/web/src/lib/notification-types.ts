@@ -21,5 +21,6 @@ export type NotificationType =
   | 'announcement_new'
   | 'seat_removed_by_staff'
   | 'seat_changed_freely'
+  | 'qr_airdrop'
 
 export type NotificationChannel = 'email' | 'sms' | 'whatsapp' | 'inapp'
