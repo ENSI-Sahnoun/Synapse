@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
 import { PaperPlaneTilt, Copy, X } from '@phosphor-icons/react'
 import { useQrAirdropFeed, type QrAirdrop } from '@/hooks/use-qr-airdrop-feed'
@@ -11,6 +11,7 @@ const AUTO_DISMISS_MS = 6000
 export function AirdropPopup() {
   const [drops, setDrops] = useState<QrAirdrop[]>([])
   const router = useRouter()
+  const pathname = usePathname()
 
   useQrAirdropFeed((drop) => {
     setDrops((prev) => [...prev, drop])
@@ -36,6 +37,8 @@ export function AirdropPopup() {
     await navigator.clipboard.writeText(drop.qrToken)
     dismiss(drop.id)
   }
+
+  if (pathname?.startsWith('/kiosk')) return null
 
   if (drops.length === 0) return null
 
