@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { adminActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
+import { validateNavOrderInput } from '@/lib/nav-items'
 
 // Toggle exam mode
 const setExamModeSchema = z.object({
@@ -67,4 +68,24 @@ export const setPriorityMinDurationDays = adminActionClient
     if (error) throw new Error('Impossible de mettre à jour le seuil de priorité.')
     revalidatePath('/admin/settings')
     return { success: true, days }
+  })
+
+// Update nav order/visibility for a role (admin edits both roles' nav from one screen)
+const setNavOrderSchema = z.object({
+  role: z.enum(['admin', 'employee']),
+  items: z.array(z.object({ key: z.string(), hidden: z.boolean() })).min(1),
+})
+
+export const setNavOrder = adminActionClient
+  .schema(setNavOrderSchema)
+  .action(async ({ parsedInput: { role, items } }) => {
+    validateNavOrderInput(role, items)
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: `nav_order_${role}`, value: JSON.stringify(items) }, { onConflict: 'key' })
+    if (error) throw new Error('Impossible de mettre à jour la navigation.')
+    revalidatePath('/admin', 'layout')
+    revalidatePath('/employee', 'layout')
+    return { success: true, role }
   })

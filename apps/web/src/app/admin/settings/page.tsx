@@ -54,20 +54,6 @@ export default async function AdminSettingsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Notifications</h2>
-        <Link
-          href="/admin/settings/notifications"
-          className="rounded-lg border p-4 hover:bg-muted/50 transition-colors flex items-center justify-between"
-        >
-          <div>
-            <p className="font-medium">Canaux de notification</p>
-            <p className="text-sm text-muted-foreground">Configurer les canaux actifs par type de notification</p>
-          </div>
-          <span className="text-muted-foreground">→</span>
-        </Link>
-      </section>
-
-      <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Classement</h2>
         <Link
           href="/admin/settings/leaderboard"
@@ -76,6 +62,20 @@ export default async function AdminSettingsPage() {
           <div>
             <p className="font-medium">Classement mensuel</p>
             <p className="text-sm text-muted-foreground">Configurer le classement et les récompenses par catégorie</p>
+          </div>
+          <span className="text-muted-foreground">→</span>
+        </Link>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Navigation</h2>
+        <Link
+          href="/admin/settings/navigation"
+          className="rounded-lg border p-4 hover:bg-muted/50 transition-colors flex items-center justify-between"
+        >
+          <div>
+            <p className="font-medium">Onglets de navigation</p>
+            <p className="text-sm text-muted-foreground">Réorganiser ou masquer les onglets admin et employé</p>
           </div>
           <span className="text-muted-foreground">→</span>
         </Link>

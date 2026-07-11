@@ -2,6 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { redirect } from 'next/navigation'
 import { getMyNotifications, getMyUnreadCount } from '@/data/notifications/list'
+import { getResolvedNavItems } from '@/data/nav/get-resolved-nav-items'
 import { EmployeeMobileShell } from '@/components/employee/EmployeeMobileShell'
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
@@ -25,10 +26,13 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
     // non-fatal
   }
 
+  const navItems = await getResolvedNavItems(supabase, profile.role === 'admin' ? 'admin' : 'employee')
+
   return (
     <EmployeeMobileShell
       fullName={profile.full_name ?? ''}
       role={profile.role}
+      navItems={navItems}
       initialNotifications={notifications}
       initialUnreadCount={unreadCount}
     >

@@ -22,7 +22,7 @@ export function QuickLinks() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {QUICK_LINKS.map((link) => (
             <Button
-              key={link.href}
+              key={link.label}
               variant="outline"
               className="h-auto flex-col items-center gap-1 p-4 text-center"
               asChild

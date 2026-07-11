@@ -1,17 +1,19 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { redirect } from 'next/navigation'
 import { getMyNotifications, getMyUnreadCount } from '@/data/notifications/list'
+import { getResolvedNavItems } from '@/data/nav/get-resolved-nav-items'
 import { EmployeeMobileShell } from '@/components/employee/EmployeeMobileShell'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) redirect('/login')
 
+  const supabase = await createSupabaseClient()
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, full_name')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single()
 
   if (profile?.role !== 'admin') redirect('/login')
@@ -24,10 +26,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     // non-fatal — bell renders empty
   }
 
+  const navItems = await getResolvedNavItems(supabase, 'admin')
+
   return (
     <EmployeeMobileShell
       fullName={profile.full_name ?? ''}
       role={profile.role}
+      navItems={navItems}
       initialNotifications={notifications}
       initialUnreadCount={unreadCount}
     >
