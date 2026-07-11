@@ -48,6 +48,7 @@ export type Database = {
           created_by: string | null
           id: string
           pinned: boolean | null
+          recipient_id: string | null
           title: string
         }
         Insert: {
@@ -56,6 +57,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           pinned?: boolean | null
+          recipient_id?: string | null
           title: string
         }
         Update: {
@@ -64,12 +66,20 @@ export type Database = {
           created_by?: string | null
           id?: string
           pinned?: boolean | null
+          recipient_id?: string | null
           title?: string
         }
         Relationships: [
           {
             foreignKeyName: "announcements_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_recipient_id_fkey"
+            columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -548,6 +558,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          announcement_id: string | null
           created_at: string
           id: string
           important_until: string | null
@@ -555,10 +566,12 @@ export type Database = {
           is_read: boolean
           link: string | null
           message: string
+          student_id: string | null
           type: string
           user_id: string
         }
         Insert: {
+          announcement_id?: string | null
           created_at?: string
           id?: string
           important_until?: string | null
@@ -566,10 +579,12 @@ export type Database = {
           is_read?: boolean
           link?: string | null
           message: string
+          student_id?: string | null
           type: string
           user_id: string
         }
         Update: {
+          announcement_id?: string | null
           created_at?: string
           id?: string
           important_until?: string | null
@@ -577,10 +592,26 @@ export type Database = {
           is_read?: boolean
           link?: string | null
           message?: string
+          student_id?: string | null
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pos_activity_log: {
         Row: {

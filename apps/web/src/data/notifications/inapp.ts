@@ -38,10 +38,38 @@ export async function notifyAllStaff(
   await sendPushToUsers(staff.map((p) => p.id), { title: 'Synapse', body: message })
 }
 
+/**
+ * Same fan-out as notifyAllStaff (one row per admin/employee), but skips the
+ * push notification and accepts a student_id — for kiosk display events,
+ * which are a UI transport, not something worth buzzing every staff phone.
+ */
+export async function notifyAllStaffNoPush(
+  type: NotificationType,
+  message: string,
+  opts?: { link?: string; studentId?: string },
+): Promise<void> {
+  if (!(await isInAppNotificationEnabled(type))) return
+  const supabase = createSupabaseAdminClient()
+  const { data: staff } = await supabase
+    .from('profiles')
+    .select('id')
+    .in('role', ['admin', 'employee'])
+  if (!staff?.length) return
+  await supabase.from('notifications').insert(
+    staff.map((p) => ({
+      user_id: p.id,
+      type,
+      message,
+      link: opts?.link ?? null,
+      student_id: opts?.studentId ?? null,
+    })),
+  )
+}
+
 export async function notifyAllUsers(
   type: NotificationType,
   message: string,
-  opts?: { important?: boolean; onlyUserId?: string },
+  opts?: { important?: boolean; onlyUserId?: string; announcementId?: string },
 ): Promise<void> {
   if (!(await isInAppNotificationEnabled(type))) return
   const supabase = createSupabaseAdminClient()
@@ -58,6 +86,7 @@ export async function notifyAllUsers(
       message,
       is_important: isImportant,
       important_until: importantUntil,
+      announcement_id: opts?.announcementId ?? null,
     })),
   )
   await sendPushToUsers(users.map((p) => p.id), { title: 'Synapse', body: message })
