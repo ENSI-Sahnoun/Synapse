@@ -75,7 +75,7 @@ export async function getActiveEligibleSubscriptionId(studentId: string): Promis
   const supabase = await createSupabaseClient()
   const today = format(new Date(), 'yyyy-MM-dd')
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('subscriptions')
     .select('id, subscription_plans!inner(duration_days)')
     .eq('student_id', studentId)
@@ -85,5 +85,6 @@ export async function getActiveEligibleSubscriptionId(studentId: string): Promis
     .limit(1)
     .maybeSingle()
 
+  if (error) throw error
   return data?.id ?? null
 }
