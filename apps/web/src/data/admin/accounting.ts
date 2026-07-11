@@ -87,6 +87,14 @@ export async function getPnl(filters: { from: string; to: string }): Promise<Pnl
 
   const subsTotal = subs?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0
 
+  const { data: lockerPayments } = await supabase
+    .from('locker_payments')
+    .select('amount_dt')
+    .gte('created_at', filters.from + 'T00:00:00')
+    .lte('created_at', filters.to + 'T23:59:59')
+
+  const lockersTotal = lockerPayments?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0
+
   const { data: purchaseItems } = await supabase
     .from('purchase_items')
     .select(
@@ -140,6 +148,10 @@ export async function getPnl(filters: { from: string; to: string }): Promise<Pnl
     rows.push({ category_id: catId, category_name: v.name, type: 'income', total: v.total })
   })
 
+  if (lockersTotal > 0) {
+    rows.push({ category_id: 'lockers', category_name: 'Casiers', type: 'income', total: lockersTotal })
+  }
+
   expenseMap.forEach((v, catId) => {
     rows.push({ category_id: catId, category_name: v.name, type: 'expense', total: v.total })
   })
@@ -165,7 +177,7 @@ export type TransactionRow = {
 export async function getTransactions(filters: { from: string; to: string }): Promise<TransactionRow[]> {
   const supabase = await createSupabaseClient()
 
-  const [{ data: subs }, { data: purchases }, { data: expenses }] = await Promise.all([
+  const [{ data: subs }, { data: purchases }, { data: expenses }, { data: lockerPayments }] = await Promise.all([
     supabase
       .from('subscriptions')
       .select('paid_amount, created_at, subscription_plans(name)')
@@ -181,6 +193,11 @@ export async function getTransactions(filters: { from: string; to: string }): Pr
       .select('amount_dt, date, description, account_categories!inner(name)')
       .gte('date', filters.from)
       .lte('date', filters.to),
+    supabase
+      .from('locker_payments')
+      .select('amount_dt, created_at, lockers(number)')
+      .gte('created_at', filters.from + 'T00:00:00')
+      .lte('created_at', filters.to + 'T23:59:59'),
   ])
 
   const rows: TransactionRow[] = []
@@ -201,6 +218,16 @@ export async function getTransactions(filters: { from: string; to: string }): Pr
       description: 'Vente comptoir',
       type: 'income',
       amount: Number(r.total_dt),
+    })
+  })
+
+  lockerPayments?.forEach((r) => {
+    const locker = r.lockers as unknown as { number: number } | null
+    rows.push({
+      date: r.created_at,
+      description: `Casier${locker ? ` n°${locker.number}` : ''}`,
+      type: 'income',
+      amount: Number(r.amount_dt),
     })
   })
 
@@ -232,6 +259,7 @@ export type FinanceSummary = {
   revenue: number
   subsRevenue: number
   posRevenue: number
+  lockerRevenue: number
   cogs: number
   missingCostProducts: number
   expenses: number
@@ -256,7 +284,7 @@ async function computeNetProfit(
   from: string,
   to: string,
 ) {
-  const [{ data: cogsRows }, { data: subs }, { data: expenses }] = await Promise.all([
+  const [{ data: cogsRows }, { data: subs }, { data: expenses }, { data: lockerPayments }] = await Promise.all([
     supabase.rpc('analytics_cogs', { p_from: from, p_to: to }),
     supabase
       .from('subscriptions')
@@ -264,20 +292,27 @@ async function computeNetProfit(
       .gte('created_at', from + 'T00:00:00')
       .lte('created_at', to + 'T23:59:59'),
     supabase.from('expenses').select('amount_dt').gte('date', from).lte('date', to),
+    supabase
+      .from('locker_payments')
+      .select('amount_dt')
+      .gte('created_at', from + 'T00:00:00')
+      .lte('created_at', to + 'T23:59:59'),
   ])
 
   const cogsRow = cogsRows?.[0] ?? { cogs: 0, revenue: 0, missing_cost_products: 0 }
   const subsRevenue = subs?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0
   const posRevenue = Number(cogsRow.revenue)
+  const lockerRevenue = lockerPayments?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0
   const cogs = Number(cogsRow.cogs)
   const expensesTotal = expenses?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0
-  const grossMargin = subsRevenue + posRevenue - cogs
+  const grossMargin = subsRevenue + posRevenue + lockerRevenue - cogs
   const netProfit = grossMargin - expensesTotal
 
   return {
     netProfit,
     subsRevenue,
     posRevenue,
+    lockerRevenue,
     cogs,
     missingCostProducts: Number(cogsRow.missing_cost_products),
     expenses: expensesTotal,
@@ -294,20 +329,21 @@ export async function getFinanceSummary(filters: { from: string; to: string }): 
   ])
 
   return {
-    revenue: current.subsRevenue + current.posRevenue,
+    revenue: current.subsRevenue + current.posRevenue + current.lockerRevenue,
     subsRevenue: current.subsRevenue,
     posRevenue: current.posRevenue,
+    lockerRevenue: current.lockerRevenue,
     cogs: current.cogs,
     missingCostProducts: current.missingCostProducts,
     expenses: current.expenses,
-    grossMargin: current.subsRevenue + current.posRevenue - current.cogs,
+    grossMargin: current.subsRevenue + current.posRevenue + current.lockerRevenue - current.cogs,
     netProfit: current.netProfit,
     prevNetProfit: previous.netProfit,
     netProfitDelta: current.netProfit - previous.netProfit,
   }
 }
 
-export type RevenueSplitPoint = { date: string; subs: number; pos: number }
+export type RevenueSplitPoint = { date: string; subs: number; pos: number; lockers: number }
 export type ExpenseByCategory = { category: string; total: number }
 export type CashFlowPoint = { date: string; net: number }
 
@@ -325,7 +361,7 @@ function enumerateDays(from: string, to: string): string[] {
 export async function getRevenueSplit(filters: { from: string; to: string }): Promise<RevenueSplitPoint[]> {
   const supabase = await createSupabaseClient()
 
-  const [{ data: subs }, { data: purchases }] = await Promise.all([
+  const [{ data: subs }, { data: purchases }, { data: lockerPayments }] = await Promise.all([
     supabase
       .from('subscriptions')
       .select('paid_amount, created_at')
@@ -334,6 +370,11 @@ export async function getRevenueSplit(filters: { from: string; to: string }): Pr
     supabase
       .from('purchases')
       .select('total_dt, created_at')
+      .gte('created_at', filters.from + 'T00:00:00')
+      .lte('created_at', filters.to + 'T23:59:59'),
+    supabase
+      .from('locker_payments')
+      .select('amount_dt, created_at')
       .gte('created_at', filters.from + 'T00:00:00')
       .lte('created_at', filters.to + 'T23:59:59'),
   ])
@@ -350,10 +391,17 @@ export async function getRevenueSplit(filters: { from: string; to: string }): Pr
     posMap.set(d, (posMap.get(d) ?? 0) + Number(r.total_dt))
   })
 
+  const lockersMap = new Map<string, number>()
+  lockerPayments?.forEach((r) => {
+    const d = r.created_at.slice(0, 10)
+    lockersMap.set(d, (lockersMap.get(d) ?? 0) + Number(r.amount_dt))
+  })
+
   return enumerateDays(filters.from, filters.to).map((date) => ({
     date,
     subs: subsMap.get(date) ?? 0,
     pos: posMap.get(date) ?? 0,
+    lockers: lockersMap.get(date) ?? 0,
   }))
 }
 
@@ -380,7 +428,7 @@ export async function getExpensesByCategory(filters: { from: string; to: string 
 export async function getCashFlow(filters: { from: string; to: string }): Promise<CashFlowPoint[]> {
   const supabase = await createSupabaseClient()
 
-  const [{ data: subs }, { data: purchases }, { data: expenses }] = await Promise.all([
+  const [{ data: subs }, { data: purchases }, { data: expenses }, { data: lockerPayments }] = await Promise.all([
     supabase
       .from('subscriptions')
       .select('paid_amount, created_at')
@@ -392,6 +440,11 @@ export async function getCashFlow(filters: { from: string; to: string }): Promis
       .gte('created_at', filters.from + 'T00:00:00')
       .lte('created_at', filters.to + 'T23:59:59'),
     supabase.from('expenses').select('amount_dt, date').gte('date', filters.from).lte('date', filters.to),
+    supabase
+      .from('locker_payments')
+      .select('amount_dt, created_at')
+      .gte('created_at', filters.from + 'T00:00:00')
+      .lte('created_at', filters.to + 'T23:59:59'),
   ])
 
   const map = new Map<string, number>()
@@ -402,6 +455,10 @@ export async function getCashFlow(filters: { from: string; to: string }): Promis
   purchases?.forEach((r) => {
     const d = r.created_at.slice(0, 10)
     map.set(d, (map.get(d) ?? 0) + Number(r.total_dt))
+  })
+  lockerPayments?.forEach((r) => {
+    const d = r.created_at.slice(0, 10)
+    map.set(d, (map.get(d) ?? 0) + Number(r.amount_dt))
   })
   expenses?.forEach((r) => {
     const d = r.date.slice(0, 10)

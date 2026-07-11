@@ -45,42 +45,71 @@ export async function getLockersWithStatus(): Promise<LockerRow[]> {
   })
 }
 
-export async function getEligibleStudentsForLocker() {
+export interface StudentForLocker {
+  id: string
+  full_name: string | null
+  student_number: number | null
+  phone: string | null
+  is_eligible: boolean
+}
+
+export async function getLockerMinDurationDays(): Promise<number> {
+  const supabase = await createSupabaseClient()
+  const { data } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', 'locker_min_duration_days')
+    .maybeSingle()
+  return parseInt(data?.value ?? '30', 10)
+}
+
+export async function getLockerFeeDt(): Promise<number> {
+  const supabase = await createSupabaseClient()
+  const { data } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', 'locker_fee_dt')
+    .maybeSingle()
+  return parseFloat(data?.value ?? '0')
+}
+
+export async function getEligibleStudentsForLocker(): Promise<StudentForLocker[]> {
   const supabase = await createSupabaseClient()
   const today = format(new Date(), 'yyyy-MM-dd')
+  const minDurationDays = await getLockerMinDurationDays()
 
-  const { data: subs, error: subsError } = await supabase
-    .from('subscriptions')
-    .select('student_id, subscription_plans!inner(duration_days)')
-    .gte('end_date', today)
-    .gte('subscription_plans.duration_days', 30)
+  const [{ data: subs, error: subsError }, { data: students, error: studentsError }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('student_id, subscription_plans!inner(duration_days)')
+      .gte('end_date', today)
+      .gte('subscription_plans.duration_days', minDurationDays),
+    supabase
+      .from('profiles')
+      .select('id, full_name, student_number, phone')
+      .eq('role', 'student')
+      .eq('is_archived', false)
+      .order('full_name', { ascending: true }),
+  ])
 
   if (subsError) throw subsError
-  const eligibleIds = [...new Set((subs ?? []).map((s) => s.student_id))]
-  if (eligibleIds.length === 0) return []
+  if (studentsError) throw studentsError
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, full_name, student_number, phone')
-    .in('id', eligibleIds)
-    .eq('role', 'student')
-    .eq('is_archived', false)
-    .order('full_name', { ascending: true })
-
-  if (error) throw error
-  return data ?? []
+  const eligibleIds = new Set((subs ?? []).map((s) => s.student_id))
+  return (students ?? []).map((s) => ({ ...s, is_eligible: eligibleIds.has(s.id) }))
 }
 
 export async function getActiveEligibleSubscriptionId(studentId: string): Promise<string | null> {
   const supabase = await createSupabaseClient()
   const today = format(new Date(), 'yyyy-MM-dd')
+  const minDurationDays = await getLockerMinDurationDays()
 
   const { data, error } = await supabase
     .from('subscriptions')
     .select('id, subscription_plans!inner(duration_days)')
     .eq('student_id', studentId)
     .gte('end_date', today)
-    .gte('subscription_plans.duration_days', 30)
+    .gte('subscription_plans.duration_days', minDurationDays)
     .order('end_date', { ascending: false })
     .limit(1)
     .maybeSingle()

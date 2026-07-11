@@ -70,6 +70,40 @@ export const setPriorityMinDurationDays = adminActionClient
     return { success: true, days }
   })
 
+// Update minimum subscription duration required for locker eligibility
+const setLockerMinDurationSchema = z.object({
+  days: z.number().int().min(1, { message: 'Minimum 1 jour' }).max(365, { message: 'Maximum 365 jours' }),
+})
+
+export const setLockerMinDurationDays = adminActionClient
+  .schema(setLockerMinDurationSchema)
+  .action(async ({ parsedInput: { days } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'locker_min_duration_days', value: String(days) }, { onConflict: 'key' })
+    if (error) throw new Error('Impossible de mettre à jour le seuil de casier.')
+    revalidatePath('/admin/settings')
+    return { success: true, days }
+  })
+
+// Update locker assignment fee (charged once when a student gets a locker; not on swaps)
+const setLockerFeeSchema = z.object({
+  amount_dt: z.number().min(0, { message: 'Minimum 0' }).max(1000, { message: 'Maximum 1000' }),
+})
+
+export const setLockerFeeDt = adminActionClient
+  .schema(setLockerFeeSchema)
+  .action(async ({ parsedInput: { amount_dt } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'locker_fee_dt', value: String(amount_dt) }, { onConflict: 'key' })
+    if (error) throw new Error('Impossible de mettre à jour le tarif du casier.')
+    revalidatePath('/employee/lockers')
+    return { success: true, amount_dt }
+  })
+
 // Update nav order/visibility for a role (admin edits both roles' nav from one screen)
 const setNavOrderSchema = z.object({
   role: z.enum(['admin', 'employee']),

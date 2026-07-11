@@ -5,6 +5,17 @@ import { useAction } from 'next-safe-action/hooks'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -20,6 +31,7 @@ interface EligibleStudent {
   full_name: string | null
   student_number: number | null
   phone: string | null
+  is_eligible: boolean
 }
 
 interface Props {
@@ -110,12 +122,35 @@ export function LockersGrid({ initialLockers, eligibleStudents }: Props) {
             <div className="space-y-4">
               <p className="text-sm">
                 Attribué à <span className="font-semibold">{selected.student?.full_name}</span>
-                {selected.student?.student_number ? ` (#${selected.student.student_number})` : ''}
               </p>
               <DialogFooter>
-                <Button variant="outline" disabled={busy} onClick={() => unassign({ locker_id: selected.id })}>
-                  {unassignStatus === 'executing' ? 'Libération…' : 'Libérer le casier'}
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" disabled={busy}>
+                      {unassignStatus === 'executing' ? 'Libération…' : 'Libérer le casier'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Libérer ce casier ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        <strong>{selected.student?.full_name}</strong> perdra l&apos;accès au casier {selected.number}.
+                        Les frais d&apos;attribution déjà payés ne sont pas remboursés. Cette action est manuelle et
+                        ne se produit pas automatiquement avant l&apos;expiration de l&apos;abonnement.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => unassign({ locker_id: selected.id })}
+                        disabled={busy}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Libérer
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </DialogFooter>
             </div>
           )}
@@ -148,12 +183,14 @@ export function LockersGrid({ initialLockers, eligibleStudents }: Props) {
                       <button
                         key={s.id}
                         type="button"
-                        disabled={busy}
+                        disabled={busy || !s.is_eligible}
                         onClick={() => assign({ locker_id: selected.id, student_id: s.id })}
-                        className="w-full text-left border rounded-md p-2 text-sm hover:bg-muted disabled:opacity-50"
+                        className={`w-full text-left border rounded-md p-2 text-sm disabled:cursor-not-allowed ${
+                          s.is_eligible ? 'hover:bg-muted' : 'text-muted-foreground opacity-50'
+                        }`}
                       >
                         <span className="font-medium">{s.full_name}</span>
-                        {s.student_number ? <span className="text-muted-foreground"> · #{s.student_number}</span> : null}
+                        {!s.is_eligible && <span className="text-xs"> (non éligible)</span>}
                       </button>
                     ))
                   )}

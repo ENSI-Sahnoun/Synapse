@@ -361,6 +361,65 @@ export type Database = {
         }
         Relationships: []
       }
+      locker_payments: {
+        Row: {
+          amount_dt: number
+          created_at: string
+          created_by: string
+          id: string
+          locker_id: string | null
+          student_id: string | null
+          subscription_id: string | null
+        }
+        Insert: {
+          amount_dt: number
+          created_at?: string
+          created_by: string
+          id?: string
+          locker_id?: string | null
+          student_id?: string | null
+          subscription_id?: string | null
+        }
+        Update: {
+          amount_dt?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          locker_id?: string | null
+          student_id?: string | null
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locker_payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locker_payments_locker_id_fkey"
+            columns: ["locker_id"]
+            isOneToOne: false
+            referencedRelation: "lockers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locker_payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locker_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lockers: {
         Row: {
           assigned_student_id: string | null

@@ -4,12 +4,12 @@ import { employeeActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
 import { assignLockerSchema, lockerIdSchema } from '@/utils/zod-schemas/locker'
-import { getActiveEligibleSubscriptionId } from '@/data/employee/lockers'
+import { getActiveEligibleSubscriptionId, getLockerFeeDt } from '@/data/employee/lockers'
 import { computeLockerStatus } from '@/lib/locker-status'
 
 export const assignLockerAction = employeeActionClient
   .schema(assignLockerSchema)
-  .action(async ({ parsedInput: { locker_id, student_id } }) => {
+  .action(async ({ parsedInput: { locker_id, student_id }, ctx }) => {
     const supabase = await createSupabaseClient()
 
     const subscriptionId = await getActiveEligibleSubscriptionId(student_id)
@@ -34,14 +34,24 @@ export const assignLockerAction = employeeActionClient
       throw new Error('Ce casier est déjà occupé.')
     }
 
-    // Enforce one locker per student: free any other locker this student currently holds.
-    const { error: freeError } = await supabase
+    // One locker per student: a student already holding a different locker is
+    // swapping, not getting one for the first time — no new fee in that case.
+    const { data: existingLocker } = await supabase
       .from('lockers')
-      .update({ assigned_student_id: null, assigned_subscription_id: null })
+      .select('id')
       .eq('assigned_student_id', student_id)
-      .neq('id', locker_id)
+      .maybeSingle()
 
-    if (freeError) throw new Error('Erreur lors de la libération du casier précédent')
+    const isFreshAssignment = !existingLocker
+
+    if (existingLocker && existingLocker.id !== locker_id) {
+      const { error: freeError } = await supabase
+        .from('lockers')
+        .update({ assigned_student_id: null, assigned_subscription_id: null })
+        .eq('id', existingLocker.id)
+
+      if (freeError) throw new Error('Erreur lors de la libération du casier précédent')
+    }
 
     const { error } = await supabase
       .from('lockers')
@@ -49,6 +59,18 @@ export const assignLockerAction = employeeActionClient
       .eq('id', locker_id)
 
     if (error) throw new Error("Erreur lors de l'attribution du casier")
+
+    if (isFreshAssignment) {
+      const feeDt = await getLockerFeeDt()
+      const { error: paymentError } = await supabase.from('locker_payments').insert({
+        locker_id,
+        student_id,
+        subscription_id: subscriptionId,
+        amount_dt: feeDt,
+        created_by: ctx.userId,
+      })
+      if (paymentError) throw new Error("Erreur lors de l'enregistrement du paiement du casier")
+    }
 
     revalidatePath('/employee/lockers')
     return { success: true }

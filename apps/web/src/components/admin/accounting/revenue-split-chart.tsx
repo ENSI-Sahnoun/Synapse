@@ -10,7 +10,7 @@ export function RevenueSplitChart({ data }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Revenus — abonnements vs boutique</CardTitle>
+        <CardTitle>Revenus — abonnements, boutique &amp; casiers</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={260}>
@@ -25,6 +25,7 @@ export function RevenueSplitChart({ data }: Props) {
             <Legend />
             <Bar dataKey="subs" name="Abonnements" stackId="rev" fill="#6366f1" />
             <Bar dataKey="pos" name="Boutique" stackId="rev" fill="#22c55e" />
+            <Bar dataKey="lockers" name="Casiers" stackId="rev" fill="#f59e0b" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

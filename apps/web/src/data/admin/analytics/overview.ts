@@ -1,9 +1,11 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { getFinanceSummary, previousPeriod } from '@/data/admin/accounting'
+import { getLockersWithStatus } from '@/data/employee/lockers'
 
 export type LiveSnapshot = {
   studentsInside: number
   seatOccupancy: { occupied: number; total: number }
+  lockerOccupancy: { occupied: number; total: number }
   todayRevenue: number
   expiringSoonCount: number
   lowStockProducts: Array<{ id: string; name: string; stock_quantity: number }>
@@ -51,7 +53,14 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'occupied')
 
-  // Today's revenue: subscriptions + purchases
+  // Locker occupancy
+  const lockers = await getLockersWithStatus()
+  const lockerOccupancy = {
+    occupied: lockers.filter((l) => l.status === 'occupied').length,
+    total: lockers.length,
+  }
+
+  // Today's revenue: subscriptions + purchases + lockers
   const { data: subRevenue } = await supabase
     .from('subscriptions')
     .select('paid_amount')
@@ -64,9 +73,16 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
     .gte('created_at', todayStr + 'T00:00:00')
     .lt('created_at', startOfTomorrow())
 
+  const { data: lockerRevenue } = await supabase
+    .from('locker_payments')
+    .select('amount_dt')
+    .gte('created_at', todayStr + 'T00:00:00')
+    .lt('created_at', startOfTomorrow())
+
   const todayRevenue =
     (subRevenue?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0) +
-    (purchaseRevenue?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0)
+    (purchaseRevenue?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0) +
+    (lockerRevenue?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0)
 
   // Subscriptions expiring this week
   const weekLater = new Date()
@@ -89,6 +105,7 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
   return {
     studentsInside: studentsInside ?? 0,
     seatOccupancy: { occupied: occupiedSeats ?? 0, total: totalSeats ?? 60 },
+    lockerOccupancy,
     todayRevenue,
     expiringSoonCount: expiringSoonCount ?? 0,
     lowStockProducts: lowStockProducts ?? [],
