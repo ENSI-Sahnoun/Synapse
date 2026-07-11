@@ -5,6 +5,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
 import { assignLockerSchema, lockerIdSchema } from '@/utils/zod-schemas/locker'
 import { getActiveEligibleSubscriptionId } from '@/data/employee/lockers'
+import { computeLockerStatus } from '@/lib/locker-status'
 
 export const assignLockerAction = employeeActionClient
   .schema(assignLockerSchema)
@@ -24,9 +25,12 @@ export const assignLockerAction = employeeActionClient
 
     const today = new Date().toISOString().slice(0, 10)
     const endDate = (target.subscriptions as { end_date: string } | null)?.end_date ?? null
-    const targetOccupied = !target.is_unavailable && !!target.assigned_student_id && !!endDate && endDate >= today
+    const targetStatus = computeLockerStatus(
+      { isUnavailable: target.is_unavailable, assignedStudentId: target.assigned_student_id, subscriptionEndDate: endDate },
+      today,
+    )
 
-    if (targetOccupied && target.assigned_student_id !== student_id) {
+    if (targetStatus === 'occupied' && target.assigned_student_id !== student_id) {
       throw new Error('Ce casier est déjà occupé.')
     }
 
