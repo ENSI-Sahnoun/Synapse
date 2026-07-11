@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PrintButton } from '@/components/employee/PrintButton'
+import { DropToKioskButton } from '@/components/employee/DropToKioskButton'
 
 interface PrintQrPageProps {
   params: Promise<{ studentId: string }>
@@ -51,7 +52,10 @@ export default async function PrintQrPage({ params }: PrintQrPageProps) {
         <QrCodeImage token={student.qr_token} size={220} />
       </div>
 
-      <PrintButton />
+      <div className="flex gap-3 print:hidden">
+        <PrintButton />
+        <DropToKioskButton studentId={studentId} />
+      </div>
     </div>
   )
 }
