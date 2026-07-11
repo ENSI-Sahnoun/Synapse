@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { QrScanner } from '@/components/checkin/QrScanner'
 import { KioskResult } from '@/components/kiosk/KioskResult'
 import { KioskGuard } from '@/components/kiosk/KioskGuard'
 import { KioskManualEntry } from '@/components/kiosk/KioskManualEntry'
+import { KioskQrDisplay } from '@/components/kiosk/KioskQrDisplay'
+import { useKioskQrDrop } from '@/hooks/use-kiosk-qr-drop'
 import { checkinAction } from '@/actions/checkin/checkin-action'
 import type { CheckinResult } from '@/utils/zod-schemas/checkin'
 import type { RoomTable, Seat } from '@/data/admin/seat-map'
@@ -19,12 +21,13 @@ export type KioskRoom = {
   seats: Seat[]
 }
 
-type Mode = 'scanning' | 'result'
+type Mode = 'scanning' | 'result' | 'qr-display'
 
 export function KioskClient({ rooms: _rooms }: { rooms: KioskRoom[] }) {
   const [mode, setMode] = useState<Mode>('scanning')
   const [scannerReady, setScannerReady] = useState(true)
   const [lastResult, setLastResult] = useState<CheckinResult | null>(null)
+  const { drop } = useKioskQrDrop()
 
   const { execute } = useAction(checkinAction, {
     onSuccess: ({ data }) => {
@@ -55,6 +58,19 @@ export function KioskClient({ rooms: _rooms }: { rooms: KioskRoom[] }) {
     setMode('scanning')
   }, [])
 
+  // A drop only interrupts the idle scanning screen, never a check-in result
+  // already on screen — that would yank the welcome message away from a
+  // student mid check-in. Once staff resets back to 'scanning' (handleReset)
+  // and a drop is still active, this effect switches to it then.
+  useEffect(() => {
+    if (drop && mode === 'scanning') {
+      setMode('qr-display')
+    } else if (!drop && mode === 'qr-display') {
+      setScannerReady(true)
+      setMode('scanning')
+    }
+  }, [drop, mode])
+
   return (
     <div className="w-screen h-screen bg-black text-white flex flex-col">
       <KioskGuard />
@@ -79,6 +95,8 @@ export function KioskClient({ rooms: _rooms }: { rooms: KioskRoom[] }) {
           <KioskManualEntry onSubmit={handleScan} disabled={!scannerReady} />
         </div>
       )}
+
+      {mode === 'qr-display' && drop && <KioskQrDisplay drop={drop} />}
 
       {mode === 'result' && lastResult && (
         <div className="flex-1 flex items-center justify-center p-8">
