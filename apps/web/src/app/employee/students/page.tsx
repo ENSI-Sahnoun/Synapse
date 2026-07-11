@@ -35,7 +35,7 @@ export default async function EmployeeStudentsPage({
       .order('full_name'),
     supabase
       .from('attendance')
-      .select('id, student_id, room_id, seat_id, profiles!attendance_student_id_fkey(full_name)')
+      .select('id, student_id, room_id, seat_id, checked_in_at, profiles!attendance_student_id_fkey(full_name)')
       .is('checked_out_at', null),
     supabase
       .from('subscription_plans')
@@ -92,8 +92,10 @@ export default async function EmployeeStudentsPage({
       attendanceId: a.id,
       roomId: a.room_id ?? null,
       roomName: a.room_id ? (roomMap[a.room_id] ?? '—') : '—',
+      seatId: a.seat_id ?? null,
       seatLabel: a.seat_id ? (seatMap[a.seat_id] ?? null) : null,
       planName: planNameByStudent[a.student_id] ?? null,
+      checkedInAt: a.checked_in_at,
     }))
 
   return (

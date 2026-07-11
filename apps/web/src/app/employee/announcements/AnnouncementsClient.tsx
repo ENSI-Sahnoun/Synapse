@@ -13,6 +13,7 @@ interface Announcement {
   pinned: boolean
   created_at: string
   created_by: string | null
+  recipient_id: string | null
 }
 
 interface Recipient {
@@ -24,10 +25,12 @@ export function AnnouncementsClient({
   announcements,
   currentUserId,
   recipients,
+  readStats,
 }: {
   announcements: Announcement[]
   currentUserId: string
   recipients: Recipient[]
+  readStats: Record<string, { total: number; read: number }>
 }) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
@@ -217,6 +220,31 @@ export function AnnouncementsClient({
                     background: 'rgba(162,114,74,0.1)', borderRadius: 99, padding: '1px 8px',
                   }}>Épinglé</span>
                 )}
+                {a.recipient_id ? (
+                  <>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
+                      background: 'var(--muted, #f1f1f1)', borderRadius: 99, padding: '1px 8px',
+                    }}>
+                      → {recipients.find(r => r.id === a.recipient_id)?.full_name ?? 'Destinataire inconnu'}
+                    </span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: (readStats[a.id]?.read ?? 0) > 0 ? 'var(--synapse-green-500, #22c55e)' : 'var(--text-tertiary)',
+                      background: (readStats[a.id]?.read ?? 0) > 0 ? 'rgba(34,197,94,0.1)' : 'var(--muted, #f1f1f1)',
+                      borderRadius: 99, padding: '1px 8px',
+                    }}>
+                      {(readStats[a.id]?.read ?? 0) > 0 ? 'Lu' : 'Non lu'}
+                    </span>
+                  </>
+                ) : readStats[a.id] ? (
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)',
+                    background: 'var(--muted, #f1f1f1)', borderRadius: 99, padding: '1px 8px',
+                  }}>
+                    {readStats[a.id].read}/{readStats[a.id].total} lu
+                  </span>
+                ) : null}
               </div>
               <div style={{
                 fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4,

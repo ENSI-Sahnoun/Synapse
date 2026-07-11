@@ -19,12 +19,15 @@ export const createAnnouncementAction = employeeActionClient
   .action(async ({ parsedInput, ctx }) => {
     const { important, recipientId, ...record } = parsedInput
     const supabase = await createSupabaseClient()
-    const { error } = await (supabase.from('announcements' as never) as any)
-      .insert({ ...record, created_by: ctx.userId })
+    const { data: inserted, error } = await (supabase.from('announcements' as never) as any)
+      .insert({ ...record, recipient_id: recipientId ?? null, created_by: ctx.userId })
+      .select('id')
+      .single()
     if (error) throw new Error('Erreur lors de la publication')
     await notifyAllUsers('announcement_new', `${parsedInput.title}: ${parsedInput.body}`, {
       important,
       onlyUserId: recipientId,
+      announcementId: inserted.id,
     })
     revalidatePath('/employee/announcements')
     return { ok: true }

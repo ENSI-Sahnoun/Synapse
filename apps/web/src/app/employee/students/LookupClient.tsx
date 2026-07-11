@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { MagnifyingGlass, CaretLeft, CaretRight, QrCode, SignIn, SignOut, Armchair } from '@phosphor-icons/react'
+import { MagnifyingGlass, CaretLeft, CaretRight, QrCode, SignIn, SignOut, Armchair, PaperPlaneTilt } from '@phosphor-icons/react'
 import { checkinAction } from '@/actions/checkin/checkin-action'
 import { checkoutAction } from '@/actions/checkin/checkout-action'
 import { getStudentDetailAction, createStudentAction, updateStudentInfoAction, getStudentAttendanceHistoryAction } from '@/actions/employee/students'
@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { ArchivedToggle } from './ArchivedToggle'
 import { EditIdentityDialog } from './EditIdentityDialog'
+import { SendAnnouncementDialog } from './SendAnnouncementDialog'
 
 interface Student {
   id: string
@@ -31,8 +32,10 @@ interface CurrentlyIn {
   attendanceId: string
   roomId: string | null
   roomName: string
+  seatId: string | null
   seatLabel: string | null
   planName: string | null
+  checkedInAt: string
 }
 
 function isDailyPlan(planName: string | null): boolean {
@@ -469,6 +472,7 @@ function DetailView({
   const [showFullHistory, setShowFullHistory] = useState(false)
   const [fullHistory, setFullHistory] = useState<AttendanceHistoryRow[] | null>(null)
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
+  const [sendAnnouncementOpen, setSendAnnouncementOpen] = useState(false)
   const router = useRouter()
 
   function handleDestructiveSuccess() {
@@ -589,9 +593,20 @@ function DetailView({
                 <QrCode size={22} weight={showQr ? 'fill' : 'regular'} />
               </button>
             )}
+            <button
+              onClick={() => setSendAnnouncementOpen(true)}
+              title="Envoyer une annonce"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-tertiary)' }}
+            >
+              <PaperPlaneTilt size={22} />
+            </button>
             {isPresent && (
               <Link
-                href={attendance!.roomId ? `/employee/rooms/${attendance!.roomId}/map` : '/employee/rooms'}
+                href={
+                  attendance!.roomId
+                    ? `/employee/rooms/${attendance!.roomId}/map?attendanceId=${attendance!.attendanceId}${attendance!.seatId ? `&fromSeatId=${attendance!.seatId}` : ''}`
+                    : '/employee/rooms'
+                }
                 title="Changer de place"
                 style={{ color: 'var(--text-tertiary)', display: 'flex' }}
               >
@@ -644,6 +659,9 @@ function DetailView({
               {attendance!.roomName && attendance!.roomName !== '—'
                 ? (attendance!.seatLabel ? `${attendance!.roomName} · ${attendance!.seatLabel}` : attendance!.roomName)
                 : 'Divers'}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
+              Depuis {new Date(attendance!.checkedInAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
         )}
@@ -867,6 +885,12 @@ function DetailView({
           }}
         />
       )}
+
+      <SendAnnouncementDialog
+        open={sendAnnouncementOpen}
+        onOpenChange={setSendAnnouncementOpen}
+        student={student}
+      />
     </div>
   )
 }
@@ -1058,7 +1082,7 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans,
 
   function handleCheckin(studentId: string, attendanceId: string) {
     router.refresh()
-    setCurrentlyIn(prev => [...prev, { studentId, attendanceId, roomId: null, roomName: '—', seatLabel: null, planName: null }])
+    setCurrentlyIn(prev => [...prev, { studentId, attendanceId, roomId: null, roomName: '—', seatId: null, seatLabel: null, planName: null, checkedInAt: new Date().toISOString() }])
   }
 
   function handleCheckout(studentId: string) {
