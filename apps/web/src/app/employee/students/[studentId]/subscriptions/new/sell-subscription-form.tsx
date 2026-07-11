@@ -34,7 +34,7 @@ export function SellSubscriptionForm({ studentId, plans, stackStartDate }: Props
   const { execute, status } = useAction(createSubscriptionAction, {
     onSuccess: ({ data }) => {
       toast.success(`Abonnement créé — ${data?.pointsEarned} point(s) Synapse attribué(s)`)
-      router.push(`/employee/students/${studentId}`)
+      router.push(`/employee/students?studentId=${studentId}`)
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
   })

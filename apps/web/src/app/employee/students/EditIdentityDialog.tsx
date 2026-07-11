@@ -7,52 +7,40 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { ResetCredentialsForm } from '@/components/admin/ResetCredentialsForm'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { updateStudentSchema, type UpdateStudentInput } from '@/utils/zod-schemas/student'
 import { useEffect } from 'react'
 
-interface EditProfileDialogProps {
+interface EditIdentityDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   student: {
     id: string
     full_name: string | null
-    phone: string | null
-    university: string | null
   }
-  studyLevel: string | null
   onSaved: () => void
 }
 
-export function EditProfileDialog({ open, onOpenChange, student, studyLevel, onSaved }: EditProfileDialogProps) {
+export function EditIdentityDialog({ open, onOpenChange, student, onSaved }: EditIdentityDialogProps) {
   const form = useForm<UpdateStudentInput>({
     resolver: zodResolver(updateStudentSchema) as any,
     defaultValues: {
       id: student.id,
       full_name: student.full_name ?? '',
-      phone: student.phone ?? '',
-      university: student.university ?? '',
-      study_level: studyLevel ?? '',
     },
   })
 
   useEffect(() => {
     if (open) {
-      form.reset({
-        id: student.id,
-        full_name: student.full_name ?? '',
-        phone: student.phone ?? '',
-        university: student.university ?? '',
-        study_level: studyLevel ?? '',
-      })
+      form.reset({ id: student.id, full_name: student.full_name ?? '' })
     }
-  }, [open, student.id, student.full_name, student.phone, student.university, studyLevel])
+  }, [open, student.id, student.full_name])
 
   const { execute, status } = useAction(updateStudentAction, {
     onSuccess: () => {
-      toast.success('Profil mis à jour')
-      onOpenChange(false)
+      toast.success('Nom mis à jour')
       onSaved()
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
@@ -62,9 +50,9 @@ export function EditProfileDialog({ open, onOpenChange, student, studyLevel, onS
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Modifier le profil</DialogTitle>
+          <DialogTitle>Modifier le compte</DialogTitle>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit((data) => execute(data))} className="space-y-4">
+        <form onSubmit={form.handleSubmit((data) => execute({ id: data.id, full_name: data.full_name }))} className="space-y-4">
           <input type="hidden" {...form.register('id')} />
           <div className="space-y-1">
             <Label htmlFor="full_name">Nom complet *</Label>
@@ -73,24 +61,13 @@ export function EditProfileDialog({ open, onOpenChange, student, studyLevel, onS
               <p className="text-sm text-destructive">{form.formState.errors.full_name.message}</p>
             )}
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="phone">Téléphone</Label>
-            <Input id="phone" {...form.register('phone')} />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="university">Université</Label>
-            <Input id="university" {...form.register('university')} />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="study_level">Niveau d&apos;étude</Label>
-            <Input id="study_level" {...form.register('study_level')} placeholder="ex: Licence 3, Master 1" />
-          </div>
           <DialogFooter>
             <Button type="submit" disabled={status === 'executing'}>
-              {status === 'executing' ? 'Sauvegarde...' : 'Enregistrer'}
+              {status === 'executing' ? 'Sauvegarde...' : 'Enregistrer le nom'}
             </Button>
           </DialogFooter>
         </form>
+        <ResetCredentialsForm userId={student.id} />
       </DialogContent>
     </Dialog>
   )

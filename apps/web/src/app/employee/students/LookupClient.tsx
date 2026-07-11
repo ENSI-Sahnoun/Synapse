@@ -15,7 +15,7 @@ import { createClient } from '@/supabase-clients/client'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ArchivedToggle } from './ArchivedToggle'
-import { EditProfileDialog } from './EditProfileDialog'
+import { EditIdentityDialog } from './EditIdentityDialog'
 
 interface Student {
   id: string
@@ -463,7 +463,6 @@ function DetailView({
   const [statsLoading, setStatsLoading] = useState(true)
   const [seatDialogOpen, setSeatDialogOpen] = useState(false)
   const [checkedInAttendanceId, setCheckedInAttendanceId] = useState<string | null>(null)
-  const [editing, setEditing] = useState(false)
   const [editFields, setEditFields] = useState({ phone: '', university: '', study_level: '' })
   const [showSubHistory, setShowSubHistory] = useState(false)
   const [showQr, setShowQr] = useState(false)
@@ -533,10 +532,7 @@ function DetailView({
   })
 
   const { execute: doUpdate, status: updateStatus } = useAction(updateStudentInfoAction, {
-    onSuccess: () => {
-      toast.success('Profil mis à jour')
-      setEditing(false)
-    },
+    onSuccess: () => toast.success('Profil mis à jour'),
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur lors de la mise à jour'),
   })
 
@@ -707,26 +703,60 @@ function DetailView({
           overflow: 'hidden',
         }}
       >
-        {[
-          { label: 'Abonnement', value: stats?.endDate ? `Expire le ${new Date(stats.endDate).toLocaleDateString('fr-FR')}` : '—' },
-          { label: 'Téléphone', value: student.phone ?? stats?.phone ?? '—' },
-          { label: 'Niveau', value: stats?.studyLevel ?? '—' },
-          { label: 'Inscrit le', value: stats?.createdAt ? new Date(stats.createdAt).toLocaleDateString('fr-FR') : '—' },
-        ].filter(Boolean).map((row, i, arr) => (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--border-subtle)' }}>
+          <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Abonnement</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            {stats?.endDate ? `Expire le ${new Date(stats.endDate).toLocaleDateString('fr-FR')}` : '—'}
+          </span>
+        </div>
+
+        {([
+          { key: 'phone', label: 'Téléphone' },
+          { key: 'university', label: 'Université' },
+          { key: 'study_level', label: 'Niveau' },
+        ] as const).map((row) => (
           <div
-            key={row!.label}
+            key={row.key}
             style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              gap: 10,
               padding: '12px 14px',
-              borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+              borderBottom: '1px solid var(--border-subtle)',
             }}
           >
-            <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>{row!.label}</span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>{row!.value}</span>
+            <span style={{ fontSize: 13, color: 'var(--text-tertiary)', flexShrink: 0 }}>{row.label}</span>
+            <input
+              value={editFields[row.key]}
+              onChange={(e) => setEditFields((f) => ({ ...f, [row.key]: e.target.value }))}
+              style={{
+                flex: 1, textAlign: 'right', border: 'none', outline: 'none', background: 'transparent',
+                fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', padding: 0, minWidth: 0,
+              }}
+            />
           </div>
         ))}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--border-subtle)' }}>
+          <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Inscrit le</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            {stats?.createdAt ? new Date(stats.createdAt).toLocaleDateString('fr-FR') : '—'}
+          </span>
+        </div>
+
+        <div style={{ padding: '10px 14px' }}>
+          <button
+            onClick={() => doUpdate({ id: student.id, ...editFields })}
+            disabled={updateStatus === 'executing'}
+            style={{
+              width: '100%', background: 'var(--accent-brand)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)',
+              padding: '10px', fontWeight: 700, fontSize: 13, cursor: updateStatus === 'executing' ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {updateStatus === 'executing' ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
       </div>
 
       {stats && stats.history.length > 0 && (
@@ -793,16 +823,6 @@ function DetailView({
           </Link>
         )}
 
-        <button
-          onClick={() => setEditing((v) => !v)}
-          style={{
-            background: 'none', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)',
-            padding: '13px', fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', cursor: 'pointer',
-          }}
-        >
-          {editing ? 'Annuler' : "Modifier l'étudiant"}
-        </button>
-
         {role === 'admin' && (
           <button
             onClick={() => setProfileDialogOpen(true)}
@@ -811,7 +831,7 @@ function DetailView({
               padding: '13px', fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', cursor: 'pointer',
             }}
           >
-            Modifier le profil
+            Modifier nom, email et mot de passe
           </button>
         )}
 
@@ -823,45 +843,6 @@ function DetailView({
               <ArchiveButtonWithRefresh id={student.id} onDone={handleDestructiveSuccess} />
             )}
             <HardDeleteButtonWithRefresh id={student.id} name={student.full_name ?? 'cet étudiant'} onDone={handleDestructiveSuccess} />
-          </div>
-        )}
-
-        {editing && (
-          <div style={{ background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Téléphone</label>
-              <input
-                value={editFields.phone}
-                onChange={(e) => setEditFields((f) => ({ ...f, phone: e.target.value }))}
-                style={{ padding: '9px 10px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 13 }}
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Université</label>
-              <input
-                value={editFields.university}
-                onChange={(e) => setEditFields((f) => ({ ...f, university: e.target.value }))}
-                style={{ padding: '9px 10px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 13 }}
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Niveau d&apos;étude</label>
-              <input
-                value={editFields.study_level}
-                onChange={(e) => setEditFields((f) => ({ ...f, study_level: e.target.value }))}
-                style={{ padding: '9px 10px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 13 }}
-              />
-            </div>
-            <button
-              onClick={() => doUpdate({ id: student.id, ...editFields })}
-              disabled={updateStatus === 'executing'}
-              style={{
-                background: 'var(--accent-brand)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)',
-                padding: '10px', fontWeight: 700, fontSize: 13, cursor: updateStatus === 'executing' ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {updateStatus === 'executing' ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
           </div>
         )}
       </div>
@@ -876,11 +857,10 @@ function DetailView({
       )}
 
       {role === 'admin' && (
-        <EditProfileDialog
+        <EditIdentityDialog
           open={profileDialogOpen}
           onOpenChange={setProfileDialogOpen}
           student={student}
-          studyLevel={stats?.studyLevel ?? null}
           onSaved={() => {
             fetchDetail({ studentId: student.id })
             router.refresh()
