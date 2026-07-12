@@ -18,7 +18,10 @@ export function useLiveRows<T extends Record<string, unknown>>(opts: {
   useEffect(() => {
     const supabase = createClient()
     const uid = Math.random().toString(36).slice(2, 7)
-    const channel = supabase
+    let disposed = false
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const build = () => supabase
       .channel(`live-rows:${table}:${filter ?? 'all'}:${uid}`)
       .on(
         'postgres_changes',
@@ -42,7 +45,20 @@ export function useLiveRows<T extends Record<string, unknown>>(opts: {
       )
       .subscribe()
 
-    return () => { void supabase.removeChannel(channel) }
+    // Auth token must be on the socket before the first join, or the
+    // subscription is anon and RLS silently drops every event.
+    void supabase.realtime
+      .setAuth()
+      .catch(() => {})
+      .then(() => {
+        if (disposed) return
+        channel = build()
+      })
+
+    return () => {
+      disposed = true
+      if (channel) void supabase.removeChannel(channel)
+    }
   }, [table, filter, primaryKey])
 
   return rows
