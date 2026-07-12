@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
 import { PaperPlaneTilt, Copy, X } from '@phosphor-icons/react'
@@ -10,12 +10,16 @@ const AUTO_DISMISS_MS = 6000
 
 export function AirdropPopup() {
   const [drops, setDrops] = useState<QrAirdrop[]>([])
+  const seenIds = useRef<Set<string>>(new Set())
   const router = useRouter()
   const pathname = usePathname()
 
   useQrAirdropFeed((drop) => {
-    setDrops((prev) => (prev.some((d) => d.id === drop.id) ? prev : [...prev, drop]))
+    if (seenIds.current.has(drop.id)) return
+    seenIds.current.add(drop.id)
+    setDrops((prev) => [...prev, drop])
     setTimeout(() => {
+      seenIds.current.delete(drop.id)
       setDrops((prev) => prev.filter((d) => d.id !== drop.id))
     }, AUTO_DISMISS_MS)
   })
