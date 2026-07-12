@@ -8,6 +8,7 @@ export const NOTIFICATION_ROUTES: Record<string, string> = {
   expiry_1d: '/student/dashboard',
   expired: '/student/dashboard',
   renewal_reminder: '/student/dashboard',
+  locker_free_reminder: '/student/dashboard',
   subscription_new: '/student/dashboard',
   purchase_completed: '/student/dashboard',
   reservation_confirmed: '/student/reservation',

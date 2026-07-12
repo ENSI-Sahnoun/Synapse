@@ -30,6 +30,7 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   qr_airdrop: 'Envoi QR en direct (interne, non configurable)',
   kiosk_qr_drop: 'Envoi QR au kiosque (interne, non configurable)',
   kiosk_qr_drop_cancel: 'Annulation envoi QR kiosque (interne, non configurable)',
+  locker_free_reminder: 'Rappel de libération de casier (étudiant)',
 }
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {

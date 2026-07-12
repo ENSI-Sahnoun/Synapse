@@ -36,6 +36,7 @@ function metaFor(type: string): { Icon: PhosphorIcon; label: string; tone: Tone 
   if (type.startsWith('loyalty')) return { Icon: Gift, label: 'Récompense', tone: 'amber' }
   if (type === 'expired') return { Icon: WarningCircle, label: 'Abonnement expiré', tone: 'red' }
   if (type.startsWith('expiry') || type === 'renewal_reminder') return { Icon: Clock, label: 'Expiration proche', tone: 'orange' }
+  if (type === 'locker_free_reminder') return { Icon: Clock, label: 'Casier à libérer', tone: 'orange' }
   if (type === 'subscription_new' || type === 'purchase_completed') return { Icon: CreditCard, label: 'Paiement', tone: 'green' }
   if (type === 'room_almost_full') return { Icon: Users, label: 'Salle presque pleine', tone: 'orange' }
   if (type === 'broadcast' || type === 'manual' || type === 'announcement_new') return { Icon: Megaphone, label: 'Annonce', tone: 'brand' }

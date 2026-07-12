@@ -24,6 +24,7 @@ export type NotificationType =
   | 'qr_airdrop'
   | 'kiosk_qr_drop'
   | 'kiosk_qr_drop_cancel'
+  | 'locker_free_reminder'
 
 export type NotificationChannel = 'email' | 'sms' | 'whatsapp' | 'inapp'
 

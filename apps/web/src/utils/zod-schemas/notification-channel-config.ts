@@ -26,6 +26,7 @@ export const notificationTypeSchema = z.enum([
   'qr_airdrop',
   'kiosk_qr_drop',
   'kiosk_qr_drop_cancel',
+  'locker_free_reminder',
 ])
 
 export const notificationChannelSchema = z.enum(['email', 'sms', 'whatsapp', 'inapp'])
