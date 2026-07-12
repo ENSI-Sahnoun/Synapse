@@ -1,5 +1,6 @@
 'use client';
 import React, { Suspense, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Toaster as SonnerToaster } from 'sonner';
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import { InstallPromptModal } from '@/components/pwa/InstallPromptModal';
@@ -9,6 +10,8 @@ import { PushPromptModal } from '@/components/notifications/PushPromptModal';
 
 export function DynamicLayoutProviders({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+  const isKiosk = pathname?.startsWith('/kiosk');
 
   useEffect(() => {
     setMounted(true);
@@ -20,7 +23,7 @@ export function DynamicLayoutProviders({ children }: { children: React.ReactNode
   return (
     <>
       {children}
-      {mounted && (
+      {mounted && !isKiosk && (
         <Suspense>
           <ProgressBar
             height="4px"
@@ -43,7 +46,7 @@ export function DynamicLayoutProviders({ children }: { children: React.ReactNode
           <PushPromptModal />
         </Suspense>
       )}
-      <InstallPromptModal />
+      {!isKiosk && <InstallPromptModal />}
     </>
   );
 }

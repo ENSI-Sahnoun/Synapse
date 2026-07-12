@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { ArchivedToggle } from './ArchivedToggle'
 import { EditIdentityDialog } from './EditIdentityDialog'
 import { SendAnnouncementDialog } from './SendAnnouncementDialog'
+import { DropToKioskButton } from '@/components/employee/DropToKioskButton'
 
 interface Student {
   id: string
@@ -674,6 +675,7 @@ function DetailView({
           <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-secondary)', wordBreak: 'break-all', textAlign: 'center' }}>
             {student.qr_token}
           </span>
+          <DropToKioskButton studentId={student.id} />
         </div>
       )}
 
@@ -899,7 +901,7 @@ function QuickAddPanel({ plans, onCreated }: { plans: Plan[]; onCreated: () => v
   const [fullName, setFullName] = useState('')
   const dailyPlan = plans.find((p) => p.name.toLowerCase().includes('journalier'))
   const [planId, setPlanId] = useState(dailyPlan?.id ?? '')
-  const [created, setCreated] = useState<{ fullName: string; qrToken: string | null } | null>(null)
+  const [created, setCreated] = useState<{ studentId: string; fullName: string; qrToken: string | null } | null>(null)
 
   const { execute: doCreateStudent, status: createStatus } = useAction(createStudentAction, {
     onSuccess: ({ data }) => {
@@ -907,7 +909,7 @@ function QuickAddPanel({ plans, onCreated }: { plans: Plan[]; onCreated: () => v
       if (planId) {
         doCreateSubscription({ student_id: data.studentId, plan_id: planId })
       }
-      setCreated({ fullName, qrToken: data.qrToken })
+      setCreated({ studentId: data.studentId, fullName, qrToken: data.qrToken })
       onCreated()
     },
     onError: ({ error }) => {
@@ -936,6 +938,7 @@ function QuickAddPanel({ plans, onCreated }: { plans: Plan[]; onCreated: () => v
         ) : (
           <p style={{ fontSize: 12, color: 'var(--destructive)' }}>QR non disponible</p>
         )}
+        {created.qrToken && <DropToKioskButton studentId={created.studentId} />}
         <button
           onClick={reset}
           style={{ background: 'var(--accent-brand)', color: '#fff', border: 'none', borderRadius: 'var(--radius-lg)', padding: '10px 16px', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
