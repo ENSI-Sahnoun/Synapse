@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { studentActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
-import { notifyAllStaff } from '@/data/notifications/inapp'
+import { notifyAllStaffNoPush } from '@/data/notifications/inapp'
 
 export const airdropQrCode = studentActionClient
   .schema(z.object({}))
@@ -17,7 +17,7 @@ export const airdropQrCode = studentActionClient
 
     if (!profile?.qr_token) throw new Error('Code QR indisponible.')
 
-    await notifyAllStaff('qr_airdrop', profile.full_name ?? 'Un étudiant', {
+    await notifyAllStaffNoPush('qr_airdrop', profile.full_name ?? 'Un étudiant', {
       link: profile.qr_token,
     })
 

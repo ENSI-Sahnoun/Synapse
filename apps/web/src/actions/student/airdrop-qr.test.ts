@@ -23,18 +23,18 @@ describe('airdropQrCode', () => {
         }),
       })),
     }))
-    const notifyAllStaff = vi.fn()
-    vi.doMock('@/data/notifications/inapp', () => ({ notifyAllStaff }))
+    const notifyAllStaffNoPush = vi.fn()
+    vi.doMock('@/data/notifications/inapp', () => ({ notifyAllStaffNoPush }))
     vi.resetModules()
 
     const { airdropQrCode } = await import('./airdrop-qr')
     await expect(
       (airdropQrCode as unknown as ActionFn)({ ctx: { userId: 'stu-1' } }),
     ).rejects.toThrow('Code QR indisponible.')
-    expect(notifyAllStaff).not.toHaveBeenCalled()
+    expect(notifyAllStaffNoPush).not.toHaveBeenCalled()
   })
 
-  it('calls notifyAllStaff with the student name and qr_token as link', async () => {
+  it('calls notifyAllStaffNoPush with the student name and qr_token as link', async () => {
     vi.doMock('@/supabase-clients/server', () => ({
       createSupabaseClient: vi.fn(async () => ({
         from: () => ({
@@ -48,14 +48,14 @@ describe('airdropQrCode', () => {
         }),
       })),
     }))
-    const notifyAllStaff = vi.fn()
-    vi.doMock('@/data/notifications/inapp', () => ({ notifyAllStaff }))
+    const notifyAllStaffNoPush = vi.fn()
+    vi.doMock('@/data/notifications/inapp', () => ({ notifyAllStaffNoPush }))
     vi.resetModules()
 
     const { airdropQrCode } = await import('./airdrop-qr')
     const result = await (airdropQrCode as unknown as ActionFn)({ ctx: { userId: 'stu-1' } })
 
-    expect(notifyAllStaff).toHaveBeenCalledWith('qr_airdrop', 'Anis Ben Ali', {
+    expect(notifyAllStaffNoPush).toHaveBeenCalledWith('qr_airdrop', 'Anis Ben Ali', {
       link: 'SYNAPSE-abc-123',
     })
     expect(result).toEqual({ success: true })

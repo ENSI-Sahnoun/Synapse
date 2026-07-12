@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useQRScanner } from '@/hooks/use-qr-scanner'
 import { useAction } from 'next-safe-action/hooks'
 import { lookupStudentByQrAction } from '@/actions/employee/lookup-student-by-qr'
@@ -19,6 +20,8 @@ interface Props {
 }
 
 export function QrScanDialog({ onStudentScanned }: Props) {
+  const [manualToken, setManualToken] = useState('')
+
   const { execute: lookup, status: lookupStatus } = useAction(lookupStudentByQrAction, {
     onSuccess: ({ data }) => {
       if (data) {
@@ -47,6 +50,13 @@ export function QrScanDialog({ onStudentScanned }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  function submitManual(e: React.FormEvent) {
+    e.preventDefault()
+    const token = manualToken.trim()
+    if (!token || lookupStatus === 'executing') return
+    lookup({ qr_token: token })
+  }
+
   return (
     <div className="space-y-4">
       <div className="relative aspect-square bg-black rounded-lg overflow-hidden">
@@ -66,6 +76,24 @@ export function QrScanDialog({ onStudentScanned }: Props) {
       <p className="text-xs text-muted-foreground text-center">
         Pointez la caméra vers le QR code de l&apos;étudiant.
       </p>
+
+      <div className="flex items-center gap-2">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">ou</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      <form onSubmit={submitManual} className="flex gap-2">
+        <Input
+          value={manualToken}
+          onChange={(e) => setManualToken(e.target.value)}
+          placeholder="Saisir le code manuellement"
+          className="flex-1"
+        />
+        <Button type="submit" disabled={lookupStatus === 'executing' || !manualToken.trim()}>
+          Valider
+        </Button>
+      </form>
     </div>
   )
 }

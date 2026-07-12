@@ -14,3 +14,18 @@ export const createPurchaseSchema = z.object({
 
 export type CreatePurchaseInput = z.infer<typeof createPurchaseSchema>
 export type PurchaseItem = z.infer<typeof purchaseItemSchema>
+
+// Admin-only "Charges" section: items given free to employees (0 revenue),
+// booked as a dépense. No unit price — the DB reads current product prices.
+export const createEmployeeChargeSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        product_id: z.string().uuid('ID produit invalide'),
+        quantity: z.coerce.number().int().min(1, 'Quantité minimum 1'),
+      })
+    )
+    .min(1, 'Le panier est vide'),
+})
+
+export type CreateEmployeeChargeInput = z.infer<typeof createEmployeeChargeSchema>

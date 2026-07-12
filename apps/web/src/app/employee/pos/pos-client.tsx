@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
 import { createPurchaseAction } from '@/actions/employee/purchases'
+import { createEmployeeChargeAction } from '@/actions/admin/employee-charge'
 import { searchStudentsByNameAction } from '@/actions/employee/search-students-by-name'
+import { lookupStudentByQrAction } from '@/actions/employee/lookup-student-by-qr'
 import {
   addCashMovementAction,
   closeCashSessionAction,
@@ -46,12 +48,14 @@ export function PosClient({
   categoryOrder,
   currentUser,
   cashSession,
+  isAdmin,
 }: {
   products: Product[]
   categoryEmojis: Record<string, string>
   categoryOrder: string[]
   currentUser: { id: string; fullName: string }
   cashSession: OpenCashSession
+  isAdmin: boolean
 }) {
   const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
@@ -67,6 +71,9 @@ export function PosClient({
   const [movementType, setMovementType] = useState<'in' | 'out'>('in')
   const [movementAmount, setMovementAmount] = useState('')
   const [movementReason, setMovementReason] = useState('')
+
+  const [chargeCart, setChargeCart] = useState<CartItem[]>([])
+  const [chargeSearch, setChargeSearch] = useState('')
 
   const [closeOpen, setCloseOpen] = useState(false)
   const [closingAmount, setClosingAmount] = useState('')
@@ -164,6 +171,54 @@ export function PosClient({
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
   })
 
+  const chargeTotalDt = chargeCart.reduce((sum, item) => sum + item.product.price_dt * item.quantity, 0)
+
+  const { execute: executeCharge, status: chargeStatus } = useAction(createEmployeeChargeAction, {
+    onSuccess: ({ data }) => {
+      toast.success(`Charge employés enregistrée — ${formatDt(data?.totalDt ?? 0)} en dépenses`)
+      setChargeCart([])
+      setChargeSearch('')
+      router.refresh()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
+  })
+
+  function addToChargeCart(product: Product) {
+    if (product.stock_quantity === 0) return
+    setChargeCart((prev) => {
+      const existing = prev.find((i) => i.product.id === product.id)
+      if (existing) {
+        if (existing.quantity >= product.stock_quantity) {
+          toast.error(`Stock max: ${product.stock_quantity}`)
+          return prev
+        }
+        return prev.map((i) =>
+          i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+        )
+      }
+      return [...prev, { product, quantity: 1 }]
+    })
+  }
+
+  function changeChargeQty(productId: string, delta: number) {
+    setChargeCart((prev) =>
+      prev
+        .map((i) =>
+          i.product.id === productId
+            ? { ...i, quantity: Math.min(i.quantity + delta, delta > 0 ? i.product.stock_quantity : Infinity) }
+            : i
+        )
+        .filter((i) => i.quantity > 0)
+    )
+  }
+
+  function submitCharge() {
+    if (chargeCart.length === 0) return
+    executeCharge({
+      items: chargeCart.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+    })
+  }
+
   function addToCart(product: Product) {
     if (product.stock_quantity === 0) return
     setCart((prev) => {
@@ -222,6 +277,27 @@ export function PosClient({
     setPendingStudent(student)
     setAssignStep('confirm')
   }
+
+  const { execute: lookupAirdroppedStudent } = useAction(lookupStudentByQrAction, {
+    onSuccess: ({ data }) => {
+      if (!data) return
+      setAssignOpen(true)
+      setPendingStudent(data)
+      setAssignStep('confirm')
+      toast.success(`Étudiant identifié: ${data.fullName}`)
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'QR non reconnu'),
+  })
+
+  useEffect(() => {
+    function onAirdropToken(e: Event) {
+      const token = (e as CustomEvent<string>).detail
+      if (token) lookupAirdroppedStudent({ qr_token: token })
+    }
+    window.addEventListener('pos-airdrop-token', onAirdropToken)
+    return () => window.removeEventListener('pos-airdrop-token', onAirdropToken)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function purchaseForSelf() {
     setPendingStudent({ studentId: currentUser.id, fullName: currentUser.fullName, phone: null, loyaltyBalance: 0 })
@@ -522,6 +598,129 @@ export function PosClient({
             <p style={{ textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 14, padding: '32px 0' }}>
               Aucun résultat
             </p>
+          )}
+
+          {isAdmin && (
+            <div style={{
+              marginTop: 8,
+              background: '#fffbeb',
+              border: '1px solid #fde68a',
+              borderRadius: 'var(--radius-xl)',
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 20 }}>🎁</span>
+                  <span>Charges — Employés</span>
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 2 }}>
+                  Articles offerts aux employés : 0 revenu, comptabilisés en dépenses (Charge Employés) au prix coûtant.
+                </p>
+              </div>
+
+              <input
+                value={chargeSearch}
+                onChange={(e) => setChargeSearch(e.target.value)}
+                placeholder="Ajouter un article existant…"
+                style={{ width: '100%', padding: '10px 14px', border: '1px solid #fde68a', borderRadius: 'var(--radius-lg)', fontSize: 14, background: '#fff' }}
+              />
+
+              {chargeSearch.trim() !== '' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {products
+                    .filter((p) => p.name.toLowerCase().includes(chargeSearch.trim().toLowerCase()))
+                    .slice(0, 6)
+                    .map((p) => (
+                      <button
+                        key={p.id}
+                        disabled={p.stock_quantity === 0}
+                        onClick={() => addToChargeCart(p)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 8,
+                          padding: '10px 12px',
+                          border: '1px solid var(--border-subtle)',
+                          borderRadius: 'var(--radius-md)',
+                          background: '#fff',
+                          cursor: p.stock_quantity === 0 ? 'not-allowed' : 'pointer',
+                          opacity: p.stock_quantity === 0 ? 0.4 : 1,
+                          fontSize: 14,
+                          textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontWeight: 600 }}>
+                          {categoryEmojis[p.category] ?? '📦'} {p.name}
+                        </span>
+                        <span style={{ color: 'var(--muted-foreground)', fontSize: 13 }}>
+                          {formatDt(p.price_dt)} · stock {p.stock_quantity} · + Ajouter
+                        </span>
+                      </button>
+                    ))}
+                  {products.filter((p) => p.name.toLowerCase().includes(chargeSearch.trim().toLowerCase())).length === 0 && (
+                    <p style={{ fontSize: 13, color: 'var(--muted-foreground)', textAlign: 'center', padding: '4px 0' }}>
+                      Aucun article trouvé
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {chargeCart.length > 0 && (
+                <div style={{ background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+                  <div style={{ padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {chargeCart.map((item) => (
+                      <div key={item.product.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                        <span style={{ flex: 1, fontWeight: 500 }}>{item.product.name}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <button
+                            onClick={() => changeChargeQty(item.product.id, -1)}
+                            style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 16 }}
+                          >–</button>
+                          <span style={{ width: 24, textAlign: 'center', fontWeight: 600 }}>{item.quantity}</span>
+                          <button
+                            onClick={() => changeChargeQty(item.product.id, 1)}
+                            disabled={item.quantity >= item.product.stock_quantity}
+                            style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: item.quantity >= item.product.stock_quantity ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 16, opacity: item.quantity >= item.product.stock_quantity ? 0.4 : 1 }}
+                          >+</button>
+                        </div>
+                        <span style={{ color: '#b45309', fontWeight: 600, minWidth: 72, textAlign: 'right' }}>
+                          {formatDt(item.product.price_dt * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, fontSize: 14 }}>
+                    <span>Valeur de vente (dépense réelle = coût, calculée à l&apos;enregistrement)</span>
+                    <span style={{ color: '#b45309' }}>{formatDt(chargeTotalDt)}</span>
+                  </div>
+                </div>
+              )}
+
+              {chargeCart.length > 0 && (
+                <button
+                  disabled={chargeStatus === 'executing'}
+                  onClick={submitCharge}
+                  style={{
+                    width: '100%',
+                    padding: '13px 0',
+                    borderRadius: 'var(--radius-lg)',
+                    background: '#b45309',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: 15,
+                    border: 'none',
+                    cursor: chargeStatus === 'executing' ? 'not-allowed' : 'pointer',
+                    opacity: chargeStatus === 'executing' ? 0.7 : 1,
+                  }}
+                >
+                  {chargeStatus === 'executing' ? 'Enregistrement...' : 'Enregistrer la charge'}
+                </button>
+              )}
+            </div>
           )}
         </div>
 

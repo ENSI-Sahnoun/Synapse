@@ -14,7 +14,7 @@ export function AirdropPopup() {
   const pathname = usePathname()
 
   useQrAirdropFeed((drop) => {
-    setDrops((prev) => [...prev, drop])
+    setDrops((prev) => (prev.some((d) => d.id === drop.id) ? prev : [...prev, drop]))
     setTimeout(() => {
       setDrops((prev) => prev.filter((d) => d.id !== drop.id))
     }, AUTO_DISMISS_MS)
@@ -26,7 +26,10 @@ export function AirdropPopup() {
 
   function handleUse(drop: QrAirdrop) {
     const isAdmin = window.location.pathname.startsWith('/admin')
-    if (!window.location.pathname.includes('/checkin')) {
+    const isPos = window.location.pathname.includes('/pos')
+    if (isPos) {
+      window.dispatchEvent(new CustomEvent('pos-airdrop-token', { detail: drop.qrToken }))
+    } else if (!window.location.pathname.includes('/checkin')) {
       sessionStorage.setItem('airdropQrToken', drop.qrToken)
       router.push(isAdmin ? '/admin/checkin' : '/employee/checkin')
     }

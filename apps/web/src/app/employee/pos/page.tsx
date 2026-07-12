@@ -38,6 +38,7 @@ export default async function PosPage() {
         categoryOrder={categoryOrder}
         currentUser={{ id: profile.id, fullName: profile.full_name }}
         cashSession={cashSession}
+        isAdmin={profile.role === 'admin'}
       />
     </>
   )
