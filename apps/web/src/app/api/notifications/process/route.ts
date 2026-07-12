@@ -16,6 +16,10 @@ import {
 } from '@/lib/notifications/email'
 import { buildExpiryWarningSms, buildExpiredSms } from '@/lib/notifications/sms'
 import {
+  getLockerReminderDelayDays,
+  getExpiredLockersForReminder,
+} from '@/data/notifications/locker-reminder'
+import {
   buildExpiryWarningWhatsApp,
   buildExpiredWhatsApp,
   buildRenewalReminderWhatsApp,
@@ -181,6 +185,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       report[notificationType].errors.push(`trigger_error: ${msg}`)
       console.error(`[notifications] trigger ${notificationType} failed:`, triggerErr)
     }
+  }
+
+  // Locker free-reminder: one in-app notification per locker whose linked
+  // subscription expired exactly `delay` days ago and is still assigned.
+  report['locker_free_reminder'] = { processed: 0, errors: [] }
+  try {
+    const delayDays = await getLockerReminderDelayDays()
+    const expiredLockers = await getExpiredLockersForReminder(delayDays)
+    for (const locker of expiredLockers) {
+      try {
+        await insertInAppNotification({
+          userId: locker.student_id,
+          type: 'locker_free_reminder',
+          message: `Votre abonnement a expiré, merci de libérer le casier numéro ${locker.locker_number}.`,
+        })
+        report['locker_free_reminder'].processed++
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        report['locker_free_reminder'].errors.push(`student=${locker.student_id}: ${msg}`)
+        console.error(`[notifications] locker_free_reminder failed for ${locker.student_id}:`, err)
+      }
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    report['locker_free_reminder'].errors.push(`trigger_error: ${msg}`)
+    console.error('[notifications] locker_free_reminder trigger failed:', err)
   }
 
   return NextResponse.json({ ok: true, report })
