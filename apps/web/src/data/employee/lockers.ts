@@ -73,6 +73,16 @@ export async function getLockerFeeDt(): Promise<number> {
   return parseFloat(data?.value ?? '0')
 }
 
+export async function getLockerReminderDelayDaysForAdmin(): Promise<number> {
+  const supabase = await createSupabaseClient()
+  const { data } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', 'locker_reminder_delay_days')
+    .maybeSingle()
+  return parseInt(data?.value ?? '1', 10)
+}
+
 export async function getEligibleStudentsForLocker(): Promise<StudentForLocker[]> {
   const supabase = await createSupabaseClient()
   const today = format(new Date(), 'yyyy-MM-dd')

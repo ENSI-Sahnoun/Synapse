@@ -6,6 +6,7 @@ import {
   getEligibleStudentsForLocker,
   getLockerMinDurationDays,
   getLockerFeeDt,
+  getLockerReminderDelayDaysForAdmin,
 } from '@/data/employee/lockers'
 import { LockersGrid } from './LockersGrid'
 import { LockerAdminSettings } from './LockerAdminSettings'
@@ -20,11 +21,12 @@ export default async function LockersPage() {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single()
   const role = profile?.role ?? 'employee'
 
-  const [lockers, eligibleStudents, minDurationDays, feeDt] = await Promise.all([
+  const [lockers, eligibleStudents, minDurationDays, feeDt, reminderDelayDays] = await Promise.all([
     getLockersWithStatus(),
     getEligibleStudentsForLocker(),
     getLockerMinDurationDays(),
     getLockerFeeDt(),
+    getLockerReminderDelayDaysForAdmin(),
   ])
 
   return (
@@ -38,7 +40,13 @@ export default async function LockersPage() {
         </p>
       </div>
 
-      {role === 'admin' && <LockerAdminSettings initialDays={minDurationDays} initialFeeDt={feeDt} />}
+      {role === 'admin' && (
+        <LockerAdminSettings
+          initialDays={minDurationDays}
+          initialFeeDt={feeDt}
+          initialReminderDelayDays={reminderDelayDays}
+        />
+      )}
 
       <LockersGrid initialLockers={lockers} eligibleStudents={eligibleStudents} />
     </div>

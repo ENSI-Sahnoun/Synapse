@@ -104,6 +104,23 @@ export const setLockerFeeDt = adminActionClient
     return { success: true, amount_dt }
   })
 
+// Delay (days after subscription expiry) before the free-locker reminder is sent
+const setLockerReminderDelaySchema = z.object({
+  days: z.number().int().min(0, { message: 'Minimum 0 jour' }).max(30, { message: 'Maximum 30 jours' }),
+})
+
+export const setLockerReminderDelayDays = adminActionClient
+  .schema(setLockerReminderDelaySchema)
+  .action(async ({ parsedInput: { days } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'locker_reminder_delay_days', value: String(days) }, { onConflict: 'key' })
+    if (error) throw new Error('Impossible de mettre à jour le délai de rappel.')
+    revalidatePath('/employee/lockers')
+    return { success: true, days }
+  })
+
 // Update nav order/visibility for a role (admin edits both roles' nav from one screen)
 const setNavOrderSchema = z.object({
   role: z.enum(['admin', 'employee']),
