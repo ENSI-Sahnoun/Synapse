@@ -21,9 +21,25 @@ export async function getMyLocker(): Promise<MyLocker | null> {
     .maybeSingle()
 
   if (!data || data.is_unavailable) return null
-  const endDate = (data.subscriptions as { end_date: string } | null)?.end_date ?? null
+  let endDate = (data.subscriptions as { end_date: string } | null)?.end_date ?? null
   if (!endDate) return null
 
   const today = format(new Date(), 'yyyy-MM-dd')
+
+  // Renewal without staff reassigning the locker: the locker still points at
+  // the old expired subscription. Follow the student's latest active
+  // subscription instead of showing a false "expired" warning.
+  if (endDate < today) {
+    const { data: activeSub } = await supabase
+      .from('subscriptions')
+      .select('end_date')
+      .eq('student_id', userId)
+      .gte('end_date', today)
+      .order('end_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (activeSub?.end_date) endDate = activeSub.end_date
+  }
+
   return { number: data.number, endDate, badge: computeLockerBadgeState(endDate, today) }
 }

@@ -22,7 +22,9 @@ export interface ExpiredLockerRow {
  * Lockers still assigned to a student whose linked subscription expired
  * exactly `delayDays` days ago. Exact-date match means the daily cron
  * produces the reminder once per locker (same dedup mechanism as the
- * subscription expiry triggers).
+ * subscription expiry triggers). Students holding another still-active
+ * subscription (renewal without staff reassigning the locker) are excluded —
+ * they should not be told to free their locker.
  */
 export async function getExpiredLockersForReminder(delayDays: number): Promise<ExpiredLockerRow[]> {
   const supabase = createSupabaseAdminClient()
@@ -38,8 +40,20 @@ export async function getExpiredLockersForReminder(delayDays: number): Promise<E
     .eq('subscriptions.end_date', targetDateStr)
 
   if (error) throw error
-  return (data ?? []).map((row: any) => ({
-    student_id: row.assigned_student_id,
-    locker_number: row.number,
+  const candidates = (data ?? []).map((row: any) => ({
+    student_id: row.assigned_student_id as string,
+    locker_number: row.number as number,
   }))
+  if (candidates.length === 0) return []
+
+  const todayStr = new Date().toISOString().split('T')[0]
+  const { data: activeSubs, error: activeError } = await supabase
+    .from('subscriptions')
+    .select('student_id')
+    .in('student_id', candidates.map((c) => c.student_id))
+    .gte('end_date', todayStr)
+
+  if (activeError) throw activeError
+  const renewed = new Set((activeSubs ?? []).map((s) => s.student_id))
+  return candidates.filter((c) => !renewed.has(c.student_id))
 }
