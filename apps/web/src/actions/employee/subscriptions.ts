@@ -84,6 +84,14 @@ export const createSubscriptionAction = employeeActionClient
       }
     }
 
+    // Confetti popup on the student app (best-effort; insert errors ignored).
+    await supabase.from('celebration_events').insert({
+      student_id,
+      kind: 'subscription',
+      payload: { plan_name: plan.name },
+      points,
+    })
+
     try {
       const { data: studentProfile } = await supabase
         .from('profiles')

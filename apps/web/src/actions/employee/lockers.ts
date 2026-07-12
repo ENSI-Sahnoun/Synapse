@@ -17,7 +17,7 @@ export const assignLockerAction = employeeActionClient
 
     const { data: target, error: targetError } = await supabase
       .from('lockers')
-      .select('id, is_unavailable, assigned_student_id, subscriptions:assigned_subscription_id(end_date)')
+      .select('id, number, is_unavailable, assigned_student_id, subscriptions:assigned_subscription_id(end_date)')
       .eq('id', locker_id)
       .single()
 
@@ -70,6 +70,14 @@ export const assignLockerAction = employeeActionClient
         created_by: ctx.userId,
       })
       if (paymentError) throw new Error("Erreur lors de l'enregistrement du paiement du casier")
+
+      // Confetti popup on the student app (best-effort; insert errors ignored).
+      await supabase.from('celebration_events').insert({
+        student_id,
+        kind: 'locker',
+        payload: { locker_number: target.number },
+        points: 0,
+      })
     }
 
     revalidatePath('/employee/lockers')

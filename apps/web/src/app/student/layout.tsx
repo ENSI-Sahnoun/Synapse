@@ -10,6 +10,7 @@ import { PullToRefresh } from '@/components/PullToRefresh'
 import { SecureAccountBanner } from '@/components/student/SecureAccountBanner'
 import { RoutePrefetcher } from '@/components/RoutePrefetcher'
 import StudentSplash from '@/components/student/StudentSplash'
+import { CelebrationPopup } from '@/components/student/CelebrationPopup'
 
 const STUDENT_ROUTES = [
   '/student/dashboard',
@@ -95,6 +96,8 @@ export default async function StudentLayout({ children }: { children: React.Reac
       <main className="flex-1 px-4 pt-4 pb-24">
         <PullToRefresh>{children}</PullToRefresh>
       </main>
+
+      <CelebrationPopup userId={userId} />
 
       <StudentBottomNav />
     </div>
