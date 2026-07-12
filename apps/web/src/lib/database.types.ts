@@ -895,6 +895,7 @@ export type Database = {
       }
       purchases: {
         Row: {
+          celebrated_at: string | null
           created_at: string
           id: string
           sold_by: string
@@ -902,6 +903,7 @@ export type Database = {
           total_dt: number
         }
         Insert: {
+          celebrated_at?: string | null
           created_at?: string
           id?: string
           sold_by: string
@@ -909,6 +911,7 @@ export type Database = {
           total_dt: number
         }
         Update: {
+          celebrated_at?: string | null
           created_at?: string
           id?: string
           sold_by?: string
@@ -1402,6 +1405,14 @@ export type Database = {
           value: number
         }[]
       }
+      get_my_uncelebrated_purchase: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      mark_my_purchases_celebrated: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_my_leaderboard_rank: {
         Args: { p_month: string }
         Returns: {
@@ -1428,6 +1439,10 @@ export type Database = {
       }
       pos_checkout: {
         Args: { p_items: Json; p_student_id: string }
+        Returns: Json
+      }
+      pos_employee_charge: {
+        Args: { p_items: Json }
         Returns: Json
       }
       pos_close_session: {
