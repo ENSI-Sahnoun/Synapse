@@ -226,6 +226,44 @@ export type Database = {
           },
         ]
       }
+      celebration_events: {
+        Row: {
+          celebrated_at: string | null
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          points: number
+          student_id: string
+        }
+        Insert: {
+          celebrated_at?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          points?: number
+          student_id: string
+        }
+        Update: {
+          celebrated_at?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          points?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "celebration_events_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_metrics: {
         Row: {
           created_at: string
@@ -895,7 +933,6 @@ export type Database = {
       }
       purchases: {
         Row: {
-          celebrated_at: string | null
           created_at: string
           id: string
           sold_by: string
@@ -903,7 +940,6 @@ export type Database = {
           total_dt: number
         }
         Insert: {
-          celebrated_at?: string | null
           created_at?: string
           id?: string
           sold_by: string
@@ -911,7 +947,6 @@ export type Database = {
           total_dt: number
         }
         Update: {
-          celebrated_at?: string | null
           created_at?: string
           id?: string
           sold_by?: string
@@ -1405,11 +1440,7 @@ export type Database = {
           value: number
         }[]
       }
-      get_my_uncelebrated_purchase: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      mark_my_purchases_celebrated: {
+      mark_my_celebrations_seen: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

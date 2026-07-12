@@ -15,3 +15,14 @@ export function computeLockerStatus(locker: LockerStatusInput, today: string): L
   }
   return 'available'
 }
+
+export type LockerBadgeState = 'active' | 'expiring_soon' | 'expired'
+
+// endDate/today are yyyy-MM-dd strings (same convention as computeLockerStatus).
+export function computeLockerBadgeState(endDate: string, today: string): LockerBadgeState {
+  if (endDate < today) return 'expired'
+  const daysLeft = Math.round(
+    (new Date(endDate).getTime() - new Date(today).getTime()) / 86_400_000,
+  )
+  return daysLeft <= 3 ? 'expiring_soon' : 'active'
+}

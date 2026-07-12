@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeLockerStatus } from './locker-status'
+import { computeLockerStatus, computeLockerBadgeState } from './locker-status'
 
 const TODAY = '2026-07-11'
 
@@ -42,5 +42,29 @@ describe('computeLockerStatus', () => {
       TODAY,
     )
     expect(status).toBe('available')
+  })
+})
+
+describe('computeLockerBadgeState', () => {
+  const TODAY = '2026-07-12'
+
+  it('is active when more than 3 days remain', () => {
+    expect(computeLockerBadgeState('2026-07-16', TODAY)).toBe('active')
+  })
+
+  it('is expiring_soon at exactly 3 days left', () => {
+    expect(computeLockerBadgeState('2026-07-15', TODAY)).toBe('expiring_soon')
+  })
+
+  it('is expiring_soon on the last day (expires today)', () => {
+    expect(computeLockerBadgeState('2026-07-12', TODAY)).toBe('expiring_soon')
+  })
+
+  it('is expired the day after end date', () => {
+    expect(computeLockerBadgeState('2026-07-11', TODAY)).toBe('expired')
+  })
+
+  it('handles month boundaries via real date math, not string diff', () => {
+    expect(computeLockerBadgeState('2026-08-01', '2026-07-30')).toBe('expiring_soon')
   })
 })
