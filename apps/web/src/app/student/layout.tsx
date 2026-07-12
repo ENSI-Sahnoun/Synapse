@@ -97,7 +97,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
         <PullToRefresh>{children}</PullToRefresh>
       </main>
 
-      <CelebrationPopup userId={userId} />
+      <CelebrationPopup />
 
       <StudentBottomNav />
     </div>

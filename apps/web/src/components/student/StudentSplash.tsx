@@ -9,19 +9,38 @@ let shownThisContext = false
 
 const MIN_DISPLAY_MS = 1500
 
+// Overlays (e.g. CelebrationPopup) must not appear under/over the splash.
+let splashEnded = false
+let splashListeners: (() => void)[] = []
+
+function markSplashEnded() {
+  splashEnded = true
+  splashListeners.forEach((l) => l())
+  splashListeners = []
+}
+
+/** Resolves once the splash has fully faded out (immediately if it won't show). */
+export function waitForSplashEnd(): Promise<void> {
+  if (splashEnded) return Promise.resolve()
+  return new Promise((resolve) => splashListeners.push(resolve))
+}
+
 export default function StudentSplash() {
   const [visible, setVisible] = useState(() => !shownThisContext)
   const reducedMotion = useReducedMotion()
 
   useEffect(() => {
-    if (shownThisContext) return
+    if (shownThisContext) {
+      markSplashEnded()
+      return
+    }
     shownThisContext = true
     const t = setTimeout(() => setVisible(false), MIN_DISPLAY_MS)
     return () => clearTimeout(t)
   }, [])
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={markSplashEnded}>
       {visible && (
         <motion.div
           key="student-splash"

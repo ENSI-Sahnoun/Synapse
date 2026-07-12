@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { createClient } from '@/supabase-clients/client'
+import { useLiveRefetch } from '@/hooks/use-live-refetch'
+import { waitForSplashEnd } from '@/components/student/StudentSplash'
 import {
   getUnseenCelebrationAction,
   markCelebrationsSeenAction,
@@ -38,29 +39,30 @@ function ConfettiPiece({ index }: { index: number }) {
         height: size * 0.5,
         borderRadius: 2,
         backgroundColor: color,
+        willChange: 'transform',
       }}
     />
   )
 }
 
-function PointsCounter({ points }: { points: number }) {
+function PointsCounter({ points, delayMs = 0 }: { points: number; delayMs?: number }) {
   const [value, setValue] = useState(0)
   useEffect(() => {
-    const start = performance.now()
-    const durationMs = 900
+    const start = performance.now() + delayMs
+    const durationMs = 650
     let raf: number
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / durationMs)
+      const t = Math.min(1, Math.max(0, (now - start) / durationMs))
       setValue(Math.round(points * (1 - Math.pow(1 - t, 3))))
       if (t < 1) raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [points])
+  }, [points, delayMs])
   return <span>{value}</span>
 }
 
-export function CelebrationPopup({ userId }: { userId: string }) {
+export function CelebrationPopup() {
   const [event, setEvent] = useState<CelebrationEvent | null>(null)
   const shownRef = useRef(false) // never re-queue in one session, even if mark fails
   const reduceMotion = useReducedMotion()
@@ -72,6 +74,7 @@ export function CelebrationPopup({ userId }: { userId: string }) {
       const payload = res?.data ?? null
       if (payload && payload.id) {
         shownRef.current = true
+        await waitForSplashEnd()
         setEvent(payload)
       }
     } catch {
@@ -87,22 +90,13 @@ export function CelebrationPopup({ userId }: { userId: string }) {
   // Catch-up on app open.
   useEffect(() => { void openIfAny() }, [openIfAny])
 
-  // Instant popup while the app is open.
-  useEffect(() => {
-    const supabase = createClient()
-    const channel = supabase
-      .channel(`celebrations:${userId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'celebration_events', filter: `student_id=eq.${userId}` },
-        () => {
-          shownRef.current = false // new event: allowed to show again
-          void openIfAny()
-        },
-      )
-      .subscribe()
-    return () => { void supabase.removeChannel(channel) }
-  }, [userId, openIfAny])
+  // Instant popup while the app is open. Unfiltered subscription matches the
+  // proven useLiveRefetch pattern; RLS scopes delivery to own rows and the
+  // fetch action re-checks server-side anyway.
+  useLiveRefetch(['celebration_events'], () => {
+    shownRef.current = false // new event: allowed to show again
+    void openIfAny()
+  }, { debounceMs: 100 })
 
   // Auto-dismiss.
   useEffect(() => {
@@ -123,7 +117,7 @@ export function CelebrationPopup({ userId }: { userId: string }) {
     detailLines.push(`Casier n° ${event.payload.locker_number}`)
   }
   const showPoints = event.points > 0
-  const pointsDelay = 0.3 + (items.length + detailLines.length) * 0.12 + 0.3
+  const pointsDelay = 0.12 + (items.length + detailLines.length) * 0.06 + 0.15
 
   return (
     <AnimatePresence>
@@ -154,7 +148,7 @@ export function CelebrationPopup({ userId }: { userId: string }) {
           initial={reduceMotion ? { opacity: 0 } : { scale: 0.6, y: 60, opacity: 0 }}
           animate={reduceMotion ? { opacity: 1 } : { scale: 1, y: 0, opacity: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 28, mass: 0.7 }}
           onClick={(e) => e.stopPropagation()}
           className="w-full max-w-sm rounded-2xl p-6 text-center shadow-xl"
           style={{ backgroundColor: 'var(--surface, #fff)' }}
@@ -162,7 +156,7 @@ export function CelebrationPopup({ userId }: { userId: string }) {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.15, type: 'spring', stiffness: 300, damping: 15 }}
+            transition={{ delay: 0.05, type: 'spring', stiffness: 420, damping: 16 }}
             className="text-4xl"
             aria-hidden
           >
@@ -177,7 +171,7 @@ export function CelebrationPopup({ userId }: { userId: string }) {
                   key={`${item.name}-${i}`}
                   initial={reduceMotion ? false : { opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + i * 0.12 }}
+                  transition={{ delay: 0.12 + i * 0.06, duration: 0.25 }}
                   className="flex justify-between"
                 >
                   <span>{item.quantity}× {item.name}</span>
@@ -188,7 +182,7 @@ export function CelebrationPopup({ userId }: { userId: string }) {
                   key={line}
                   initial={reduceMotion ? false : { opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + (items.length + i) * 0.12 }}
+                  transition={{ delay: 0.12 + (items.length + i) * 0.06, duration: 0.25 }}
                 >
                   {line}
                 </motion.li>
@@ -200,11 +194,11 @@ export function CelebrationPopup({ userId }: { userId: string }) {
             <motion.div
               initial={reduceMotion ? false : { opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: reduceMotion ? 1 : [0.5, 1.15, 1] }}
-              transition={{ delay: pointsDelay, duration: 0.5 }}
+              transition={{ delay: pointsDelay, duration: 0.35 }}
               className="mt-5 rounded-xl py-3 font-semibold"
               style={{ backgroundColor: 'var(--synapse-brown-100)', color: 'var(--accent-brand)' }}
             >
-              +<PointsCounter points={event.points} /> point(s) Synapse ✨
+              +<PointsCounter points={event.points} delayMs={reduceMotion ? 0 : pointsDelay * 1000} /> point(s) Synapse ✨
             </motion.div>
           )}
 
