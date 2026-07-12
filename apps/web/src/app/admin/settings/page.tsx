@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createSupabaseClient as createSupabaseServerClient } from '@/supabase-clients/server';
 import { ExamModeCard } from './ExamModeCard';
 import { ReservationHoldCard } from './ReservationHoldCard';
+import { ReservationExtendedHoldCard } from './ReservationExtendedHoldCard';
 import { PriorityThresholdCard } from './PriorityThresholdCard';
 import { FreeSwapCard } from './FreeSwapCard';
 import { DangerZoneSection } from './DangerZoneSection';
@@ -24,15 +25,26 @@ async function getSetting(
 export default async function AdminSettingsPage() {
   const supabase = await createSupabaseServerClient();
 
-  const [examModeValue, holdMinutesValue, priorityDaysValue, freeSwapValue] = await Promise.all([
+  const [
+    examModeValue,
+    holdMinutesValue,
+    holdMinutesExtendedValue,
+    extendedMinDaysValue,
+    priorityDaysValue,
+    freeSwapValue,
+  ] = await Promise.all([
     getSetting(supabase, 'exam_mode', 'false'),
     getSetting(supabase, 'reservation_hold_minutes', '30'),
+    getSetting(supabase, 'reservation_hold_minutes_extended', '60'),
+    getSetting(supabase, 'reservation_extended_min_duration_days', '30'),
     getSetting(supabase, 'priority_min_duration_days', '30'),
     getSetting(supabase, 'free_swap', 'false'),
   ]);
 
   const examMode = examModeValue === 'true';
   const holdMinutes = parseInt(holdMinutesValue, 10);
+  const holdMinutesExtended = parseInt(holdMinutesExtendedValue, 10);
+  const extendedMinDays = parseInt(extendedMinDaysValue, 10);
   const priorityDays = parseInt(priorityDaysValue, 10);
   const freeSwap = freeSwapValue === 'true';
 
@@ -48,6 +60,10 @@ export default async function AdminSettingsPage() {
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Réservations</h2>
         <ReservationHoldCard initialMinutes={holdMinutes} />
+        <ReservationExtendedHoldCard
+          initialMinutes={holdMinutesExtended}
+          initialMinDays={extendedMinDays}
+        />
         <ExamModeCard initialEnabled={examMode} />
         <PriorityThresholdCard initialDays={priorityDays} />
         <FreeSwapCard initialEnabled={freeSwap} />

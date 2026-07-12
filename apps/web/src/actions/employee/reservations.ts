@@ -73,14 +73,34 @@ export const acceptReservation = employeeActionClient
     const seatLabel = seatData?.label ?? '—'
     const roomId = seatData?.room_id ?? null
 
-    // Extend expiry by the configured hold duration and mark as confirmed
-    const { data: settingRow } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'reservation_hold_minutes')
-      .maybeSingle()
+    // Extend expiry by the configured hold duration and mark as confirmed.
+    // Students whose subscription plan lasts long enough get the extended duration.
+    const today = new Date().toISOString().split('T')[0]
 
-    const holdMinutes = parseInt(settingRow?.value ?? '30', 10)
+    const [{ data: settingRow }, { data: extendedMinutesSetting }, { data: extendedMinDaysSetting }, { data: subWithPlan }] =
+      await Promise.all([
+        supabase.from('settings').select('value').eq('key', 'reservation_hold_minutes').maybeSingle(),
+        supabase.from('settings').select('value').eq('key', 'reservation_hold_minutes_extended').maybeSingle(),
+        supabase.from('settings').select('value').eq('key', 'reservation_extended_min_duration_days').maybeSingle(),
+        supabase
+          .from('subscriptions')
+          .select('subscription_plans(duration_days)')
+          .eq('student_id', reservation.student_id)
+          .gte('end_date', today)
+          .order('end_date', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ])
+
+    const baseHoldMinutes = parseInt(settingRow?.value ?? '30', 10)
+    const extendedMinDays = parseInt(extendedMinDaysSetting?.value ?? '30', 10)
+    const subPlanDurationDays = (subWithPlan?.subscription_plans as { duration_days: number } | null)
+      ?.duration_days ?? 0
+    const qualifiesForExtendedHold = subPlanDurationDays >= extendedMinDays
+
+    const holdMinutes = qualifiesForExtendedHold
+      ? parseInt(extendedMinutesSetting?.value ?? '60', 10)
+      : baseHoldMinutes
     const newExpiry = new Date(Date.now() + holdMinutes * 60 * 1000).toISOString()
 
     const { error: updateError } = await supabase

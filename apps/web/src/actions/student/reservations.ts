@@ -107,14 +107,39 @@ export const createReservation = studentActionClient
       return { error: `La place ${seat.label} n'est plus disponible.` }
     }
 
-    // 4. Read hold duration from settings
+    // 4. Read hold duration from settings — students whose subscription plan
+    // lasts at least `reservation_extended_min_duration_days` get the extended duration.
     const { data: settingRow } = await supabase
       .from('settings')
       .select('value')
       .eq('key', 'reservation_hold_minutes')
       .maybeSingle()
 
-    const holdMinutes = parseInt(settingRow?.value ?? '30', 10)
+    const baseHoldMinutes = parseInt(settingRow?.value ?? '30', 10)
+
+    const { data: subWithPlanForHold } = await supabase
+      .from('subscriptions')
+      .select('subscription_plans(duration_days)')
+      .eq('student_id', userId)
+      .gte('end_date', today)
+      .order('end_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const subPlanDurationDays = (subWithPlanForHold?.subscription_plans as { duration_days: number } | null)
+      ?.duration_days ?? 0
+
+    const [{ data: extendedMinutesSetting }, { data: extendedMinDaysSetting }] = await Promise.all([
+      supabase.from('settings').select('value').eq('key', 'reservation_hold_minutes_extended').maybeSingle(),
+      supabase.from('settings').select('value').eq('key', 'reservation_extended_min_duration_days').maybeSingle(),
+    ])
+
+    const extendedMinDays = parseInt(extendedMinDaysSetting?.value ?? '30', 10)
+    const qualifiesForExtendedHold = subPlanDurationDays >= extendedMinDays
+
+    const holdMinutes = qualifiesForExtendedHold
+      ? parseInt(extendedMinutesSetting?.value ?? '60', 10)
+      : baseHoldMinutes
 
     // --- Exam mode: queue assignment ---
     const { data: examModeSetting } = await supabase
@@ -137,19 +162,8 @@ export const createReservation = studentActionClient
 
       const priorityMinDays = parseInt(prioritySetting?.value ?? '30', 10)
 
-      // Check if this student qualifies as priority
-      const { data: subWithPlan } = await supabase
-        .from('subscriptions')
-        .select('subscription_plans(duration_days)')
-        .eq('student_id', userId)
-        .gte('end_date', today)
-        .order('end_date', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      const planDuration = (subWithPlan?.subscription_plans as { duration_days: number } | null)
-        ?.duration_days ?? 0
-      isPriority = planDuration >= priorityMinDays
+      // Reuses the plan duration already fetched above for the extended hold check
+      isPriority = subPlanDurationDays >= priorityMinDays
 
       if (isPriority) {
         // Priority students go ahead of the first non-priority active reservation

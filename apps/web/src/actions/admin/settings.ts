@@ -53,6 +53,40 @@ export const setReservationHoldMinutes = adminActionClient
     return { success: true, minutes }
   })
 
+// Update extended reservation hold duration (for students with a long subscription)
+const setReservationHoldExtendedSchema = z.object({
+  minutes: z.number().int().min(5, { message: 'Minimum 5 minutes' }).max(240, { message: 'Maximum 240 minutes' }),
+})
+
+export const setReservationHoldMinutesExtended = adminActionClient
+  .schema(setReservationHoldExtendedSchema)
+  .action(async ({ parsedInput: { minutes } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'reservation_hold_minutes_extended', value: String(minutes) }, { onConflict: 'key' })
+    if (error) throw new Error('Impossible de mettre à jour la durée de réservation étendue.')
+    revalidatePath('/admin/settings')
+    return { success: true, minutes }
+  })
+
+// Update minimum subscription duration required for the extended reservation hold
+const setReservationExtendedMinDaysSchema = z.object({
+  days: z.number().int().min(1, { message: 'Minimum 1 jour' }).max(365, { message: 'Maximum 365 jours' }),
+})
+
+export const setReservationExtendedMinDurationDays = adminActionClient
+  .schema(setReservationExtendedMinDaysSchema)
+  .action(async ({ parsedInput: { days } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'reservation_extended_min_duration_days', value: String(days) }, { onConflict: 'key' })
+    if (error) throw new Error('Impossible de mettre à jour le seuil de réservation étendue.')
+    revalidatePath('/admin/settings')
+    return { success: true, days }
+  })
+
 // Update priority subscription threshold
 const setPriorityMinDaysSchema = z.object({
   days: z.number().int().min(1, { message: 'Minimum 1 jour' }).max(365, { message: 'Maximum 365 jours' }),
