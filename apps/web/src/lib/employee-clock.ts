@@ -23,6 +23,20 @@ export async function clockEmployee(
     .maybeSingle()
 
   if (open) {
+    // Mandatory: an employee who opened the cash register must cloture it
+    // before clocking out — otherwise the register can be left open with no
+    // one accountable for it overnight.
+    const { data: openCaisse } = await admin
+      .from('cash_register_sessions')
+      .select('id')
+      .eq('status', 'open')
+      .eq('opened_by', employeeId)
+      .maybeSingle()
+
+    if (openCaisse) {
+      return { status: 'EMPLOYEE_CAISSE_OPEN', employeeName }
+    }
+
     await admin
       .from('employee_attendance')
       .update({ clock_out: new Date().toISOString(), updated_at: new Date().toISOString() })

@@ -165,6 +165,26 @@ export function KioskResult({ result, onReset }: KioskResultProps) {
     )
   }
 
+  if (result.status === 'EMPLOYEE_CAISSE_OPEN') {
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 text-center px-8">
+        <div className="w-32 h-32 rounded-full bg-[#DC2626] flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-16 h-16">
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+          </svg>
+        </div>
+        <p className="text-4xl font-bold text-[#FCA5A5]">{result.employeeName}</p>
+        <p className="text-2xl text-[#FCA5A5] font-bold tracking-widest">CAISSE ENCORE OUVERTE</p>
+        <p className="text-xl text-[#A08060]">
+          Clôturez votre caisse avant de partir.
+        </p>
+        <p className="text-[#8C7B6E] text-base">Sortie non enregistrée.</p>
+      </div>
+    )
+  }
+
   if (result.status === 'ALREADY_IN') {
     return (
       <div className="flex flex-col items-center justify-center gap-6 text-center px-8">

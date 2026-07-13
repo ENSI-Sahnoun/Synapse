@@ -4,7 +4,6 @@ import { getLoggedInUserProfile } from '@/data/user/user'
 import { getOpenCashSession } from '@/data/employee/cash-sessions'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
 import { PosClient } from './pos-client'
-import { OpenSessionForm } from './open-session-form'
 
 export default async function PosPage() {
   const [products, categories, profile, cashSession] = await Promise.all([
@@ -18,17 +17,11 @@ export default async function PosPage() {
   )
   const categoryOrder = categories.map((c) => c.name)
 
-  // Mandatory open: no open cash session -> gate the whole POS behind the
-  // "Ouverture de caisse" form instead of rendering PosClient.
-  if (!cashSession) {
-    return (
-      <>
-        <LiveRefresher tables={['cash_register_sessions', 'cash_movements']} />
-        <OpenSessionForm />
-      </>
-    )
-  }
-
+  // cashSession may be null (no open session) — PosClient itself decides
+  // whether to show the "Ouverture de caisse" form or the POS UI. Keeping a
+  // single, always-mounted PosClient (instead of swapping it for
+  // OpenSessionForm here) means a live-refresh right after closing a session
+  // doesn't unmount PosClient and wipe its "just closed" summary state.
   return (
     <>
       <LiveRefresher tables={['products', 'product_categories', 'cash_register_sessions', 'cash_movements']} />

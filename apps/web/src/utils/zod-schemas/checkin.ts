@@ -19,3 +19,6 @@ export type CheckinResult =
   // Employee badge scan at the kiosk toggles clock-in/out — no seat/subscription checks.
   | { status: 'EMPLOYEE_CLOCKED_IN'; employeeName: string }
   | { status: 'EMPLOYEE_CLOCKED_OUT'; employeeName: string; clockedInAt: string }
+  // Employee has an open cash-register session they opened themselves —
+  // clock-out is refused until they cloture it.
+  | { status: 'EMPLOYEE_CAISSE_OPEN'; employeeName: string }

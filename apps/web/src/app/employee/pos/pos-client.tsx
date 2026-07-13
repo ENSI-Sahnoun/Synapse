@@ -13,6 +13,7 @@ import {
   closeCashSessionAction,
 } from '@/actions/employee/cash-sessions'
 import { QrScanDialog } from './qr-scan-dialog'
+import { OpenSessionForm } from './open-session-form'
 import { type Product } from '@/data/employee/products'
 import { type OpenCashSession } from '@/data/employee/cash-sessions'
 
@@ -54,7 +55,7 @@ export function PosClient({
   categoryEmojis: Record<string, string>
   categoryOrder: string[]
   currentUser: { id: string; fullName: string }
-  cashSession: OpenCashSession
+  cashSession: OpenCashSession | null
   isAdmin: boolean
 }) {
   const router = useRouter()
@@ -120,7 +121,7 @@ export function PosClient({
       return
     }
     executeMovement({
-      session_id: cashSession.id,
+      session_id: cashSession!.id,
       type: movementType,
       amount_dt: amount,
       reason: movementReason.trim(),
@@ -135,7 +136,7 @@ export function PosClient({
       return
     }
     executeClose({
-      session_id: cashSession.id,
+      session_id: cashSession!.id,
       closing_amount_dt: amount,
       notes: closingNotes.trim() || null,
     })
@@ -366,6 +367,14 @@ export function PosClient({
         </div>
       </div>
     )
+  }
+
+  // No open session and nothing to show from a just-finished close — gate
+  // behind the opening form. Rendered from inside PosClient (rather than by
+  // the parent page swapping components) so a live-refresh triggered by the
+  // session closing can never unmount this component and lose closeResult.
+  if (!cashSession) {
+    return <OpenSessionForm />
   }
 
   if (receiptData) {
