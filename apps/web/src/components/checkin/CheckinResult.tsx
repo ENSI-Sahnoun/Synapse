@@ -59,6 +59,12 @@ const STATUS_CONFIG = {
     badge: 'bg-yellow-100 text-yellow-800',
     label: 'SORTIE ENREGISTRÉE',
   },
+  EMPLOYEE_CAISSE_OPEN: {
+    bg: 'bg-red-50 border-red-200',
+    heading: 'text-red-800',
+    badge: 'bg-red-100 text-red-800',
+    label: 'CAISSE OUVERTE — CLÔTURE REQUISE',
+  },
 } satisfies Record<CheckinResultType['status'], { bg: string; heading: string; badge: string; label: string }>
 
 function formatDate(dateStr: string): string {
