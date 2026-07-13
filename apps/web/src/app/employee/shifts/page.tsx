@@ -43,6 +43,19 @@ export default async function ShiftsPage() {
       <LiveRefresher tables={['weekly_schedules', 'employee_attendance']} />
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>Mes horaires</h1>
 
+      {!openClock && (
+        <div style={{
+          background: 'var(--synapse-amber-50, #fff7e6)',
+          border: '1px solid var(--synapse-amber-300, #ffd580)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '12px 16px',
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'var(--synapse-amber-800, #7a4a00)',
+        }}>
+          Vous n'êtes pas pointé(e). Pensez à pointer votre arrivée.
+        </div>
+      )}
       <ClockButton isClockedIn={!!openClock} />
       {onShiftNow && today && (
         <div style={{

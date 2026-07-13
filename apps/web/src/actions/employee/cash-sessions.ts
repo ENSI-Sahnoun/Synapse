@@ -7,12 +7,34 @@ import {
   closeCashSessionSchema,
 } from '@/utils/zod-schemas/cash-session'
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { createSupabaseAdminClient } from '@/supabase-clients/admin'
+import { clockEmployee } from '@/lib/employee-clock'
 import { revalidatePath } from 'next/cache'
 
 export const openCashSessionAction = employeeActionClient
   .schema(openCashSessionSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseClient()
+
+    // Opening a caisse implies the employee is on-site — auto-clock-in
+    // if they forgot to press "Pointer arrivée" first.
+    const admin = createSupabaseAdminClient()
+    const { data: openClock } = await admin
+      .from('employee_attendance')
+      .select('id')
+      .eq('employee_id', ctx.userId)
+      .is('clock_out', null)
+      .maybeSingle()
+
+    if (!openClock) {
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('full_name')
+        .eq('id', ctx.userId)
+        .single()
+      await clockEmployee(admin, ctx.userId, profile?.full_name ?? '', 'manual_web')
+    }
+
     const { data, error } = await supabase
       .rpc('pos_open_session', { p_opening_amount: parsedInput.opening_amount_dt })
       .single()
@@ -20,6 +42,7 @@ export const openCashSessionAction = employeeActionClient
     if (error) throw new Error(error.message)
 
     revalidatePath('/employee/pos')
+    revalidatePath('/employee/shifts')
     return data
   })
 

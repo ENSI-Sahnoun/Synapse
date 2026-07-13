@@ -84,7 +84,7 @@ export function KioskClient({ rooms: _rooms }: { rooms: KioskRoom[] }) {
       {mode === 'scanning' && (
         <div className="flex-1 flex flex-col landscape:flex-row items-center justify-center gap-8 p-8 overflow-auto">
           <div className="w-full max-w-2xl landscape:max-h-[80vh] landscape:w-auto">
-            <QrScanner onScan={handleScan} ready={scannerReady} />
+            <QrScanner onScan={handleScan} ready={scannerReady} mode="kiosk" />
           </div>
           <div className="flex flex-col items-center gap-8">
             <p className="text-gray-300 text-2xl uppercase tracking-widest text-center">

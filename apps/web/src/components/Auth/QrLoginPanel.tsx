@@ -21,7 +21,7 @@ export function QrLoginPanel({ onSuccess }: { onSuccess: (redirectTo: string) =>
     },
   })
 
-  const { videoRef, scanning, error: cameraError, startScan, stopScan } = useQRScanner(
+  const { videoRef, scanning, error: cameraError, startScan, stopScan, onDoubleClick, onTouchEnd } = useQRScanner(
     ({ text }) => {
       execute({ qr_token: text })
     }
@@ -35,6 +35,8 @@ export function QrLoginPanel({ onSuccess }: { onSuccess: (redirectTo: string) =>
       <div
         className="relative w-full overflow-hidden rounded-xl"
         style={{ aspectRatio: '4 / 3', background: 'var(--synapse-stone-900)' }}
+        onDoubleClick={onDoubleClick}
+        onTouchEnd={onTouchEnd}
       >
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video ref={videoRef} className="absolute inset-0 h-full w-full object-cover" />

@@ -2,7 +2,7 @@
 // plugin doesn't support Turbopack (Next 16 default), and the Turbopack
 // variant is still preview-only. Caches the app shell + same-origin static
 // assets only; never touches API/data requests (avoids stale bookings data).
-const CACHE_NAME = 'synapse-shell-v1';
+const CACHE_NAME = 'synapse-shell-v2';
 const SHELL_URLS = ['/', '/manifest.json', '/logos/icon-192.png', '/logos/icon-512.png'];
 
 self.addEventListener('install', (event) => {

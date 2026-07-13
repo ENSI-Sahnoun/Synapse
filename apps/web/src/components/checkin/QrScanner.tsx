@@ -6,13 +6,19 @@ import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library'
 interface QrScannerProps {
   onScan: (token: string) => void
   ready: boolean
+  /** 'kiosk' locks the selfie/front camera with no switching. 'staff' starts on
+   * the back camera and lets the user double-click/tap the video to flip it. */
+  mode?: 'kiosk' | 'staff'
 }
 
-export function QrScanner({ onScan, ready }: QrScannerProps) {
+export function QrScanner({ onScan, ready, mode = 'staff' }: QrScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const readerRef = useRef<BrowserMultiFormatReader | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [cameraActive, setCameraActive] = useState(false)
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>(
+    mode === 'kiosk' ? 'user' : 'environment'
+  )
   const lastScannedRef = useRef<string | null>(null)
 
   const startScanner = useCallback(async () => {
@@ -20,22 +26,10 @@ export function QrScanner({ onScan, ready }: QrScannerProps) {
 
     try {
       readerRef.current = new BrowserMultiFormatReader()
-      const devices = await readerRef.current.listVideoInputDevices()
-
-      if (devices.length === 0) {
-        setError("Aucune caméra détectée sur cet appareil.")
-        return
-      }
-
-      // Selfie / front-facing camera preferred for the kiosk.
-      const device =
-        devices.find((d) => /front|user|face|selfie/i.test(d.label)) ??
-        devices[0]
-
       setCameraActive(true)
 
-      readerRef.current.decodeFromVideoDevice(
-        device.deviceId,
+      await readerRef.current.decodeFromConstraints(
+        { video: { facingMode: { ideal: facingMode } } },
         videoRef.current,
         (result, err) => {
           if (result) {
@@ -57,14 +51,43 @@ export function QrScanner({ onScan, ready }: QrScannerProps) {
       setError("Impossible d'accéder à la caméra. Vérifiez les permissions.")
       console.error('Camera access error:', e)
     }
-  }, [onScan])
+  }, [onScan, facingMode])
 
   useEffect(() => {
     startScanner()
     return () => {
-      readerRef.current?.reset()
+      // zxing throws NotFoundError if reset() runs while decodeFromConstraints
+      // is still attaching the stream to a video element that's since unmounted.
+      try {
+        readerRef.current?.reset()
+      } catch {
+        // ignore — stream already gone
+      }
     }
   }, [startScanner])
+
+  const handleSwitchCamera = useCallback(() => {
+    if (mode === 'kiosk') return
+    try {
+      readerRef.current?.reset()
+    } catch {
+      // ignore — stream already gone
+    }
+    setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'))
+  }, [mode])
+
+  // Mobile browsers don't reliably synthesize dblclick from double-tap, so
+  // detect it manually from touchend timing as well.
+  const lastTapRef = useRef(0)
+  const handleTouchEnd = useCallback(() => {
+    const now = Date.now()
+    if (now - lastTapRef.current < 300) {
+      handleSwitchCamera()
+      lastTapRef.current = 0
+    } else {
+      lastTapRef.current = now
+    }
+  }, [handleSwitchCamera])
 
   if (error) {
     return (
@@ -81,7 +104,11 @@ export function QrScanner({ onScan, ready }: QrScannerProps) {
   }
 
   return (
-    <div className="relative w-full max-w-sm mx-auto landscape:max-h-[70vh] landscape:w-[70vh] aspect-square rounded-xl overflow-hidden bg-black">
+    <div
+      className="relative w-full max-w-sm mx-auto landscape:max-h-[70vh] landscape:w-[70vh] aspect-square rounded-xl overflow-hidden bg-black"
+      onDoubleClick={handleSwitchCamera}
+      onTouchEnd={handleTouchEnd}
+    >
       <video
         ref={videoRef}
         className="w-full h-full object-cover"

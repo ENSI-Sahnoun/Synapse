@@ -7,7 +7,7 @@ export type CelebrationEvent = {
   id: string
   kind: 'purchase' | 'subscription' | 'locker'
   payload: {
-    items?: { name: string; quantity: number }[]
+    items?: { name: string; quantity: number; image_url?: string | null }[]
     total_dt?: number
     plan_name?: string
     locker_number?: number

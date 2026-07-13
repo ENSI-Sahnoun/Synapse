@@ -37,10 +37,12 @@ export async function clockEmployee(
       return { status: 'EMPLOYEE_CAISSE_OPEN', employeeName }
     }
 
-    await admin
+    const { error: clockOutError } = await admin
       .from('employee_attendance')
       .update({ clock_out: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', open.id)
+
+    if (clockOutError) throw new Error(clockOutError.message)
 
     return { status: 'EMPLOYEE_CLOCKED_OUT', employeeName, clockedInAt: open.clock_in }
   }

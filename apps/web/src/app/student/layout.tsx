@@ -1,9 +1,10 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
+import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { StudentBottomNav } from '@/components/student/StudentBottomNav'
+import { StudentHeaderMenu } from '@/components/student/StudentHeaderMenu'
 import { getMyNotifications, getMyUnreadCount } from '@/data/notifications/list'
 import { StudentNotificationSheet } from '@/components/notifications/StudentNotificationSheet'
 import { PullToRefresh } from '@/components/PullToRefresh'
@@ -17,6 +18,7 @@ const STUDENT_ROUTES = [
   '/student/qr',
   '/student/rooms',
   '/student/history',
+  '/student/shop',
   '/student/loyalty',
   '/student/rewards',
   '/student/settings',
@@ -80,13 +82,8 @@ export default async function StudentLayout({ children }: { children: React.Reac
             initialUnreadCount={unreadCount}
           />
 
-          {/* Avatar */}
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-            style={{ backgroundColor: 'var(--synapse-brown-100)', color: 'var(--accent-brand)' }}
-          >
-            {initials}
-          </div>
+          {/* Avatar — opens account menu (name, historique, logout) */}
+          <StudentHeaderMenu fullName={profile.full_name} initials={initials} />
         </div>
       </header>
 

@@ -9,21 +9,33 @@ export function ClockButton({ isClockedIn }: { isClockedIn: boolean }) {
   const justToggled = result.data?.status === 'EMPLOYEE_CLOCKED_IN' || result.data?.status === 'EMPLOYEE_CLOCKED_OUT'
   const nowIn = justToggled ? result.data?.status === 'EMPLOYEE_CLOCKED_IN' : isClockedIn
 
+  const blockedMessage =
+    result.data?.status === 'EMPLOYEE_CAISSE_OPEN'
+      ? 'Caisse ouverte — clôturez-la avant de pointer votre départ.'
+      : result.serverError
+        ? "Erreur : le pointage n'a pas été enregistré."
+        : null
+
   return (
-    <button
-      onClick={() => execute()}
-      disabled={status === 'executing'}
-      style={{
-        background: nowIn ? 'var(--destructive)' : 'var(--synapse-green-500)',
-        color: '#fff',
-        borderRadius: 'var(--radius-lg)',
-        padding: '12px 20px',
-        fontSize: 14,
-        fontWeight: 600,
-        width: '100%',
-      }}
-    >
-      {nowIn ? 'Pointer départ' : 'Pointer arrivée'}
-    </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <button
+        onClick={() => execute()}
+        disabled={status === 'executing'}
+        style={{
+          background: nowIn ? 'var(--destructive)' : 'var(--synapse-green-500)',
+          color: '#fff',
+          borderRadius: 'var(--radius-lg)',
+          padding: '12px 20px',
+          fontSize: 14,
+          fontWeight: 600,
+          width: '100%',
+        }}
+      >
+        {nowIn ? 'Pointer départ' : 'Pointer arrivée'}
+      </button>
+      {blockedMessage && (
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--destructive)' }}>{blockedMessage}</div>
+      )}
+    </div>
   )
 }

@@ -43,6 +43,7 @@ export const signInWithPasswordAction = actionClient
       admin: '/admin/dashboard',
       employee: '/employee/dashboard',
       student: '/student/dashboard',
+      kiosk: '/kiosk',
     }
 
     // Use admin client — same-request session cookies aren't readable via the

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const insertMock = vi.fn(async () => ({ error: null }))
-const maybeSingleMock = vi.fn(async () => ({ data: { is_enabled: true } }))
+const maybeSingleMock = vi.fn(async (): Promise<{ data: { is_enabled: boolean } | null }> => ({
+  data: { is_enabled: true },
+}))
 const staffSelectMock = vi.fn(async () => ({ data: [{ id: 'staff-1' }] }))
 
 vi.mock('@/supabase-clients/admin', () => ({

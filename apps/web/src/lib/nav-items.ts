@@ -19,6 +19,7 @@ export interface ResolvedNavItem extends NavRegistryItem {
 
 export const EMPLOYEE_NAV_ITEMS: NavRegistryItem[] = [
   { key: '/employee/dashboard',        href: '/employee/dashboard',        label: 'Tableau de bord',  icon: 'ChartBar',      group: 'employee' },
+  { key: '/employee/qr',               href: '/employee/qr',               label: 'Mon QR',           icon: 'QrCode',        group: 'employee' },
   { key: '/employee/checkin',          href: '/employee/checkin',          label: 'Contrôle accès',   icon: 'QrCode',        group: 'employee' },
   { key: '/employee/attendance',       href: '/employee/attendance',       label: 'Présences',        icon: 'ClipboardText', group: 'employee' },
   { key: '/employee/students',         href: '/employee/students',         label: 'Étudiants',        icon: 'Users',         group: 'employee' },

@@ -41,7 +41,7 @@ export function QrScanDialog({ onStudentScanned }: Props) {
     [lookup, lookupStatus]
   )
 
-  const { videoRef, scanning, error, startScan, stopScan } = useQRScanner(handleResult)
+  const { videoRef, scanning, error, startScan, stopScan, onDoubleClick, onTouchEnd } = useQRScanner(handleResult)
 
   // Start the camera as soon as the panel is shown; stop it on unmount.
   useEffect(() => {
@@ -59,7 +59,11 @@ export function QrScanDialog({ onStudentScanned }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="relative aspect-square bg-black rounded-lg overflow-hidden">
+      <div
+        className="relative aspect-square bg-black rounded-lg overflow-hidden"
+        onDoubleClick={onDoubleClick}
+        onTouchEnd={onTouchEnd}
+      >
         <video ref={videoRef} className="w-full h-full object-cover" />
         {!scanning && (
           <div className="absolute inset-0 flex items-center justify-center">

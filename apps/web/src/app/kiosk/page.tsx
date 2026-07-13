@@ -22,7 +22,7 @@ export default async function KioskPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile || !['admin', 'employee'].includes(profile.role)) {
+  if (!profile || !['admin', 'employee', 'kiosk'].includes(profile.role)) {
     redirect('/kiosk/setup')
   }
 

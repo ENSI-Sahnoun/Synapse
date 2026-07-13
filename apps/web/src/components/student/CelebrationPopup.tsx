@@ -172,9 +172,28 @@ export function CelebrationPopup() {
                   initial={reduceMotion ? false : { opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.12 + i * 0.06, duration: 0.25 }}
-                  className="flex justify-between"
+                  className="flex items-center justify-between gap-2"
                 >
-                  <span>{item.quantity}× {item.name}</span>
+                  <span className="flex items-center gap-2 min-w-0">
+                    {item.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.image_url}
+                        alt=""
+                        className="w-6 h-6 rounded-md object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <span
+                        className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-xs"
+                        style={{ background: 'var(--synapse-cream-100)' }}
+                        aria-hidden
+                      >
+                        🛍️
+                      </span>
+                    )}
+                    <span className="truncate">{item.name}</span>
+                  </span>
+                  <span className="flex-shrink-0">×{item.quantity}</span>
                 </motion.li>
               ))}
               {detailLines.map((line, i) => (
