@@ -82,17 +82,19 @@ export function KioskClient({ rooms: _rooms }: { rooms: KioskRoom[] }) {
       </div>
 
       {mode === 'scanning' && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-8 p-8">
-          <p className="text-gray-300 text-2xl uppercase tracking-widest">
-            Présentez votre QR code
-          </p>
-          <div className="w-full max-w-2xl">
+        <div className="flex-1 flex flex-col landscape:flex-row items-center justify-center gap-8 p-8 overflow-auto">
+          <div className="w-full max-w-2xl landscape:max-h-[80vh] landscape:w-auto">
             <QrScanner onScan={handleScan} ready={scannerReady} />
           </div>
-          <p className="text-gray-600 text-sm">
-            Ouvrez l&apos;app Synapse → QR Code
-          </p>
-          <KioskManualEntry onSubmit={handleScan} disabled={!scannerReady} />
+          <div className="flex flex-col items-center gap-8">
+            <p className="text-gray-300 text-2xl uppercase tracking-widest text-center">
+              Présentez votre QR code
+            </p>
+            <p className="text-gray-600 text-sm">
+              Ouvrez l&apos;app Synapse → QR Code
+            </p>
+            <KioskManualEntry onSubmit={handleScan} disabled={!scannerReady} />
+          </div>
         </div>
       )}
 

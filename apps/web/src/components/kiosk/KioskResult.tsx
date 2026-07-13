@@ -21,30 +21,20 @@ function formatDate(dateStr: string): string {
 }
 
 export function KioskResult({ result, onReset }: KioskResultProps) {
-  const [confirmCheckout, setConfirmCheckout] = useState(false)
   const [checkedOut, setCheckedOut] = useState(false)
   const { execute: kioskCheckout, status: checkoutStatus } = useAction(checkoutAction, {
     onSuccess: () => setCheckedOut(true),
-    onError: () => setConfirmCheckout(false),
   })
 
   useEffect(() => {
     // checkedOut owns its own dismiss timer below.
     if (checkedOut) return
-    // If the student opened the checkout confirm and walked away, fall back
-    // to resetting to the scanner after an idle timeout so the kiosk never
-    // locks up waiting for a tap that never comes. This must NOT check the
-    // student out — it only calls onReset.
-    if (confirmCheckout) {
-      const timer = setTimeout(onReset, 15000)
-      return () => clearTimeout(timer)
-    }
     // Give authorized students longer to read their seat / phone instruction.
     const delay =
       result.status === 'AUTHORIZED' ? 6000 : result.status === 'ALREADY_IN' ? 8000 : 2500
     const timer = setTimeout(onReset, delay)
     return () => clearTimeout(timer)
-  }, [result, onReset, confirmCheckout, checkedOut])
+  }, [result, onReset, checkedOut])
 
   useEffect(() => {
     if (!checkedOut) return
@@ -161,28 +151,10 @@ export function KioskResult({ result, onReset }: KioskResultProps) {
           <p className="mt-4 text-lg font-semibold" style={{ color: 'var(--synapse-green-600, #16a34a)' }}>
             Sortie enregistrée ✓
           </p>
-        ) : confirmCheckout ? (
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <button
-              onClick={() => setConfirmCheckout(false)}
-              disabled={checkoutStatus === 'executing'}
-              className="text-sm font-semibold px-4 py-2 rounded-lg border"
-              style={{ borderColor: 'var(--border-default)' }}
-            >
-              Annuler
-            </button>
-            <button
-              onClick={() => kioskCheckout({ attendanceId: result.attendanceId })}
-              disabled={checkoutStatus === 'executing'}
-              className="text-sm font-semibold px-4 py-2 rounded-lg"
-              style={{ background: 'var(--accent-brand)', color: '#fff' }}
-            >
-              Confirmer la sortie
-            </button>
-          </div>
         ) : (
           <button
-            onClick={() => setConfirmCheckout(true)}
+            onClick={() => kioskCheckout({ attendanceId: result.attendanceId })}
+            disabled={checkoutStatus === 'executing'}
             className="mt-4 text-sm font-semibold px-5 py-2.5 rounded-lg"
             style={{ background: 'var(--accent-brand)', color: '#fff' }}
           >
