@@ -47,6 +47,18 @@ const STATUS_CONFIG = {
     badge: 'bg-red-100 text-red-800',
     label: 'REFUSÉ — PAS DE RÉSERVATION',
   },
+  EMPLOYEE_CLOCKED_IN: {
+    bg: 'bg-green-50 border-green-200',
+    heading: 'text-green-800',
+    badge: 'bg-green-100 text-green-800',
+    label: 'POINTAGE ENREGISTRÉ',
+  },
+  EMPLOYEE_CLOCKED_OUT: {
+    bg: 'bg-yellow-50 border-yellow-200',
+    heading: 'text-yellow-800',
+    badge: 'bg-yellow-100 text-yellow-800',
+    label: 'SORTIE ENREGISTRÉE',
+  },
 } satisfies Record<CheckinResultType['status'], { bg: string; heading: string; badge: string; label: string }>
 
 function formatDate(dateStr: string): string {

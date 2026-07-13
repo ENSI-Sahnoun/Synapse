@@ -16,3 +16,6 @@ export type CheckinResult =
   | { status: 'DENIED_UNKNOWN' }
   | { status: 'ALREADY_IN'; studentName: string; checkedInAt: string; attendanceId: string }
   | { status: 'DENIED_NO_RESERVATION'; studentName: string }
+  // Employee badge scan at the kiosk toggles clock-in/out — no seat/subscription checks.
+  | { status: 'EMPLOYEE_CLOCKED_IN'; employeeName: string }
+  | { status: 'EMPLOYEE_CLOCKED_OUT'; employeeName: string; clockedInAt: string }

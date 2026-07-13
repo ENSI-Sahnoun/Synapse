@@ -4,6 +4,7 @@ import { employeeActionClient } from '@/lib/safe-action'
 import { checkinSchema, type CheckinResult } from '@/utils/zod-schemas/checkin'
 import { isValidQrTokenFormat } from '@/lib/qr-token'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
+import { clockEmployee } from '@/lib/employee-clock'
 import { differenceInDays, format, parseISO, startOfDay } from 'date-fns'
 
 export const checkinAction = employeeActionClient
@@ -17,16 +18,20 @@ export const checkinAction = employeeActionClient
 
     const admin = createSupabaseAdminClient()
 
-    // Lookup student by stored token value
+    // Lookup by stored token value — could be a student or an employee badge.
     const { data: profile, error: profileError } = await admin
       .from('profiles')
       .select('id, full_name, role')
       .eq('qr_token', qrToken)
-      .eq('role', 'student')
+      .in('role', ['student', 'employee'])
       .single()
 
     if (profileError || !profile) {
       return { status: 'DENIED_UNKNOWN' }
+    }
+
+    if (profile.role === 'employee') {
+      return clockEmployee(admin, profile.id, profile.full_name)
     }
 
     const studentId = profile.id

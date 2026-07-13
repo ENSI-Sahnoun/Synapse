@@ -2,6 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
+import { ClockButton } from '@/components/employee/ClockButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,11 +31,19 @@ export default async function ShiftsPage() {
   const today = days.find((d) => d.day_of_week === todayDow)
   const onShiftNow = !!today && nowTime >= today.start_time && nowTime < today.end_time
 
+  const { data: openClock } = await supabase
+    .from('employee_attendance')
+    .select('id')
+    .eq('employee_id', userId)
+    .is('clock_out', null)
+    .maybeSingle()
+
   return (
     <div className="p-4 pb-24" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <LiveRefresher tables={['weekly_schedules']} />
+      <LiveRefresher tables={['weekly_schedules', 'employee_attendance']} />
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>Mes horaires</h1>
 
+      <ClockButton isClockedIn={!!openClock} />
       {onShiftNow && today && (
         <div style={{
           background: 'var(--synapse-green-500)',

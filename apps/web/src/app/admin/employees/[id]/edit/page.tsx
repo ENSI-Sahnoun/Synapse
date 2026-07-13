@@ -28,6 +28,9 @@ export default async function AdminEditEmployeePage({
         ← Employés
       </Link>
       <h1 className="text-2xl font-semibold">Modifier — {profile.full_name}</h1>
+      <Link href={`/admin/employees/${id}/attendance`} className="text-sm underline">
+        Voir le pointage →
+      </Link>
       <EditEmployeeForm employee={profile} redirectTo="/admin/employees" />
       <hr className="my-6" />
       <ResetCredentialsForm userId={id} />

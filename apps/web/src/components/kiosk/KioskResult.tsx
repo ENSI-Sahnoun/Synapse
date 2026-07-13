@@ -133,6 +133,38 @@ export function KioskResult({ result, onReset }: KioskResultProps) {
     )
   }
 
+  if (result.status === 'EMPLOYEE_CLOCKED_IN') {
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 text-center px-8">
+        <div className="w-32 h-32 rounded-full bg-[#16A34A] flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-16 h-16">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <p className="text-4xl font-bold text-[#4ADE80]">{result.employeeName}</p>
+        <p className="text-[#4ADE80] text-2xl font-bold tracking-widest">POINTAGE ENREGISTRÉ</p>
+        <p className="text-xl text-[#A08060]">Bonne journée !</p>
+      </div>
+    )
+  }
+
+  if (result.status === 'EMPLOYEE_CLOCKED_OUT') {
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 text-center px-8">
+        <div className="w-32 h-32 rounded-full bg-[#D97706] flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-16 h-16">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <p className="text-4xl font-bold text-[#FCD34D]">{result.employeeName}</p>
+        <p className="text-xl text-[#A08060]">
+          Arrivé à {format(parseISO(result.clockedInAt), 'HH:mm', { locale: fr })}
+        </p>
+        <p className="text-[#FCD34D] text-2xl font-bold tracking-widest">SORTIE ENREGISTRÉE</p>
+      </div>
+    )
+  }
+
   if (result.status === 'ALREADY_IN') {
     return (
       <div className="flex flex-col items-center justify-center gap-6 text-center px-8">
