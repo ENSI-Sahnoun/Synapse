@@ -1,12 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-type UserRole = 'admin' | 'employee' | 'student'
+type UserRole = 'admin' | 'employee' | 'student' | 'kiosk'
 
 const ROLE_HOME: Record<UserRole, string> = {
   admin: '/admin/dashboard',
   employee: '/employee/dashboard',
   student: '/student/dashboard',
+  kiosk: '/kiosk',
 }
 
 async function getUserRole(
@@ -85,9 +86,16 @@ export async function updateSession(request: NextRequest) {
 
   // Role-based access enforcement
 
-  // Kiosk: accessible to employees and admins — no redirect to role home
+  // Kiosk-role accounts are locked to /kiosk and nowhere else.
+  if (role === 'kiosk' && !pathname.startsWith('/kiosk')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/kiosk'
+    return NextResponse.redirect(url)
+  }
+
+  // Kiosk route: accessible to employees, admins, and kiosk accounts — no redirect to role home
   if (pathname.startsWith('/kiosk')) {
-    if (role === 'admin' || role === 'employee') {
+    if (role === 'admin' || role === 'employee' || role === 'kiosk') {
       return supabaseResponse
     }
     const url = request.nextUrl.clone()

@@ -40,6 +40,41 @@ export const createEmployeeAction = adminActionClient
     return { employeeId: authData.user.id }
   })
 
+const createKioskAccountSchema = z.object({
+  full_name: z.string().min(2, 'Nom requis'),
+  email: z.string().email('Email invalide'),
+  password: z.string().min(8, '8 caractères minimum'),
+})
+
+// Kiosk accounts are device credentials, not personal accounts — admin sets
+// the password directly instead of a temp password + reset-your-own-password
+// flow, since no one individually "owns" a kiosk login.
+export const createKioskAccountAction = adminActionClient
+  .schema(createKioskAccountSchema)
+  .action(async ({ parsedInput }) => {
+    const { full_name, email, password } = parsedInput
+    const adminSupabase = createSupabaseAdminClient()
+
+    const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
+      email,
+      password,
+      user_metadata: { full_name },
+      email_confirm: true,
+    })
+
+    if (authError) throw new Error(`Erreur: ${authError.message}`)
+
+    const { error: profileError } = await adminSupabase
+      .from('profiles')
+      .update({ role: 'kiosk', full_name })
+      .eq('id', authData.user.id)
+
+    if (profileError) throw new Error(`Erreur profil: ${profileError.message}`)
+
+    revalidatePath('/admin/employees')
+    return { employeeId: authData.user.id }
+  })
+
 const updateEmployeeSchema = z.object({
   id: z.string().uuid(),
   full_name: z.string().min(2, 'Nom requis').optional(),

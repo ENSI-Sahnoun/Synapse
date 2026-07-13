@@ -15,15 +15,16 @@ export default async function AdminEmployeesPage({
   const params = await searchParams
   const showArchived = params.archived === '1'
   const employees = await listAllProfiles('employee', showArchived)
+  const kioskAccounts = await listAllProfiles('kiosk', showArchived)
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 mb-6">
         <p className="font-medium">Configuration du kiosque d&apos;accès</p>
         <p className="mt-1 text-xs">
-          Créez un compte employé dédié (ex. <code>kiosk@synapse.tn</code>), puis
-          rendez-vous sur l&apos;appareil kiosque et connectez-vous via{' '}
-          <strong>/kiosk/setup</strong>. Le kiosque restera connecté en permanence.
+          Créez un compte kiosque dédié ci-dessous, puis connectez-vous avec ces
+          identifiants sur l&apos;appareil kiosque. Ce compte n&apos;a accès qu&apos;au
+          kiosque — aucun autre écran.
         </p>
       </div>
 
@@ -34,9 +35,14 @@ export default async function AdminEmployeesPage({
         <div className="flex gap-2">
           <Suspense><ArchivedToggle /></Suspense>
           {!showArchived && (
-            <Button asChild>
-              <Link href="/admin/employees/new">Nouvel employé</Link>
-            </Button>
+            <>
+              <Button asChild variant="outline">
+                <Link href="/admin/employees/new-kiosk">Nouveau compte kiosque</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/admin/employees/new">Nouvel employé</Link>
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -76,6 +82,46 @@ export default async function AdminEmployeesPage({
                         </Button>
                         <ArchiveButton id={e.id} />
                       </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-xl font-semibold pt-4">
+        Comptes kiosque{showArchived ? ' — Archivés' : ''}
+      </h2>
+      <div className="border rounded-md">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="text-left px-4 py-2">Nom</th>
+              <th className="px-4 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {kioskAccounts.length === 0 && (
+              <tr>
+                <td colSpan={2} className="text-center py-8 text-muted-foreground">
+                  {showArchived ? 'Aucun compte kiosque archivé' : 'Aucun compte kiosque'}
+                </td>
+              </tr>
+            )}
+            {kioskAccounts.map((k) => (
+              <tr key={k.id} className="border-b last:border-0">
+                <td className="px-4 py-2">{k.full_name}</td>
+                <td className="px-4 py-2">
+                  <div className="flex gap-2 justify-end">
+                    {showArchived ? (
+                      <>
+                        <RestoreButton id={k.id} />
+                        <HardDeleteButton id={k.id} name={k.full_name} />
+                      </>
+                    ) : (
+                      <ArchiveButton id={k.id} />
                     )}
                   </div>
                 </td>

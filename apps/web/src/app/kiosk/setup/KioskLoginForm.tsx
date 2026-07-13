@@ -43,7 +43,7 @@ export function KioskLoginForm() {
         .eq('id', data.user.id)
         .single()
 
-      if (!profile || !['admin', 'employee'].includes(profile.role)) {
+      if (!profile || !['admin', 'employee', 'kiosk'].includes(profile.role)) {
         await supabase.auth.signOut()
         setError("Ce compte n'a pas accès au kiosque.")
         return

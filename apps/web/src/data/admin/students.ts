@@ -3,7 +3,7 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 
 export async function listAllProfiles(
-  role?: 'student' | 'employee' | 'admin',
+  role?: 'student' | 'employee' | 'admin' | 'kiosk',
   showArchived = false,
   search?: string
 ) {

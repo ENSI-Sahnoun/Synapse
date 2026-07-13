@@ -22,7 +22,6 @@ export const viewport: Viewport = {
 export const metadata = {
   title: 'Synapse',
   description: "Gestion de l'espace de coworking Synapse",
-  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
