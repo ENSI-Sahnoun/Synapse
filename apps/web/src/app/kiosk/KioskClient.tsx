@@ -2,11 +2,13 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useAction } from 'next-safe-action/hooks'
+import { ArrowsClockwise } from '@phosphor-icons/react'
 import { QrScanner } from '@/components/checkin/QrScanner'
 import { KioskResult } from '@/components/kiosk/KioskResult'
 import { KioskGuard } from '@/components/kiosk/KioskGuard'
 import { KioskManualEntry } from '@/components/kiosk/KioskManualEntry'
 import { KioskQrDisplay } from '@/components/kiosk/KioskQrDisplay'
+import { HoldToLogoutKiosk } from '@/components/kiosk/HoldToLogoutKiosk'
 import { useKioskQrDrop } from '@/hooks/use-kiosk-qr-drop'
 import { checkinAction } from '@/actions/checkin/checkin-action'
 import type { CheckinResult } from '@/utils/zod-schemas/checkin'
@@ -22,12 +24,32 @@ export type KioskRoom = {
 }
 
 type Mode = 'scanning' | 'result' | 'qr-display'
+type Rotation = 0 | 90 | 180 | 270
+
+const ROTATION_KEY = 'kiosk-screen-rotation'
 
 export function KioskClient({ rooms: _rooms }: { rooms: KioskRoom[] }) {
   const [mode, setMode] = useState<Mode>('scanning')
   const [scannerReady, setScannerReady] = useState(true)
   const [lastResult, setLastResult] = useState<CheckinResult | null>(null)
+  const [rotation, setRotation] = useState<Rotation>(0)
   const { drop } = useKioskQrDrop()
+
+  // Some kiosk tablets/webviews don't honor the manifest's landscape lock or
+  // the device's physical orientation change — this lets staff force the
+  // screen orientation manually. Persisted so it survives PWA restarts.
+  useEffect(() => {
+    const saved = Number(localStorage.getItem(ROTATION_KEY))
+    if ([0, 90, 180, 270].includes(saved)) setRotation(saved as Rotation)
+  }, [])
+
+  const cycleRotation = useCallback(() => {
+    setRotation((prev) => {
+      const next = ((prev + 90) % 360) as Rotation
+      localStorage.setItem(ROTATION_KEY, String(next))
+      return next
+    })
+  }, [])
 
   const { execute } = useAction(checkinAction, {
     onSuccess: ({ data }) => {
@@ -71,14 +93,43 @@ export function KioskClient({ rooms: _rooms }: { rooms: KioskRoom[] }) {
     }
   }, [drop, mode])
 
+  const rotated = rotation === 90 || rotation === 270
+
   return (
-    <div className="w-screen h-screen bg-black text-white flex flex-col">
+    <div
+      className="fixed bg-black text-white flex flex-col"
+      style={{
+        top: '50%',
+        left: '50%',
+        width: rotated ? '100vh' : '100vw',
+        height: rotated ? '100vw' : '100vh',
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+      }}
+    >
       <KioskGuard />
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-8 py-4 border-b border-gray-800 shrink-0">
         <span className="text-xl font-bold tracking-widest">SYNAPSE</span>
-        <span className="text-gray-500 text-sm">Kiosque d&apos;accès</span>
+        <div className="flex items-center gap-3">
+          <span className="text-gray-500 text-sm">Kiosque d&apos;accès</span>
+          <button
+            type="button"
+            onClick={cycleRotation}
+            aria-label="Pivoter l'écran"
+            title="Pivoter l'écran"
+            className="flex items-center justify-center rounded-full cursor-pointer"
+            style={{
+              width: 44,
+              height: 44,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}
+          >
+            <ArrowsClockwise size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
+          </button>
+          <HoldToLogoutKiosk />
+        </div>
       </div>
 
       {mode === 'scanning' && (
