@@ -65,7 +65,7 @@ export function RestockDialog({ product }: { product: AdminProduct }) {
           </div>
           <div className="space-y-1">
             <Label>Coût unitaire (DT, hors taxe)</Label>
-            <Input type="number" step="0.1" min="0" {...form.register('cost_price')} />
+            <Input type="number" step="0.001" min="0" {...form.register('cost_price')} />
             {form.formState.errors.cost_price && (
               <p className="text-sm text-destructive">{form.formState.errors.cost_price.message}</p>
             )}

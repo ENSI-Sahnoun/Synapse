@@ -253,7 +253,7 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
         {/* Price */}
         <div className="space-y-1">
           <Label>Prix (DT) *</Label>
-          <Input type="number" step="0.1" min="0" {...form.register('price_dt')} />
+          <Input type="number" step="0.001" min="0" {...form.register('price_dt')} />
           {form.formState.errors.price_dt && (
             <p className="text-sm text-destructive">{(form.formState.errors.price_dt as any).message}</p>
           )}
@@ -262,7 +262,7 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
         {/* Cost price */}
         <div className="space-y-1">
           <Label>Coût d&apos;achat (DT)</Label>
-          <Input type="number" step="0.1" min="0" {...form.register('cost_price')} placeholder="ex: 0.8" />
+          <Input type="number" step="0.001" min="0" {...form.register('cost_price')} placeholder="ex: 0.8" />
           {form.formState.errors.cost_price && (
             <p className="text-sm text-destructive">{(form.formState.errors.cost_price as any).message}</p>
           )}
