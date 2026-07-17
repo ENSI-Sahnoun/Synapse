@@ -7,6 +7,7 @@ import {
   updateRoomSchema,
   setRoomStatusSchema,
   deleteRoomSchema,
+  updateRoomShapesSchema,
 } from '@/utils/zod-schemas/room'
 import { revalidatePath } from 'next/cache'
 
@@ -75,4 +76,29 @@ export const deleteRoomAction = adminActionClient
 
     revalidatePath('/admin/rooms')
     return { deleted: true }
+  })
+
+export const updateRoomShapesAction = adminActionClient
+  .schema(updateRoomShapesSchema)
+  .action(async ({ parsedInput }) => {
+    const supabase = await createSupabaseClient()
+
+    for (const room of parsedInput.rooms) {
+      const { error } = await supabase
+        .from('rooms')
+        .update({
+          shape_x: room.shape_x,
+          shape_y: room.shape_y,
+          shape_width: room.shape_width,
+          shape_height: room.shape_height,
+        })
+        .eq('id', room.id)
+
+      if (error) throw new Error(error.message)
+    }
+
+    revalidatePath('/admin/rooms')
+    revalidatePath('/admin/rooms/floor-plan')
+    revalidatePath('/student/rooms')
+    return { ok: true }
   })
