@@ -30,6 +30,9 @@ export const metadata = {
   icons: {
     apple: '/logos/icon-192.png',
   },
+  other: {
+    'strix-verification': 'strix-verify-41d3a9d6ac01a22c5913250987fb9184',
+  },
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
