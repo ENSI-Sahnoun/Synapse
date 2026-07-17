@@ -50,7 +50,13 @@ export function StudentNotificationSheet({
             if (!row.is_read) setUnreadCount((c) => c + 1)
           } else if (payload.eventType === 'UPDATE') {
             const row = payload.new as NotificationRow
-            setNotifications((prev) => prev.map((n) => (n.id === row.id ? row : n)))
+            setNotifications((prev) => {
+              const existing = prev.find((n) => n.id === row.id)
+              if (existing && existing.is_read !== row.is_read) {
+                setUnreadCount((c) => Math.max(0, c + (row.is_read ? -1 : 1)))
+              }
+              return prev.map((n) => (n.id === row.id ? row : n))
+            })
           } else if (payload.eventType === 'DELETE') {
             const old = payload.old as { id: string }
             setNotifications((prev) => prev.filter((n) => n.id !== old.id))
@@ -78,8 +84,8 @@ export function StudentNotificationSheet({
     setOpen(false)
     startTransition(async () => {
       await markNotificationRead({ notificationId: id })
+      router.push(href)
     })
-    router.push(href)
   }
 
   function handleMarkAllRead() {

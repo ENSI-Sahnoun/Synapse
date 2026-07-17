@@ -46,29 +46,24 @@ export const fulfilRedemptionAction = employeeActionClient
 
 export const rejectRedemptionAction = employeeActionClient
   .schema(handleRedemptionRequestSchema)
-  .action(async ({ parsedInput, ctx }) => {
+  .action(async ({ parsedInput }) => {
     const { request_id } = parsedInput
     const supabase = await createSupabaseClient()
 
     const { data: request, error: fetchError } = await supabase
       .from('loyalty_redemption_requests')
-      .select('id, student_id, status')
+      .select('id, student_id')
       .eq('id', request_id)
       .single()
 
     if (fetchError || !request) throw new Error('Demande introuvable')
-    if (request.status !== 'pending') throw new Error('Cette demande a déjà été traitée')
 
-    const { error: updateError } = await supabase
-      .from('loyalty_redemption_requests')
-      .update({
-        status: 'rejected',
-        handled_by: ctx.userId,
-        handled_at: new Date().toISOString(),
-      })
-      .eq('id', request_id)
+    // Atomic in the DB: refunds the points reserved at request time and flips status.
+    const { error: rpcError } = await supabase.rpc('reject_redemption_request', {
+      p_request_id: request_id,
+    })
 
-    if (updateError) throw new Error('Une erreur est survenue lors du rejet de la demande')
+    if (rpcError) throw new Error(rpcError.message)
 
     try {
       await insertInAppNotification({

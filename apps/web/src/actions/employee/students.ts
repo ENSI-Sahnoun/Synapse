@@ -72,7 +72,7 @@ export const getStudentDetailAction = employeeActionClient
         .maybeSingle(),
       supabase
         .from('subscriptions')
-        .select('id, start_date, end_date, paid_amount, subscription_plans(name)')
+        .select('id, plan_id, start_date, end_date, paid_amount, subscription_plans(name)')
         .eq('student_id', studentId)
         .order('end_date', { ascending: false }),
       supabase
@@ -102,6 +102,7 @@ export const getStudentDetailAction = employeeActionClient
       totalVisits: visits,
       history: (historyResult.data ?? []).map((s) => ({
         id: s.id,
+        planId: s.plan_id,
         startDate: s.start_date,
         endDate: s.end_date,
         paidAmount: s.paid_amount,

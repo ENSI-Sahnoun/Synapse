@@ -1494,6 +1494,18 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: Json
       }
+      request_redemption: {
+        Args: { p_rule_id: string }
+        Returns: Json
+      }
+      reject_redemption_request: {
+        Args: { p_request_id: string }
+        Returns: Json
+      }
+      cancel_redemption_request: {
+        Args: { p_request_id: string }
+        Returns: Json
+      }
       pos_add_cash_movement: {
         Args: { p_amount: number; p_reason: string; p_session_id: string; p_type: string }
         Returns: {

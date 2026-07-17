@@ -155,6 +155,23 @@ export const setLockerReminderDelayDays = adminActionClient
     return { success: true, days }
   })
 
+// Update daily reset time (checkout/caisses/reservations/notifications reset)
+const setDailyResetTimeSchema = z.object({
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Format HH:MM requis' }),
+})
+
+export const setDailyResetTime = adminActionClient
+  .schema(setDailyResetTimeSchema)
+  .action(async ({ parsedInput: { time } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'daily_reset_time', value: time }, { onConflict: 'key' })
+    if (error) throw new Error('Impossible de mettre à jour l\'heure de réinitialisation.')
+    revalidatePath('/admin/settings')
+    return { success: true, time }
+  })
+
 // Update nav order/visibility for a role (admin edits both roles' nav from one screen)
 const setNavOrderSchema = z.object({
   role: z.enum(['admin', 'employee']),

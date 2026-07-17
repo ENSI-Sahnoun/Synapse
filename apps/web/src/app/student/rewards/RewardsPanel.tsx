@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { LoyaltyRule } from '@/lib/rewards'
 import { RequestButton } from './request-button'
+import { CancelButton } from './cancel-button'
 
 export type RedemptionRequest = {
   id: string
@@ -24,12 +25,14 @@ const STATUS_LABELS: Record<string, string> = {
   pending: 'En attente',
   fulfilled: 'Accordée',
   rejected: 'Refusée',
+  cancelled: 'Annulée',
 }
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
   fulfilled: 'bg-green-100 text-green-700',
   rejected: 'bg-red-100 text-red-700',
+  cancelled: 'bg-muted text-muted-foreground',
 }
 
 const GOLD = '#c9a227'
@@ -128,9 +131,12 @@ export function RewardsPanel({
                     {format(new Date(req.created_at), 'dd MMM yyyy', { locale: fr })}
                   </p>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[req.status] ?? 'bg-muted text-muted-foreground'}`}>
-                  {STATUS_LABELS[req.status] ?? req.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[req.status] ?? 'bg-muted text-muted-foreground'}`}>
+                    {STATUS_LABELS[req.status] ?? req.status}
+                  </span>
+                  {req.status === 'pending' && <CancelButton requestId={req.id} />}
+                </div>
               </div>
             ))}
           </div>

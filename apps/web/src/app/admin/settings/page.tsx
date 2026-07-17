@@ -5,6 +5,7 @@ import { ReservationHoldCard } from './ReservationHoldCard';
 import { ReservationExtendedHoldCard } from './ReservationExtendedHoldCard';
 import { PriorityThresholdCard } from './PriorityThresholdCard';
 import { FreeSwapCard } from './FreeSwapCard';
+import { DailyResetTimeCard } from './DailyResetTimeCard';
 import { DangerZoneSection } from './DangerZoneSection';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,7 @@ export default async function AdminSettingsPage() {
     extendedMinDaysValue,
     priorityDaysValue,
     freeSwapValue,
+    dailyResetTime,
   ] = await Promise.all([
     getSetting(supabase, 'exam_mode', 'false'),
     getSetting(supabase, 'reservation_hold_minutes', '30'),
@@ -39,6 +41,7 @@ export default async function AdminSettingsPage() {
     getSetting(supabase, 'reservation_extended_min_duration_days', '30'),
     getSetting(supabase, 'priority_min_duration_days', '30'),
     getSetting(supabase, 'free_swap', 'false'),
+    getSetting(supabase, 'daily_reset_time', '00:00'),
   ]);
 
   const examMode = examModeValue === 'true';
@@ -67,6 +70,11 @@ export default async function AdminSettingsPage() {
         <ExamModeCard initialEnabled={examMode} />
         <PriorityThresholdCard initialDays={priorityDays} />
         <FreeSwapCard initialEnabled={freeSwap} />
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Réinitialisation</h2>
+        <DailyResetTimeCard initialTime={dailyResetTime} />
       </section>
 
       <section className="flex flex-col gap-4">

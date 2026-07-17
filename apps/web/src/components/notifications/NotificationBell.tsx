@@ -52,8 +52,8 @@ export function NotificationBell({
     setOpen(false)
     startTransition(async () => {
       await markNotificationRead({ notificationId: id })
+      router.push(href)
     })
-    router.push(href)
   }
 
   function handleMarkAllRead() {

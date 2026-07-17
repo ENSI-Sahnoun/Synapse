@@ -14,55 +14,21 @@ export const requestRedemptionAction = studentActionClient
     const studentId = ctx.userId
     const supabase = await createSupabaseClient()
 
-    // Fetch the rule
-    const { data: rule, error: ruleError } = await supabase
-      .from('loyalty_rules')
-      .select('id, name, points_threshold, is_active')
-      .eq('id', rule_id)
-      .single()
+    // Atomic in the DB: advisory-locks the student, re-checks balance, inserts the
+    // request, and deducts points — all in one transaction. This closes the race
+    // where two concurrent requests could each pass a balance check before either
+    // was recorded, later both getting approved and pushing the balance negative.
+    const { data: result, error: rpcError } = await supabase.rpc('request_redemption', {
+      p_rule_id: rule_id,
+    })
 
-    if (ruleError || !rule) throw new Error('Récompense introuvable')
-    if (!rule.is_active) throw new Error("Cette récompense n'est plus disponible")
+    if (rpcError) throw new Error(rpcError.message)
 
-    // Check for existing pending request for this rule
-    const { data: existing } = await supabase
-      .from('loyalty_redemption_requests')
-      .select('id')
-      .eq('student_id', studentId)
-      .eq('rule_id', rule_id)
-      .eq('status', 'pending')
-      .maybeSingle()
-
-    if (existing) throw new Error('Une demande est déjà en attente pour cette récompense')
-
-    // Compute current balance
-    const { data: ledger, error: ledgerError } = await supabase
-      .from('loyalty_ledger')
-      .select('points_delta')
-      .eq('student_id', studentId)
-
-    if (ledgerError) throw new Error('Erreur de lecture du solde')
-    const balance = (ledger ?? []).reduce((sum, row) => sum + row.points_delta, 0)
-
-    if (balance < rule.points_threshold) {
-      throw new Error(
-        `Solde insuffisant: ${balance} pts disponibles, ${rule.points_threshold} pts requis`
-      )
+    const { id: requestId, rule_name: ruleName, points_used: pointsUsed } = result as {
+      id: string
+      rule_name: string
+      points_used: number
     }
-
-    // Insert redemption request (does NOT deduct points — employee confirms physically)
-    const { data: insertedRequest, error: insertError } = await supabase
-      .from('loyalty_redemption_requests')
-      .insert({
-        student_id: studentId,
-        rule_id,
-        status: 'pending',
-        points_used: rule.points_threshold,
-      })
-      .select('id')
-      .single()
-
-    if (insertError) throw new Error('Erreur lors de la demande. Veuillez réessayer.')
 
     try {
       const { data: studentProfile } = await supabase
@@ -75,13 +41,14 @@ export const requestRedemptionAction = studentActionClient
         'loyalty_request_new',
         buildLoyaltyRequestMessage({
           studentName: studentProfile?.full_name ?? 'Un étudiant',
-          ruleName: rule.name,
-          points: rule.points_threshold,
+          ruleName,
+          points: pointsUsed,
         }),
-        { link: `/employee/loyalty-requests?highlight=${insertedRequest.id}` },
+        { link: `/employee/loyalty-requests?highlight=${requestId}` },
       )
     } catch { /* non-fatal */ }
 
     revalidatePath('/student/loyalty')
-    return { ruleName: rule.name, pointsUsed: rule.points_threshold }
+    revalidatePath('/student/rewards')
+    return { ruleName, pointsUsed }
   })

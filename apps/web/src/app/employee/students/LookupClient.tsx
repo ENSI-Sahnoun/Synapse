@@ -3,11 +3,12 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { MagnifyingGlass, CaretLeft, CaretRight, QrCode, SignIn, SignOut, Armchair, PaperPlaneTilt } from '@phosphor-icons/react'
+import { MagnifyingGlass, CaretLeft, CaretRight, QrCode, SignIn, SignOut, Armchair, PaperPlaneTilt, PencilSimple, Trash, X, Check } from '@phosphor-icons/react'
 import { checkinAction } from '@/actions/checkin/checkin-action'
 import { checkoutAction } from '@/actions/checkin/checkout-action'
 import { getStudentDetailAction, createStudentAction, updateStudentInfoAction, getStudentAttendanceHistoryAction } from '@/actions/employee/students'
 import { createSubscriptionAction } from '@/actions/employee/subscriptions'
+import { updateSubscriptionAction, deleteSubscriptionAction, adjustLoyaltyPointsAction } from '@/actions/admin/subscriptions'
 import { archiveUserAction, restoreUserAction, hardDeleteUserAction } from '@/actions/admin/students'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PostCheckinSeatDialog } from '@/components/checkin/PostCheckinSeatDialog'
@@ -243,6 +244,7 @@ function SectionHeader({ label }: { label: string }) {
 
 interface SubscriptionHistoryRow {
   id: string
+  planId: string
   startDate: string
   endDate: string
   paidAmount: number
@@ -429,19 +431,192 @@ function daysLeft(endDate: string | null): number | null {
   return Math.ceil(ms / 86_400_000)
 }
 
-function StatTile({ label, value }: { label: string; value: string | number }) {
+function StatTile({ label, value, onClick }: { label: string; value: string | number; onClick?: () => void }) {
   return (
     <div
+      onClick={onClick}
       style={{
         flex: 1,
         background: 'var(--synapse-green-50, #f0faf4)',
         borderRadius: 'var(--radius-md)',
         padding: '12px 10px',
         textAlign: 'center',
+        cursor: onClick ? 'pointer' : 'default',
       }}
     >
       <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--synapse-green-500, #22c55e)' }}>{value}</div>
       <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{label}</div>
+    </div>
+  )
+}
+
+function SubscriptionRow({
+  row,
+  isLast,
+  plans,
+  onSaved,
+}: {
+  row: SubscriptionHistoryRow
+  isLast: boolean
+  plans: Plan[]
+  onSaved: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [planId, setPlanId] = useState(row.planId)
+  const [startDate, setStartDate] = useState(row.startDate.slice(0, 10))
+  const [endDate, setEndDate] = useState(row.endDate.slice(0, 10))
+
+  const { execute: doUpdate, status: updateStatus } = useAction(updateSubscriptionAction, {
+    onSuccess: () => {
+      toast.success('Abonnement mis à jour')
+      setEditing(false)
+      onSaved()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
+  })
+
+  const { execute: doDelete, status: deleteStatus } = useAction(deleteSubscriptionAction, {
+    onSuccess: () => {
+      toast.success('Abonnement supprimé')
+      onSaved()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
+  })
+
+  const busy = updateStatus === 'executing' || deleteStatus === 'executing'
+
+  if (editing) {
+    return (
+      <div
+        style={{
+          padding: '10px 14px', borderBottom: isLast ? 'none' : '1px solid var(--border-subtle)',
+          display: 'flex', flexDirection: 'column', gap: 8,
+        }}
+      >
+        <select
+          value={planId}
+          onChange={(e) => setPlanId(e.target.value)}
+          style={{ border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '8px', fontSize: 13 }}
+        >
+          {plans.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            style={{ flex: 1, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '8px', fontSize: 13 }}
+          />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            style={{ flex: 1, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '8px', fontSize: 13 }}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setEditing(false)}
+            disabled={busy}
+            style={{ flex: 1, background: 'none', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '8px', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+          >
+            <X size={14} /> Annuler
+          </button>
+          <button
+            onClick={() => doUpdate({
+              subscription_id: row.id,
+              plan_id: planId !== row.planId ? planId : undefined,
+              start_date: startDate !== row.startDate.slice(0, 10) ? startDate : undefined,
+              end_date: endDate !== row.endDate.slice(0, 10) ? endDate : undefined,
+            })}
+            disabled={busy}
+            style={{ flex: 1, background: 'var(--accent-brand)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', padding: '8px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+          >
+            <Check size={14} /> {updateStatus === 'executing' ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '10px 14px', borderBottom: isLast ? 'none' : '1px solid var(--border-subtle)', gap: 10,
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>{row.planName}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+          {new Date(row.startDate).toLocaleDateString('fr-FR')} → {new Date(row.endDate).toLocaleDateString('fr-FR')}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{row.paidAmount} DT</span>
+        <button
+          onClick={() => setEditing(true)}
+          disabled={busy}
+          title="Modifier"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-tertiary)' }}
+        >
+          <PencilSimple size={16} />
+        </button>
+        <button
+          onClick={() => {
+            if (window.confirm('Supprimer définitivement cet abonnement ?')) doDelete({ subscription_id: row.id })
+          }}
+          disabled={busy}
+          title="Supprimer"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--destructive)' }}
+        >
+          <Trash size={16} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PointsAdjustPanel({ studentId, onSaved }: { studentId: string; onSaved: () => void }) {
+  const [delta, setDelta] = useState('')
+
+  const { execute, status } = useAction(adjustLoyaltyPointsAction, {
+    onSuccess: () => {
+      toast.success('Points mis à jour')
+      setDelta('')
+      onSaved()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
+  })
+
+  return (
+    <div style={{ background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Ajuster les points de fidélité</span>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          type="number"
+          value={delta}
+          onChange={(e) => setDelta(e.target.value)}
+          placeholder="+10 ou -5"
+          style={{ flex: 1, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '8px', fontSize: 13 }}
+        />
+        <button
+          onClick={() => {
+            const n = parseInt(delta, 10)
+            if (!n) { toast.error('Montant invalide'); return }
+            execute({ student_id: studentId, points_delta: n })
+          }}
+          disabled={status === 'executing'}
+          style={{
+            background: 'var(--accent-brand)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)',
+            padding: '8px 14px', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+          }}
+        >
+          {status === 'executing' ? '…' : 'Appliquer'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -454,6 +629,7 @@ function DetailView({
   onCheckout,
   role,
   showArchived,
+  plans,
 }: {
   student: Student
   attendance: CurrentlyIn | null
@@ -462,6 +638,7 @@ function DetailView({
   onCheckout: (studentId: string) => void
   role: string
   showArchived: boolean
+  plans: Plan[]
 }) {
   const [stats, setStats] = useState<DetailStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
@@ -474,6 +651,7 @@ function DetailView({
   const [fullHistory, setFullHistory] = useState<AttendanceHistoryRow[] | null>(null)
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
   const [sendAnnouncementOpen, setSendAnnouncementOpen] = useState(false)
+  const [showPointsAdjust, setShowPointsAdjust] = useState(false)
   const router = useRouter()
 
   function handleDestructiveSuccess() {
@@ -685,9 +863,20 @@ function DetailView({
           label="Jours restants"
           value={statsLoading ? '…' : (remaining === null ? '—' : remaining < 0 ? 'Expiré' : remaining)}
         />
-        <StatTile label="Points" value={statsLoading ? '…' : (stats?.loyaltyPoints ?? 0)} />
+        <StatTile
+          label="Points"
+          value={statsLoading ? '…' : (stats?.loyaltyPoints ?? 0)}
+          onClick={role === 'admin' ? () => setShowPointsAdjust((v) => !v) : undefined}
+        />
         <StatTile label="Visites" value={statsLoading ? '…' : (stats?.totalVisits ?? 0)} />
       </div>
+
+      {role === 'admin' && showPointsAdjust && (
+        <PointsAdjustPanel
+          studentId={student.id}
+          onSaved={() => fetchDetail({ studentId: student.id })}
+        />
+      )}
 
       <button
         onClick={() => {
@@ -796,21 +985,13 @@ function DetailView({
           {showSubHistory && (
             <div style={{ background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
               {stats.history.map((h, i) => (
-                <div
+                <SubscriptionRow
                   key={h.id}
-                  style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '10px 14px', borderBottom: i < stats.history.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>{h.planName}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-                      {new Date(h.startDate).toLocaleDateString('fr-FR')} → {new Date(h.endDate).toLocaleDateString('fr-FR')}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{h.paidAmount} DT</span>
-                </div>
+                  row={h}
+                  isLast={i === stats.history.length - 1}
+                  plans={plans}
+                  onSaved={() => fetchDetail({ studentId: student.id })}
+                />
               ))}
             </div>
           )}
@@ -1103,6 +1284,7 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans,
         onCheckout={handleCheckout}
         role={role}
         showArchived={showArchived}
+        plans={plans}
       />
     )
   }
