@@ -4,7 +4,7 @@ import { getMyLocker } from '@/data/student/lockers'
 import { getMyImportantNotifications } from '@/data/notifications/list'
 import { getMyLeaderboardRank, getLeaderboardSettings, getLeaderboardConfig } from '@/data/student/leaderboard'
 import { getStudentLoyaltyBalance } from '@/data/student/loyalty'
-import { differenceInDays, parseISO, format, startOfDay } from 'date-fns'
+import { differenceInDays, differenceInMinutes, parseISO, format, startOfDay, endOfDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { WarningCircle, ArrowRight } from '@phosphor-icons/react/dist/ssr'
@@ -17,7 +17,7 @@ import { DiversSeatPrompt } from '@/components/student/DiversSeatPrompt'
 import { StudentPresenceSync } from '@/components/student/StudentPresenceSync'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
 import { SubscriptionStatusPopup } from '@/components/student/SubscriptionStatusPopup'
-import { computeSubscriptionState } from '@/lib/subscription-status'
+import { computeSubscriptionState, isDailyPlan } from '@/lib/subscription-status'
 
 export default async function StudentDashboardPage() {
   const userId = await getCachedLoggedInUserId()
@@ -53,16 +53,30 @@ export default async function StudentDashboardPage() {
     : 0
 
   const planDuration = (activeSubscription?.subscription_plans as { duration_days?: number } | null)?.duration_days ?? 30
+  const isDaily = isDailyPlan((activeSubscription?.subscription_plans as { name?: string } | null)?.name)
+
+  // Daily plans (journalier/demi) and the last day of any plan read as
+  // "hours left" instead of "X jours restants" — a day count is meaningless
+  // when there's only a day (or less) of validity remaining.
+  const showHoursMode = activeSubscription != null && (isDaily || daysRemaining <= 1)
+  const hoursRemaining =
+    activeSubscription && showHoursMode
+      ? Math.max(0, Math.ceil(differenceInMinutes(endOfDay(parseISO(activeSubscription.end_date)), new Date()) / 60))
+      : 0
+
   const progressPct = activeSubscription
-    ? Math.max(0, Math.min(100, (daysRemaining / planDuration) * 100))
+    ? showHoursMode
+      ? Math.max(0, Math.min(100, (hoursRemaining / 24) * 100))
+      : Math.max(0, Math.min(100, (daysRemaining / planDuration) * 100))
     : 0
 
-  // Tiered color coding: healthy while most of the plan is left, warning as it
-  // runs low, critical once nearly (or fully) expired.
-  const planColor =
-    progressPct > 50 ? 'var(--synapse-green-500)' : progressPct > 20 ? 'var(--synapse-orange-600, #ea580c)' : '#dc2626'
-  const planColorBg =
-    progressPct > 50 ? 'var(--synapse-green-50)' : progressPct > 20 ? 'rgba(234,88,12,0.1)' : '#fee2e2'
+  // Tiered color coding: healthy while most of the time is left, critical
+  // once it's down to a few hours. Hours-mode reads green until the last
+  // stretch of the day, days-mode keeps the original 50%/20% tiers.
+  const isCritical = showHoursMode ? hoursRemaining <= 4 : progressPct <= 20
+  const isWarning = !showHoursMode && progressPct > 20 && progressPct <= 50
+  const planColor = isCritical ? '#dc2626' : isWarning ? 'var(--synapse-orange-600, #ea580c)' : 'var(--synapse-green-500)'
+  const planColorBg = isCritical ? '#fee2e2' : isWarning ? 'rgba(234,88,12,0.1)' : 'var(--synapse-green-50)'
 
   const firstName = profile.full_name?.split(' ')[0] || 'étudiant'
   const hour = new Date().getHours()
@@ -165,7 +179,11 @@ export default async function StudentDashboardPage() {
             </div>
 
             <p className="text-sm mb-2 font-semibold" style={{ color: planColor }}>
-              {daysRemaining === 0 ? "Expire aujourd'hui" : `${daysRemaining} jours restants`}
+              {showHoursMode
+                ? hoursRemaining <= 1
+                  ? "Moins d'1h restante"
+                  : `${hoursRemaining}h restantes`
+                : `${daysRemaining} jours restants`}
             </p>
 
             {/* Progress bar */}
@@ -176,7 +194,7 @@ export default async function StudentDashboardPage() {
               />
             </div>
 
-            {daysRemaining <= 3 && (
+            {isCritical && (
               <p className="text-xs flex items-center gap-1 mb-3" style={{ color: planColor }}>
                 <WarningCircle size={13} weight="bold" />
                 Abonnement expire bientôt — contactez l'accueil
@@ -207,13 +225,15 @@ export default async function StudentDashboardPage() {
         )}
       </div>
 
-      {latestSubscription && subscriptionState && (
-        <SubscriptionStatusPopup
-          subscriptionId={latestSubscription.id}
-          state={subscriptionState}
-          endDateLabel={format(parseISO(latestSubscription.end_date), 'dd MMMM yyyy', { locale: fr })}
-        />
-      )}
+      {latestSubscription &&
+        subscriptionState &&
+        !(isDaily && (subscriptionState === 'expiring_soon' || subscriptionState === 'expires_today')) && (
+          <SubscriptionStatusPopup
+            subscriptionId={latestSubscription.id}
+            state={subscriptionState}
+            endDateLabel={format(parseISO(latestSubscription.end_date), 'dd MMMM yyyy', { locale: fr })}
+          />
+        )}
 
       <LockerStatus locker={locker} />
 

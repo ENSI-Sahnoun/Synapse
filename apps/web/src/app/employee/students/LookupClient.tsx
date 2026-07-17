@@ -3,12 +3,12 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { MagnifyingGlass, CaretLeft, CaretRight, QrCode, SignIn, SignOut, Armchair, PaperPlaneTilt, PencilSimple, Trash, X, Check } from '@phosphor-icons/react'
+import { MagnifyingGlass, CaretLeft, CaretRight, QrCode, SignIn, SignOut, Armchair, PaperPlaneTilt, PencilSimple } from '@phosphor-icons/react'
 import { checkinAction } from '@/actions/checkin/checkin-action'
 import { checkoutAction } from '@/actions/checkin/checkout-action'
 import { getStudentDetailAction, createStudentAction, updateStudentInfoAction, getStudentAttendanceHistoryAction } from '@/actions/employee/students'
 import { createSubscriptionAction } from '@/actions/employee/subscriptions'
-import { updateSubscriptionAction, deleteSubscriptionAction, adjustLoyaltyPointsAction } from '@/actions/admin/subscriptions'
+import { adjustLoyaltyPointsAction } from '@/actions/admin/subscriptions'
 import { archiveUserAction, restoreUserAction, hardDeleteUserAction } from '@/actions/admin/students'
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PostCheckinSeatDialog } from '@/components/checkin/PostCheckinSeatDialog'
@@ -19,6 +19,7 @@ import { ArchivedToggle } from './ArchivedToggle'
 import { EditIdentityDialog } from './EditIdentityDialog'
 import { SendAnnouncementDialog } from './SendAnnouncementDialog'
 import { DropToKioskButton } from '@/components/employee/DropToKioskButton'
+import { isDailyPlan } from '@/lib/subscription-status'
 
 interface Student {
   id: string
@@ -38,14 +39,6 @@ interface CurrentlyIn {
   seatLabel: string | null
   planName: string | null
   checkedInAt: string
-}
-
-function isDailyPlan(planName: string | null): boolean {
-  if (!planName) return false
-  const n = planName
-    .toLowerCase()
-    .replace(/é|è|ê/g, 'e')
-  return n.includes('journalier') || n.includes('journee')
 }
 
 function placeLabel(a: CurrentlyIn | undefined): string | null {
@@ -435,146 +428,27 @@ function StatTile({ label, value, onClick }: { label: string; value: string | nu
   return (
     <div
       onClick={onClick}
+      title={onClick ? 'Cliquer pour modifier' : undefined}
       style={{
         flex: 1,
+        position: 'relative',
         background: 'var(--synapse-green-50, #f0faf4)',
         borderRadius: 'var(--radius-md)',
         padding: '12px 10px',
         textAlign: 'center',
         cursor: onClick ? 'pointer' : 'default',
+        border: onClick ? '1px dashed var(--synapse-green-500, #22c55e)' : '1px solid transparent',
       }}
     >
+      {onClick && (
+        <PencilSimple
+          size={12}
+          weight="bold"
+          style={{ position: 'absolute', top: 6, right: 6, color: 'var(--synapse-green-500, #22c55e)' }}
+        />
+      )}
       <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--synapse-green-500, #22c55e)' }}>{value}</div>
       <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{label}</div>
-    </div>
-  )
-}
-
-function SubscriptionRow({
-  row,
-  isLast,
-  plans,
-  onSaved,
-}: {
-  row: SubscriptionHistoryRow
-  isLast: boolean
-  plans: Plan[]
-  onSaved: () => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [planId, setPlanId] = useState(row.planId)
-  const [startDate, setStartDate] = useState(row.startDate.slice(0, 10))
-  const [endDate, setEndDate] = useState(row.endDate.slice(0, 10))
-
-  const { execute: doUpdate, status: updateStatus } = useAction(updateSubscriptionAction, {
-    onSuccess: () => {
-      toast.success('Abonnement mis à jour')
-      setEditing(false)
-      onSaved()
-    },
-    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
-  })
-
-  const { execute: doDelete, status: deleteStatus } = useAction(deleteSubscriptionAction, {
-    onSuccess: () => {
-      toast.success('Abonnement supprimé')
-      onSaved()
-    },
-    onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
-  })
-
-  const busy = updateStatus === 'executing' || deleteStatus === 'executing'
-
-  if (editing) {
-    return (
-      <div
-        style={{
-          padding: '10px 14px', borderBottom: isLast ? 'none' : '1px solid var(--border-subtle)',
-          display: 'flex', flexDirection: 'column', gap: 8,
-        }}
-      >
-        <select
-          value={planId}
-          onChange={(e) => setPlanId(e.target.value)}
-          style={{ border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '8px', fontSize: 13 }}
-        >
-          {plans.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            style={{ flex: 1, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '8px', fontSize: 13 }}
-          />
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            style={{ flex: 1, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '8px', fontSize: 13 }}
-          />
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setEditing(false)}
-            disabled={busy}
-            style={{ flex: 1, background: 'none', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '8px', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-          >
-            <X size={14} /> Annuler
-          </button>
-          <button
-            onClick={() => doUpdate({
-              subscription_id: row.id,
-              plan_id: planId !== row.planId ? planId : undefined,
-              start_date: startDate !== row.startDate.slice(0, 10) ? startDate : undefined,
-              end_date: endDate !== row.endDate.slice(0, 10) ? endDate : undefined,
-            })}
-            disabled={busy}
-            style={{ flex: 1, background: 'var(--accent-brand)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', padding: '8px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-          >
-            <Check size={14} /> {updateStatus === 'executing' ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div
-      style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '10px 14px', borderBottom: isLast ? 'none' : '1px solid var(--border-subtle)', gap: 10,
-      }}
-    >
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>{row.planName}</div>
-        <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-          {new Date(row.startDate).toLocaleDateString('fr-FR')} → {new Date(row.endDate).toLocaleDateString('fr-FR')}
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>{row.paidAmount} DT</span>
-        <button
-          onClick={() => setEditing(true)}
-          disabled={busy}
-          title="Modifier"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-tertiary)' }}
-        >
-          <PencilSimple size={16} />
-        </button>
-        <button
-          onClick={() => {
-            if (window.confirm('Supprimer définitivement cet abonnement ?')) doDelete({ subscription_id: row.id })
-          }}
-          disabled={busy}
-          title="Supprimer"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--destructive)' }}
-        >
-          <Trash size={16} />
-        </button>
-      </div>
     </div>
   )
 }
@@ -629,7 +503,6 @@ function DetailView({
   onCheckout,
   role,
   showArchived,
-  plans,
 }: {
   student: Student
   attendance: CurrentlyIn | null
@@ -638,14 +511,12 @@ function DetailView({
   onCheckout: (studentId: string) => void
   role: string
   showArchived: boolean
-  plans: Plan[]
 }) {
   const [stats, setStats] = useState<DetailStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
   const [seatDialogOpen, setSeatDialogOpen] = useState(false)
   const [checkedInAttendanceId, setCheckedInAttendanceId] = useState<string | null>(null)
   const [editFields, setEditFields] = useState({ phone: '', university: '', study_level: '' })
-  const [showSubHistory, setShowSubHistory] = useState(false)
   const [showQr, setShowQr] = useState(false)
   const [showFullHistory, setShowFullHistory] = useState(false)
   const [fullHistory, setFullHistory] = useState<AttendanceHistoryRow[] | null>(null)
@@ -968,37 +839,6 @@ function DetailView({
         </div>
       </div>
 
-      {stats && stats.history.length > 0 && (
-        <div>
-          <button
-            onClick={() => setShowSubHistory((v) => !v)}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
-              background: 'none', border: 'none', padding: 0, cursor: 'pointer', marginBottom: 8,
-            }}
-          >
-            <SectionHeader label="Historique des abonnements" />
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-brand)' }}>
-              {showSubHistory ? 'Masquer' : 'Afficher'}
-            </span>
-          </button>
-          {showSubHistory && (
-            <div style={{ background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-              {stats.history.map((h, i) => (
-                <SubscriptionRow
-                  key={h.id}
-                  row={h}
-                  isLast={i === stats.history.length - 1}
-                  plans={plans}
-                  onSaved={() => fetchDetail({ studentId: student.id })}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <Link
           href={`/employee/students/${student.id}/subscriptions/new`}
@@ -1008,7 +848,7 @@ function DetailView({
             color: 'var(--text-secondary)', textDecoration: 'none',
           }}
         >
-          Vendre un abonnement
+          Gérer l'abonnement
         </Link>
 
         {student.qr_token && (
@@ -1284,7 +1124,6 @@ export function LookupClient({ students, currentlyIn: initialCurrentlyIn, plans,
         onCheckout={handleCheckout}
         role={role}
         showArchived={showArchived}
-        plans={plans}
       />
     )
   }

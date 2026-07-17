@@ -2,6 +2,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Toaster as SonnerToaster } from 'sonner';
+import { CheckCircle2, AlertCircle, AlertTriangle, Info, Loader2 } from 'lucide-react';
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import { InstallPromptModal } from '@/components/pwa/InstallPromptModal';
 import { NotificationToaster } from '@/components/notifications/NotificationToaster';
@@ -34,6 +35,14 @@ export function DynamicLayoutProviders({ children }: { children: React.ReactNode
           <SonnerToaster
             richColors
             theme="light"
+            mobileOffset={{ left: 16, right: 16 }}
+            icons={{
+              success: <CheckCircle2 className="h-full w-full" />,
+              error: <AlertCircle className="h-full w-full" />,
+              warning: <AlertTriangle className="h-full w-full" />,
+              info: <Info className="h-full w-full" />,
+              loading: <Loader2 className="h-full w-full animate-spin" />,
+            }}
             toastOptions={{
               classNames: {
                 actionButton: '!bg-primary !text-primary-foreground !font-semibold hover:!bg-[var(--primary-hover)]',

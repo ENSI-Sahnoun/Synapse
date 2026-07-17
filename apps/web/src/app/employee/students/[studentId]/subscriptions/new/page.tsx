@@ -2,6 +2,7 @@ import { getStudentById, getActiveSubscription } from '@/data/employee/students'
 import { listActivePlans } from '@/data/employee/subscription-plans'
 import { notFound } from 'next/navigation'
 import { SellSubscriptionForm } from './sell-subscription-form'
+import { SubscriptionHistory } from './subscription-history'
 import Link from 'next/link'
 import { addDays, format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -33,7 +34,7 @@ export default async function NewSubscriptionPage({
       >
         ← {student.full_name}
       </Link>
-      <h1 className="text-2xl font-semibold">Vendre un abonnement</h1>
+      <h1 className="text-2xl font-semibold">Gérer l'abonnement</h1>
 
       {activeSubscription && (
         <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
@@ -48,6 +49,20 @@ export default async function NewSubscriptionPage({
         studentId={studentId}
         plans={plans}
         stackStartDate={stackStartDate}
+      />
+
+      <SubscriptionHistory
+        plans={plans}
+        history={(student.subscriptions ?? [])
+          .filter((s) => s.subscription_plans)
+          .map((s) => ({
+            id: s.id,
+            planId: s.plan_id,
+            planName: s.subscription_plans!.name,
+            startDate: s.start_date,
+            endDate: s.end_date,
+            paidAmount: s.paid_amount,
+          }))}
       />
     </div>
   )
