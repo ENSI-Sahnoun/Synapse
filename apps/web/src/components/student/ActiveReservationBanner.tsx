@@ -1,6 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
+
+const WARNING_THRESHOLD_MS = 2 * 60 * 1000
 
 type Reservation = {
   id: string
@@ -18,13 +21,25 @@ export function ActiveReservationBanner({
   examMode: boolean
 }) {
   const [timeLeft, setTimeLeft] = useState('')
+  const [urgent, setUrgent] = useState(false)
+  const warnedRef = useRef(false)
 
   useEffect(() => {
     function update() {
       const diff = new Date(reservation.expires_at).getTime() - Date.now()
       if (diff <= 0) {
         setTimeLeft('Expirée')
+        setUrgent(true)
         return
+      }
+      if (diff <= WARNING_THRESHOLD_MS) {
+        setUrgent(true)
+        if (!warnedRef.current) {
+          warnedRef.current = true
+          toast.warning(`Votre réservation expire bientôt — place ${reservation.seats?.label ?? '—'}`, {
+            position: 'top-center',
+          })
+        }
       }
       const m = Math.floor(diff / 60000)
       const s = Math.floor((diff % 60000) / 1000)
@@ -33,14 +48,20 @@ export function ActiveReservationBanner({
     update()
     const id = setInterval(update, 1000)
     return () => clearInterval(id)
-  }, [reservation.expires_at])
+  }, [reservation.expires_at, reservation.seats?.label])
 
   return (
-    <div className="rounded-xl bg-orange-50 border border-orange-200 p-4">
+    <div
+      className={
+        urgent
+          ? 'rounded-xl bg-red-50 border border-red-300 p-4 animate-pulse'
+          : 'rounded-xl bg-orange-50 border border-orange-200 p-4'
+      }
+    >
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-semibold text-orange-800">Réservation active</p>
-          <p className="text-orange-700 text-sm">
+          <p className={urgent ? 'font-semibold text-red-800' : 'font-semibold text-orange-800'}>Réservation active</p>
+          <p className={urgent ? 'text-red-700 text-sm' : 'text-orange-700 text-sm'}>
             Place <strong>{reservation.seats?.label ?? '—'}</strong> — expire dans{' '}
             <strong>{timeLeft}</strong>
           </p>

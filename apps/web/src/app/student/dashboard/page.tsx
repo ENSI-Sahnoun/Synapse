@@ -1,5 +1,5 @@
 import { getCachedLoggedInUserId } from '@/rsc-data/supabase'
-import { getMyProfile, getMyActiveSubscription, getMyPresence } from '@/data/student/profile'
+import { getMyProfile, getMyLatestSubscription, getMyPresence } from '@/data/student/profile'
 import { getMyLocker } from '@/data/student/lockers'
 import { getMyImportantNotifications } from '@/data/notifications/list'
 import { getMyLeaderboardRank, getLeaderboardSettings, getLeaderboardConfig } from '@/data/student/leaderboard'
@@ -16,14 +16,16 @@ import { GamificationTeaser } from '@/components/student/GamificationTeaser'
 import { DiversSeatPrompt } from '@/components/student/DiversSeatPrompt'
 import { StudentPresenceSync } from '@/components/student/StudentPresenceSync'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
+import { SubscriptionStatusPopup } from '@/components/student/SubscriptionStatusPopup'
+import { computeSubscriptionState } from '@/lib/subscription-status'
 
 export default async function StudentDashboardPage() {
   const userId = await getCachedLoggedInUserId()
 
-  const [profile, activeSubscription, presence, importantNotifications, lbMyRanks, lbSettings, lbConfig, balance, locker] =
+  const [profile, latestSubscription, presence, importantNotifications, lbMyRanks, lbSettings, lbConfig, balance, locker] =
     await Promise.all([
       getMyProfile(),
-      getMyActiveSubscription(),
+      getMyLatestSubscription(),
       getMyPresence(),
       getMyImportantNotifications(),
       getMyLeaderboardRank(),
@@ -39,6 +41,12 @@ export default async function StudentDashboardPage() {
   const myRank = lbMyRanks.find((m) => m.category === primaryCategory)?.rank ?? null
 
   const today = startOfDay(new Date())
+  const todayStr = format(today, 'yyyy-MM-dd')
+
+  const subscriptionState = latestSubscription
+    ? computeSubscriptionState(latestSubscription.end_date, todayStr)
+    : null
+  const activeSubscription = subscriptionState && subscriptionState !== 'expired' ? latestSubscription : null
 
   const daysRemaining = activeSubscription
     ? differenceInDays(parseISO(activeSubscription.end_date), today)
@@ -157,7 +165,7 @@ export default async function StudentDashboardPage() {
             </div>
 
             <p className="text-sm mb-2 font-semibold" style={{ color: planColor }}>
-              {daysRemaining} jours restants
+              {daysRemaining === 0 ? "Expire aujourd'hui" : `${daysRemaining} jours restants`}
             </p>
 
             {/* Progress bar */}
@@ -179,6 +187,16 @@ export default async function StudentDashboardPage() {
               Expire le {format(parseISO(activeSubscription.end_date), 'dd MMMM yyyy', { locale: fr })}
             </p>
           </div>
+        ) : subscriptionState === 'expired' && latestSubscription ? (
+          <div className="p-5 text-center space-y-1">
+            <p className="font-semibold text-sm" style={{ color: '#dc2626' }}>
+              Votre abonnement a expiré
+            </p>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              Il s'est terminé le {format(parseISO(latestSubscription.end_date), 'dd MMMM yyyy', { locale: fr })} —
+              rendez-vous à l'accueil pour le renouveler
+            </p>
+          </div>
         ) : (
           <div className="p-5 text-center space-y-1">
             <p className="font-semibold text-sm">Aucun abonnement actif</p>
@@ -188,6 +206,14 @@ export default async function StudentDashboardPage() {
           </div>
         )}
       </div>
+
+      {latestSubscription && subscriptionState && (
+        <SubscriptionStatusPopup
+          subscriptionId={latestSubscription.id}
+          state={subscriptionState}
+          endDateLabel={format(parseISO(latestSubscription.end_date), 'dd MMMM yyyy', { locale: fr })}
+        />
+      )}
 
       <LockerStatus locker={locker} />
 

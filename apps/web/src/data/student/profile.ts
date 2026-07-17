@@ -42,6 +42,28 @@ export async function getMyActiveSubscription() {
   return data
 }
 
+// Unlike getMyActiveSubscription, this returns the most recent subscription
+// row even if it has already expired — needed to tell "never subscribed"
+// apart from "subscription ended" on the dashboard.
+export async function getMyLatestSubscription() {
+  const supabase = await createSupabaseClient()
+  const userId = await getCachedLoggedInUserIdOrNull()
+  if (!userId) return null
+
+  const { data } = await supabase
+    .from('subscriptions')
+    .select(`
+      id, start_date, end_date, paid_amount,
+      subscription_plans ( name, duration_days )
+    `)
+    .eq('student_id', userId)
+    .order('end_date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return data
+}
+
 export async function getMyCheckInHistory(limit = 500) {
   const supabase = await createSupabaseClient()
   const userId = await getCachedLoggedInUserId()
