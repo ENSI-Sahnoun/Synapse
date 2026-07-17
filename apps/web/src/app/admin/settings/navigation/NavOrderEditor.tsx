@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
 import { CaretUp, CaretDown, Eye, EyeSlash, ChartBar } from '@phosphor-icons/react'
+import { motion } from 'motion/react'
 import { setNavOrder } from '@/actions/admin/settings'
 import { type NavRole, type ResolvedNavItem } from '@/lib/nav-items'
 import { ICON_MAP } from '@/lib/nav-icon-map'
@@ -77,8 +78,10 @@ export function NavOrderEditor({ role, title, description, initialItems }: Props
                 const groupItems = items.filter((i) => i.group === group)
                 const indexInGroup = groupItems.findIndex((i) => i.key === item.key)
                 return (
-                  <div
+                  <motion.div
                     key={item.key}
+                    layout
+                    transition={{ type: 'spring', duration: 0.35, bounce: 0.15 }}
                     className="flex items-center gap-3 rounded-md border p-2"
                     style={{ opacity: item.hidden ? 0.5 : 1 }}
                   >
@@ -110,7 +113,7 @@ export function NavOrderEditor({ role, title, description, initialItems }: Props
                     >
                       {item.hidden ? <EyeSlash size={16} /> : <Eye size={16} />}
                     </button>
-                  </div>
+                  </motion.div>
                 )
               })}
           </div>

@@ -228,11 +228,80 @@
   outline-offset: 2px;
 }
 
-/* Reduced motion */
+/* Reduced motion: drop movement, keep opacity/color feedback */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-property: opacity, color, background-color, border-color, box-shadow !important;
+  }
+}
+
+/* ── Toast alerts (sonner) ────────────────────────────────────
+   Brand-align the rich-color palette per toast type, then, on
+   mobile, pin the default bottom-right toaster (the one every
+   form/action toast.success|error call lands in) to the bottom
+   of the viewport, clear of the student bottom nav (64px +
+   safe-area-inset-bottom, see StudentBottomNav) and the
+   keyboard. Toasts fired with an explicit position (e.g. the
+   realtime notification banner) keep their own position
+   untouched. */
+[data-sonner-toaster][data-sonner-theme='light'] {
+  --success-bg: var(--synapse-green-50);
+  --success-border: color-mix(in oklab, var(--success) 32%, white);
+  --success-text: var(--synapse-green-700);
+
+  --error-bg: color-mix(in oklab, var(--destructive) 6%, white);
+  --error-border: color-mix(in oklab, var(--destructive) 28%, white);
+  --error-text: var(--destructive);
+
+  --warning-bg: color-mix(in oklab, var(--warning) 12%, white);
+  --warning-border: color-mix(in oklab, var(--warning) 32%, white);
+  --warning-text: color-mix(in oklab, var(--warning) 55%, black);
+}
+
+[data-sonner-toast][data-styled='true'] {
+  --border-radius: 0.875rem;
+  padding: 14px 16px;
+  font-size: 14px;
+  gap: 10px;
+  box-shadow: 0 8px 24px -6px rgba(30, 24, 18, 0.18), 0 2px 6px rgba(30, 24, 18, 0.06);
+}
+
+[data-sonner-toast][data-styled='true'] [data-title] {
+  font-weight: 600;
+}
+
+[data-sonner-toast][data-styled='true'] [data-icon] {
+  height: 20px;
+  width: 20px;
+}
+
+@media (max-width: 640px) {
+  [data-sonner-toaster][data-x-position='right'][data-y-position='bottom'] {
+    top: auto !important;
+    bottom: calc(64px + env(safe-area-inset-bottom) + 12px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: min(calc(100vw - 32px), 420px) !important;
+  }
+
+  [data-sonner-toaster][data-x-position='right'][data-y-position='bottom'] [data-sonner-toast] {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+  }
+
+  [data-sonner-toast][data-styled='true'] {
+    padding: 16px;
+    font-size: 15px;
+  }
+
+  [data-sonner-toast][data-styled='true'] [data-icon] {
+    height: 22px;
+    width: 22px;
   }
 }
 

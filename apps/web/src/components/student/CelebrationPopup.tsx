@@ -154,8 +154,8 @@ export function CelebrationPopup() {
           style={{ backgroundColor: 'var(--surface, #fff)' }}
         >
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.05, type: 'spring', stiffness: 420, damping: 16 }}
             className="text-4xl"
             aria-hidden

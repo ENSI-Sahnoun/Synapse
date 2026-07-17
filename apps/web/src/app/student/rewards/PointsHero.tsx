@@ -46,8 +46,8 @@ export function PointsHero({
           style={{
             background: 'linear-gradient(105deg, transparent, rgba(255,216,115,0.12), transparent)',
           }}
-          initial={{ left: '-40%' }}
-          animate={{ left: '120%' }}
+          initial={{ transform: 'translateX(-140%)' }}
+          animate={{ transform: 'translateX(140%)' }}
           transition={{ duration: 1.4, ease: 'easeInOut', delay: 0.3 }}
         />
       )}
@@ -72,10 +72,10 @@ export function PointsHero({
           </p>
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.12)' }}>
             <motion.div
-              className="h-full rounded-full"
+              className="h-full rounded-full origin-left"
               style={{ background: GOLD }}
-              initial={{ width: reduced ? `${next.progressPct}%` : 0 }}
-              animate={{ width: `${next.progressPct}%` }}
+              initial={{ scaleX: reduced ? next.progressPct / 100 : 0 }}
+              animate={{ scaleX: next.progressPct / 100 }}
               transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
             />
           </div>

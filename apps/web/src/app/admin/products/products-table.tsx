@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
+import { motion, AnimatePresence } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArchiveProductButton, RestoreProductButton, DeleteProductButton } from './product-actions'
@@ -105,9 +106,18 @@ export function ProductsTable({ products, categoryEmojis, categoryOrder }: Props
       )}
 
       {total === 0 ? (
-        <div className="border rounded-md px-4 py-8 text-center text-muted-foreground">
-          {products.length === 0 ? 'Aucun produit' : 'Aucun résultat'}
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={products.length === 0 ? 'no-products' : 'no-results'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="border rounded-md px-4 py-8 text-center text-muted-foreground"
+          >
+            {products.length === 0 ? 'Aucun produit' : 'Aucun résultat'}
+          </motion.div>
+        </AnimatePresence>
       ) : (
         groups.map(([category, list]) => {
           const catId = cats.find((c) => c.name === category)?.id

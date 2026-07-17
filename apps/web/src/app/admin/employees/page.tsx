@@ -5,6 +5,7 @@ import { ArchiveButton } from '@/components/admin/ArchiveButton'
 import { RestoreButton } from '@/components/admin/RestoreButton'
 import { HardDeleteButton } from '@/components/admin/HardDeleteButton'
 import { ArchivedToggle } from './ArchivedToggle'
+import { EmptyStateText } from './EmptyStateText'
 import { Suspense } from 'react'
 
 export default async function AdminEmployeesPage({
@@ -60,7 +61,10 @@ export default async function AdminEmployeesPage({
             {employees.length === 0 && (
               <tr>
                 <td colSpan={3} className="text-center py-8 text-muted-foreground">
-                  {showArchived ? 'Aucun employé archivé' : 'Aucun employé'}
+                  <EmptyStateText
+                    stateKey={showArchived ? 'archived' : 'active'}
+                    text={showArchived ? 'Aucun employé archivé' : 'Aucun employé'}
+                  />
                 </td>
               </tr>
             )}
@@ -106,7 +110,10 @@ export default async function AdminEmployeesPage({
             {kioskAccounts.length === 0 && (
               <tr>
                 <td colSpan={2} className="text-center py-8 text-muted-foreground">
-                  {showArchived ? 'Aucun compte kiosque archivé' : 'Aucun compte kiosque'}
+                  <EmptyStateText
+                    stateKey={showArchived ? 'kiosk-archived' : 'kiosk-active'}
+                    text={showArchived ? 'Aucun compte kiosque archivé' : 'Aucun compte kiosque'}
+                  />
                 </td>
               </tr>
             )}

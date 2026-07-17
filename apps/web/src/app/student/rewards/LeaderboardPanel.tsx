@@ -100,10 +100,10 @@ export function LeaderboardPanel({
                   {formatValue(active, r.value)}
                 </span>
                 <motion.div
-                  className="w-full rounded-t-lg flex items-start justify-center pt-1"
-                  style={{ background: 'var(--synapse-cream-300)' }}
-                  initial={reduced ? { height: PODIUM_HEIGHTS[i] } : { height: 0 }}
-                  animate={{ height: PODIUM_HEIGHTS[i] }}
+                  className="w-full rounded-t-lg flex items-start justify-center pt-1 origin-bottom"
+                  style={{ background: 'var(--synapse-cream-300)', height: PODIUM_HEIGHTS[i] }}
+                  initial={reduced ? { scaleY: 1 } : { scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
                   transition={{ type: 'spring', stiffness: 160, damping: 20, delay: reduced ? 0 : 0.1 * i }}
                 >
                   <span className="text-lg">{MEDALS[i]}</span>
