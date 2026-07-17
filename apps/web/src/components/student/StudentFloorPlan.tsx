@@ -69,7 +69,6 @@ export function StudentFloorPlan({
                 strokeWidth={isMyRoom ? 3 : 2}
                 opacity={pressedId === room.id ? 0.7 : 1}
                 onTap={() => handleTap(room)}
-                onClick={() => handleTap(room)}
                 onTouchStart={() => setPressedId(room.id)}
                 onTouchEnd={() => setPressedId(null)}
               />
