@@ -28,7 +28,15 @@ export default async function AdminRoomsPage() {
             {rooms.length} salle{rooms.length !== 1 ? 's' : ''} configurée{rooms.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <CreateRoomDialog />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/rooms/floor-plan">
+              <GridFour className="mr-1 h-4 w-4" />
+              Plan de l&apos;établissement
+            </Link>
+          </Button>
+          <CreateRoomDialog />
+        </div>
       </div>
 
       {rooms.length === 0 ? (

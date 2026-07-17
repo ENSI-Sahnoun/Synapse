@@ -6,6 +6,8 @@ import { ActiveReservationBanner } from '@/components/student/ActiveReservationB
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
+import { StudentFloorPlan } from '@/components/student/StudentFloorPlan'
+import { splitRoomsByShape } from '@/lib/floor-plan'
 
 type StatusConfig = {
   label: string
@@ -65,8 +67,10 @@ export default async function StudentRoomsPage() {
   } | null
 
   const myRoomId = presence.status === 'seated' ? presence.roomId : null
-  const openRooms = rooms.filter((r) => r.status === 'open')
-  const unavailable = rooms.filter((r) => r.status !== 'open')
+  const { placed, unplaced } = splitRoomsByShape(rooms)
+  const anyOpenRoom = rooms.some((r) => r.status === 'open')
+  const openRooms = unplaced.filter((r) => r.status === 'open')
+  const unavailable = unplaced.filter((r) => r.status !== 'open')
 
   function RoomCard({
     room,
@@ -259,6 +263,8 @@ export default async function StudentRoomsPage() {
           </div>
         )}
 
+        {placed.length > 0 && <StudentFloorPlan rooms={placed} myRoomId={myRoomId} />}
+
         {/* Open rooms */}
         {openRooms.length > 0 && (
           <>
@@ -280,7 +286,7 @@ export default async function StudentRoomsPage() {
           </>
         )}
 
-        {openRooms.length === 0 && (
+        {!anyOpenRoom && (
           <div
             style={{
               background: 'white',

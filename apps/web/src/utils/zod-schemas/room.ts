@@ -35,3 +35,19 @@ export const deleteRoomSchema = z.object({
 })
 
 export type DeleteRoomInput = z.infer<typeof deleteRoomSchema>
+
+export const updateRoomShapesSchema = z.object({
+  rooms: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        shape_x: z.number(),
+        shape_y: z.number(),
+        shape_width: z.number().positive(),
+        shape_height: z.number().positive(),
+      }),
+    )
+    .min(1, 'Au moins une salle requise'),
+})
+
+export type UpdateRoomShapesInput = z.infer<typeof updateRoomShapesSchema>

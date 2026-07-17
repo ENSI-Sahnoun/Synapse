@@ -1089,6 +1089,10 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          shape_height: number | null
+          shape_width: number | null
+          shape_x: number | null
+          shape_y: number | null
           status: string
           status_note: string | null
           updated_at: string
@@ -1098,6 +1102,10 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          shape_height?: number | null
+          shape_width?: number | null
+          shape_x?: number | null
+          shape_y?: number | null
           status?: string
           status_note?: string | null
           updated_at?: string
@@ -1107,6 +1115,10 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          shape_height?: number | null
+          shape_width?: number | null
+          shape_x?: number | null
+          shape_y?: number | null
           status?: string
           status_note?: string | null
           updated_at?: string
