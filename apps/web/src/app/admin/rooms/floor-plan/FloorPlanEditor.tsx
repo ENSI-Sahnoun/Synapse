@@ -32,8 +32,18 @@ function toShapeState(room: Room, index: number): RoomShapeState {
     id: room.id,
     name: room.name,
     status: room.status,
-    shape_x: room.shape_x ?? 40 + (index % 4) * (DEFAULT_ROOM_WIDTH + 20),
-    shape_y: room.shape_y ?? 40 + Math.floor(index / 4) * (DEFAULT_ROOM_HEIGHT + 20),
+    shape_x:
+      room.shape_x ??
+      Math.min(
+        40 + (index % 4) * (DEFAULT_ROOM_WIDTH + 20),
+        FLOOR_PLAN_CANVAS_WIDTH - DEFAULT_ROOM_WIDTH,
+      ),
+    shape_y:
+      room.shape_y ??
+      Math.min(
+        40 + Math.floor(index / 4) * (DEFAULT_ROOM_HEIGHT + 20),
+        FLOOR_PLAN_CANVAS_HEIGHT - DEFAULT_ROOM_HEIGHT,
+      ),
     shape_width: room.shape_width ?? DEFAULT_ROOM_WIDTH,
     shape_height: room.shape_height ?? DEFAULT_ROOM_HEIGHT,
   }
