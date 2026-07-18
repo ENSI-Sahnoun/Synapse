@@ -15,12 +15,14 @@ export async function getEmployeeRevenue(range: { from: string; to: string }): P
       .from('subscriptions')
       .select('sold_by, paid_amount, created_at, profiles!subscriptions_sold_by_fkey(full_name)')
       .gte('created_at', range.from + 'T00:00:00')
-      .lte('created_at', range.to + 'T23:59:59'),
+      .lte('created_at', range.to + 'T23:59:59')
+      .is('voided_at', null),
     supabase
       .from('purchases')
       .select('sold_by, total_dt, created_at, profiles!purchases_sold_by_fkey(full_name)')
       .gte('created_at', range.from + 'T00:00:00')
-      .lte('created_at', range.to + 'T23:59:59'),
+      .lte('created_at', range.to + 'T23:59:59')
+      .is('voided_at', null),
   ])
 
   const map = new Map<string, { fullName: string; revenue: number; transactions: number }>()

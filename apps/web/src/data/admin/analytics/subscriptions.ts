@@ -53,7 +53,7 @@ export function plansChangedSince(
 
 export async function getSubscriptionStatusCounts(asOf: string): Promise<SubscriptionStatusCounts> {
   const supabase = await createSupabaseClient()
-  const { data } = await supabase.from('subscriptions').select('end_date')
+  const { data } = await supabase.from('subscriptions').select('end_date').is('voided_at', null)
 
   const counts: SubscriptionStatusCounts = { active: 0, expiringSoon: 0, expired: 0 }
   data?.forEach((r) => {

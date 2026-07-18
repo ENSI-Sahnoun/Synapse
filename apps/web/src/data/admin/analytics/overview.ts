@@ -66,12 +66,14 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
     .select('paid_amount')
     .gte('created_at', todayStr + 'T00:00:00')
     .lt('created_at', startOfTomorrow())
+    .is('voided_at', null)
 
   const { data: purchaseRevenue } = await supabase
     .from('purchases')
     .select('total_dt')
     .gte('created_at', todayStr + 'T00:00:00')
     .lt('created_at', startOfTomorrow())
+    .is('voided_at', null)
 
   const { data: lockerRevenue } = await supabase
     .from('locker_payments')
@@ -130,6 +132,7 @@ export async function getDailySummary(): Promise<DailySummary> {
     .select('paid_amount')
     .gte('created_at', start)
     .lt('created_at', end)
+    .is('voided_at', null)
 
   const subscriptionsSold = subs?.length ?? 0
   const subscriptionsRevenue = subs?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0
@@ -139,6 +142,7 @@ export async function getDailySummary(): Promise<DailySummary> {
     .select('total_dt')
     .gte('created_at', start)
     .lt('created_at', end)
+    .is('voided_at', null)
 
   const inStoreSales = purchases?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0
 
@@ -167,11 +171,13 @@ export async function getRevenueOverTime(days = 30): Promise<RevenuePoint[]> {
     .from('subscriptions')
     .select('paid_amount, created_at')
     .gte('created_at', sinceStr)
+    .is('voided_at', null)
 
   const { data: purchases } = await supabase
     .from('purchases')
     .select('total_dt, created_at')
     .gte('created_at', sinceStr)
+    .is('voided_at', null)
 
   const map = new Map<string, number>()
 
@@ -223,6 +229,7 @@ async function countActiveSubscriptions(
     .select('*', { count: 'exact', head: true })
     .lte('start_date', asOf)
     .gte('end_date', asOf)
+    .is('voided_at', null)
   return count ?? 0
 }
 

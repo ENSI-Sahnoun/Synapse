@@ -151,3 +151,35 @@ describe('getAvgDiscount', () => {
     vi.doUnmock('@/supabase-clients/server')
   })
 })
+
+describe('getSubscriptionStatusCounts', () => {
+  it('excludes voided subscriptions from the status buckets', async () => {
+    const subscriptionsQuery = {
+      select: vi.fn(() => subscriptionsQuery),
+      is: vi.fn(async (column: string, value: null) => {
+        expect(column).toBe('voided_at')
+        expect(value).toBeNull()
+        // Only the non-voided row would be returned by a real `.is('voided_at', null)` filter.
+        return { data: [{ end_date: '2026-08-01' }] }
+      }),
+    }
+
+    vi.doMock('@/supabase-clients/server', () => ({
+      createSupabaseClient: vi.fn(async () => ({
+        from: (table: string) => {
+          if (table === 'subscriptions') return subscriptionsQuery
+          throw new Error(`unexpected table: ${table}`)
+        },
+      })),
+    }))
+
+    vi.resetModules()
+    const { getSubscriptionStatusCounts } = await import('./subscriptions')
+    const result = await getSubscriptionStatusCounts('2026-07-04')
+
+    expect(subscriptionsQuery.is).toHaveBeenCalledWith('voided_at', null)
+    expect(result).toEqual({ active: 1, expiringSoon: 0, expired: 0 })
+
+    vi.doUnmock('@/supabase-clients/server')
+  })
+})
