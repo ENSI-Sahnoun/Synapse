@@ -26,7 +26,6 @@ import { CapitalHistoryTable } from '@/components/admin/accounting/capital-histo
 import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { BackButton } from '@/components/admin/shared/back-button'
 import { ExportButtons } from '@/components/admin/accounting/export-buttons'
 import { defaultDateRange } from '@/lib/date-range'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
@@ -70,7 +69,6 @@ export default async function AccountingPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6 p-6">
       <LiveRefresher tables={['purchases', 'expenses']} />
-      <BackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Comptabilité</h1>
         <div className="flex gap-2">
