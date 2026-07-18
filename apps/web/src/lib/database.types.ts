@@ -124,6 +124,85 @@ export type Database = {
           },
         ]
       }
+      capital_movements: {
+        Row: {
+          account: string
+          amount_dt: number
+          created_at: string
+          created_by: string | null
+          date: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          account: string
+          amount_dt: number
+          created_at?: string
+          created_by?: string | null
+          date: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          account?: string
+          amount_dt?: number
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capital_movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capital_transfers: {
+        Row: {
+          amount_dt: number
+          created_at: string
+          created_by: string | null
+          date: string
+          from_account: string
+          id: string
+          note: string | null
+          to_account: string
+        }
+        Insert: {
+          amount_dt: number
+          created_at?: string
+          created_by?: string | null
+          date: string
+          from_account: string
+          id?: string
+          note?: string | null
+          to_account: string
+        }
+        Update: {
+          amount_dt?: number
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          from_account?: string
+          id?: string
+          note?: string | null
+          to_account?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capital_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_movements: {
         Row: {
           actor_id: string
@@ -972,6 +1051,7 @@ export type Database = {
       purchases: {
         Row: {
           created_at: string
+          discount_dt: number
           id: string
           sold_by: string
           student_id: string | null
@@ -979,6 +1059,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          discount_dt?: number
           id?: string
           sold_by: string
           student_id?: string | null
@@ -986,6 +1067,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          discount_dt?: number
           id?: string
           sold_by?: string
           student_id?: string | null
@@ -1085,7 +1167,6 @@ export type Database = {
       }
       rooms: {
         Row: {
-          capacity: number
           created_at: string
           id: string
           name: string
@@ -1098,7 +1179,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          capacity: number
           created_at?: string
           id?: string
           name: string
@@ -1111,7 +1191,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          capacity?: number
           created_at?: string
           id?: string
           name?: string
