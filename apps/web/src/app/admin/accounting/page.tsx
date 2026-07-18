@@ -11,6 +11,7 @@ import {
   getExpensesByCategory,
   getCashFlow,
 } from '@/data/admin/accounting'
+import { getCapitalBalances, getCapitalHistory } from '@/data/admin/capital'
 import { ExpenseForm } from '@/components/admin/accounting/expense-form'
 import { ExpenseTable } from '@/components/admin/accounting/expense-table'
 import { PnlTable } from '@/components/admin/accounting/pnl-table'
@@ -18,9 +19,14 @@ import { NetProfitCard } from '@/components/admin/accounting/net-profit-card'
 import { RevenueSplitChart } from '@/components/admin/accounting/revenue-split-chart'
 import { ExpensesByCategoryChart } from '@/components/admin/accounting/expenses-by-category-chart'
 import { CashFlowChart } from '@/components/admin/accounting/cash-flow-chart'
+import { CapitalBalancesCard } from '@/components/admin/accounting/capital-balances-card'
+import { RecordCapitalMovementDialog } from '@/components/admin/accounting/record-capital-movement-dialog'
+import { RecordCapitalTransferDialog } from '@/components/admin/accounting/record-capital-transfer-dialog'
+import { CapitalHistoryTable } from '@/components/admin/accounting/capital-history-table'
 import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { BackButton } from '@/components/admin/shared/back-button'
 import { ExportButtons } from '@/components/admin/accounting/export-buttons'
 import { defaultDateRange } from '@/lib/date-range'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
@@ -39,20 +45,32 @@ export default async function AccountingPage({ searchParams }: PageProps) {
   const to = params.to ?? defaults.to
   const category_id = params.category_id
 
-  const [expenses, pnl, categories, financeSummary, revenueSplit, expensesByCategory, cashFlow] =
-    await Promise.all([
-      getExpenses({ from, to, category_id }),
-      getPnl({ from, to }),
-      getExpenseCategories(),
-      getFinanceSummary({ from, to }),
-      getRevenueSplit({ from, to }),
-      getExpensesByCategory({ from, to }),
-      getCashFlow({ from, to }),
-    ])
+  const [
+    expenses,
+    pnl,
+    categories,
+    financeSummary,
+    revenueSplit,
+    expensesByCategory,
+    cashFlow,
+    capitalBalances,
+    capitalHistory,
+  ] = await Promise.all([
+    getExpenses({ from, to, category_id }),
+    getPnl({ from, to }),
+    getExpenseCategories(),
+    getFinanceSummary({ from, to }),
+    getRevenueSplit({ from, to }),
+    getExpensesByCategory({ from, to }),
+    getCashFlow({ from, to }),
+    getCapitalBalances(),
+    getCapitalHistory(),
+  ])
 
   return (
     <div className="space-y-6 p-6">
       <LiveRefresher tables={['purchases', 'expenses']} />
+      <BackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Comptabilité</h1>
         <div className="flex gap-2">
@@ -69,6 +87,7 @@ export default async function AccountingPage({ searchParams }: PageProps) {
         <TabsList>
           <TabsTrigger value="depenses">Dépenses</TabsTrigger>
           <TabsTrigger value="pnl">Résultat P&amp;L</TabsTrigger>
+          <TabsTrigger value="tresorerie">Trésorerie</TabsTrigger>
         </TabsList>
 
         <TabsContent value="depenses" className="space-y-6">
@@ -115,6 +134,26 @@ export default async function AccountingPage({ searchParams }: PageProps) {
             </CardHeader>
             <CardContent>
               <PnlTable pnl={pnl} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tresorerie" className="space-y-6">
+          <CapitalBalancesCard balances={capitalBalances} />
+
+          <div className="flex gap-2">
+            <RecordCapitalMovementDialog />
+            <RecordCapitalTransferDialog />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Historique</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                <CapitalHistoryTable entries={capitalHistory} />
+              </Suspense>
             </CardContent>
           </Card>
         </TabsContent>
