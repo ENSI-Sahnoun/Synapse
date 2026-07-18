@@ -86,3 +86,50 @@ describe('updateProductAction old/new price-change logging', () => {
     expect(payload.details.new).toEqual({ price_dt: 8, name: 'New Name' })
   })
 })
+
+describe('createProductAction price-change logging', () => {
+  it('logs details wrapped as { new: parsedInput } so extractPriceChange can read it', async () => {
+    const insertMock = vi.fn(async () => ({ error: null }))
+    const singleMock = vi.fn(async () => ({ data: { id: 'p1' }, error: null }))
+    const supabaseAdmin = {
+      from: (table: string) => {
+        if (table === 'products') {
+          return { insert: () => ({ select: () => ({ single: singleMock }) }) }
+        }
+        if (table === 'pos_activity_log') {
+          return { insert: insertMock }
+        }
+        throw new Error(`unexpected table: ${table}`)
+      },
+    }
+
+    vi.doMock('@/supabase-clients/admin', () => ({
+      createSupabaseAdminClient: vi.fn(() => supabaseAdmin),
+    }))
+    vi.doMock('next/cache', () => ({ revalidatePath: vi.fn() }))
+    vi.resetModules()
+
+    const { createProductAction } = await import('./products')
+
+    type Handler = (args: {
+      parsedInput: { name: string; category: string; price_dt: number }
+      ctx: { userId: string }
+    }) => Promise<unknown>
+
+    await (createProductAction as unknown as Handler)({
+      parsedInput: { name: 'Coca', category: 'Boissons', price_dt: 12.5 },
+      ctx: { userId: 'u1' },
+    })
+
+    expect(insertMock).toHaveBeenCalledTimes(1)
+    const [payload] = insertMock.mock.calls[0] as [
+      { action: string; product_id: string; actor_id: string; details: { new: Record<string, unknown> } },
+    ]
+
+    expect(payload.action).toBe('product_create')
+    expect(payload.details).toEqual({ new: { name: 'Coca', category: 'Boissons', price_dt: 12.5 } })
+
+    const { extractPriceChange } = await import('@/data/admin/price-history-helpers')
+    expect(extractPriceChange(payload.details)).toEqual({ oldPrice: null, newPrice: 12.5 })
+  })
+})

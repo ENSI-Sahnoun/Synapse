@@ -18,7 +18,7 @@ export const createProductAction = adminActionClient
       action: 'product_create',
       product_id: data.id,
       actor_id: ctx.userId,
-      details: parsedInput,
+      details: { new: parsedInput },
     })
     revalidatePath('/admin/products')
     return { success: true }

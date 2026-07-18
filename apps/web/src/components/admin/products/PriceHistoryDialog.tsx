@@ -3,20 +3,28 @@
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { getProductPriceHistory, type PriceChangeEntry } from '@/data/admin/price-history'
+import { getProductPriceHistory } from '@/data/admin/price-history'
+import type { PriceChangeEntry } from '@/data/admin/price-history-helpers'
 
 export function PriceHistoryDialog({ productId, productName }: { productId: string; productName: string }) {
   const [open, setOpen] = useState(false)
   const [entries, setEntries] = useState<PriceChangeEntry[] | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleOpenChange(next: boolean) {
     setOpen(next)
     if (next && entries === null) {
       setLoading(true)
-      const rows = await getProductPriceHistory(productId)
-      setEntries(rows)
-      setLoading(false)
+      setError(null)
+      try {
+        const rows = await getProductPriceHistory(productId)
+        setEntries(rows)
+      } catch {
+        setError("Erreur lors du chargement de l'historique")
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -32,10 +40,11 @@ export function PriceHistoryDialog({ productId, productName }: { productId: stri
           <DialogTitle>Historique des prix — {productName}</DialogTitle>
         </DialogHeader>
         {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
-        {!loading && entries && entries.length === 0 && (
+        {!loading && error && <p className="text-sm text-destructive">{error}</p>}
+        {!loading && !error && entries && entries.length === 0 && (
           <p className="text-sm text-muted-foreground">Aucun changement de prix enregistré.</p>
         )}
-        {!loading && entries && entries.length > 0 && (
+        {!loading && !error && entries && entries.length > 0 && (
           <ul className="space-y-2 text-sm">
             {entries.map((e) => (
               <li key={e.id} className="flex justify-between border-b pb-1">
