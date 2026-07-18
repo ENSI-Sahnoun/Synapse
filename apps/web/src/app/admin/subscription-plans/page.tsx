@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { TogglePlanButton } from './toggle-plan-button'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
+import { PlanPriceHistoryDialog } from '@/components/admin/subscription-plans/PlanPriceHistoryDialog'
 
 export default async function SubscriptionPlansPage() {
   const plans = await listSubscriptionPlans()
@@ -40,6 +41,7 @@ export default async function SubscriptionPlansPage() {
                 </td>
                 <td className="px-4 py-2">
                   <div className="flex gap-2 justify-end">
+                    <PlanPriceHistoryDialog planId={plan.id} planName={plan.name} />
                     <Button asChild variant="outline" size="sm">
                       <Link href={`/admin/subscription-plans/${plan.id}/edit`}>Modifier</Link>
                     </Button>
