@@ -32,6 +32,21 @@ export function classifySubscriptionStatus(
   return endDate <= cutoffStr ? 'expiring_soon' : 'active'
 }
 
+export function plansChangedSince(
+  logRows: { plan_id: string | null; created_at: string }[],
+): (planId: string, since: string) => boolean {
+  const latestChangeByPlan = new Map<string, string>()
+  for (const r of logRows) {
+    if (!r.plan_id) continue
+    const current = latestChangeByPlan.get(r.plan_id)
+    if (!current || r.created_at > current) latestChangeByPlan.set(r.plan_id, r.created_at)
+  }
+  return (planId: string, since: string) => {
+    const latest = latestChangeByPlan.get(planId)
+    return latest !== undefined && latest > since
+  }
+}
+
 export async function getSubscriptionStatusCounts(asOf: string): Promise<SubscriptionStatusCounts> {
   const supabase = await createSupabaseClient()
   const { data } = await supabase.from('subscriptions').select('end_date')
@@ -70,24 +85,36 @@ export async function getRevenuePerPlan(range: { from: string; to: string }): Pr
 
 export async function getAvgDiscount(range: { from: string; to: string }): Promise<AvgDiscount> {
   const supabase = await createSupabaseClient()
-  const { data } = await supabase
-    .from('subscriptions')
-    .select('paid_amount, created_at, subscription_plans!inner(price_dt)')
-    .gte('created_at', range.from + 'T00:00:00')
-    .lte('created_at', range.to + 'T23:59:59')
+  const [{ data }, { data: logRows }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('plan_id, paid_amount, created_at, subscription_plans!inner(price_dt)')
+      .gte('created_at', range.from + 'T00:00:00')
+      .lte('created_at', range.to + 'T23:59:59'),
+    supabase
+      .from('subscription_plan_activity_log')
+      .select('plan_id, created_at')
+      .eq('action', 'plan_update'),
+  ])
 
   if (!data || data.length === 0) return { avgDiscount: 0, avgDiscountPct: 0 }
 
+  const changedSince = plansChangedSince(logRows ?? [])
+
   let totalDiscount = 0
   let totalPrice = 0
+  let count = 0
   data.forEach((r) => {
+    if (changedSince(r.plan_id, r.created_at)) return
     const price = Number((r.subscription_plans as { price_dt: number }).price_dt)
     const paid = Number(r.paid_amount)
     totalDiscount += price - paid
     totalPrice += price
+    count += 1
   })
 
-  const avgDiscount = totalDiscount / data.length
+  if (count === 0) return { avgDiscount: 0, avgDiscountPct: 0 }
+  const avgDiscount = totalDiscount / count
   const avgDiscountPct = totalPrice > 0 ? (totalDiscount / totalPrice) * 100 : 0
   return { avgDiscount, avgDiscountPct }
 }
