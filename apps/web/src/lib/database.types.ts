@@ -976,6 +976,8 @@ export type Database = {
           sold_by: string
           student_id: string | null
           total_dt: number
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           created_at?: string
@@ -983,6 +985,8 @@ export type Database = {
           sold_by: string
           student_id?: string | null
           total_dt: number
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           created_at?: string
@@ -990,6 +994,8 @@ export type Database = {
           sold_by?: string
           student_id?: string | null
           total_dt?: number
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1002,6 +1008,13 @@ export type Database = {
           {
             foreignKeyName: "purchases_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_voided_by_fkey"
+            columns: ["voided_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1389,6 +1402,8 @@ export type Database = {
           sold_by: string
           start_date: string
           student_id: string
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           created_at?: string
@@ -1399,6 +1414,8 @@ export type Database = {
           sold_by: string
           start_date?: string
           student_id: string
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           created_at?: string
@@ -1409,6 +1426,8 @@ export type Database = {
           sold_by?: string
           start_date?: string
           student_id?: string
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1428,6 +1447,13 @@ export type Database = {
           {
             foreignKeyName: "subscriptions_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_voided_by_fkey"
+            columns: ["voided_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
