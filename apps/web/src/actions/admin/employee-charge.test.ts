@@ -11,6 +11,9 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }))
 
+type ActionArgs = { parsedInput: { items: { product_id: string; quantity: number }[]; employee_id: string | null } }
+type ActionFn = (args: ActionArgs) => Promise<{ expenseId: string; totalDt: number }>
+
 describe('createEmployeeChargeAction', () => {
   it('sends p_employee_id to the RPC', async () => {
     const rpc = vi.fn(async () => ({
@@ -22,7 +25,7 @@ describe('createEmployeeChargeAction', () => {
     }))
 
     const { createEmployeeChargeAction } = await import('./employee-charge')
-    const result = await createEmployeeChargeAction({
+    const result = await (createEmployeeChargeAction as unknown as ActionFn)({
       parsedInput: {
         items: [{ product_id: 'p1', quantity: 2 }],
         employee_id: 'emp-1',
