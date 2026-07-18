@@ -5,6 +5,7 @@ import { createProductSchema, updateProductSchema, productIdSchema, reorderProdu
 import { restockProductSchema } from '@/utils/zod-schemas/restock'
 import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { getProductById } from '@/data/admin/products'
 import { revalidatePath } from 'next/cache'
 
 export const createProductAction = adminActionClient
@@ -40,13 +41,16 @@ export const updateProductAction = adminActionClient
   .schema(updateProductSchema)
   .action(async ({ parsedInput: { id, ...updates }, ctx }) => {
     const supabase = createSupabaseAdminClient()
+    const before = await getProductById(id)
     const { error } = await supabase.from('products').update(updates).eq('id', id)
     if (error) throw new Error('Erreur lors de la mise à jour du produit')
+    const keys = Object.keys(updates) as (keyof typeof updates)[]
+    const old = before ? Object.fromEntries(keys.map((k) => [k, before[k as keyof typeof before]])) : {}
     await supabase.from('pos_activity_log').insert({
       action: 'product_update',
       product_id: id,
       actor_id: ctx.userId,
-      details: updates,
+      details: { old, new: updates },
     })
     revalidatePath('/admin/products')
     return { success: true }
