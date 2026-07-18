@@ -8,6 +8,7 @@ export async function getPlanPopularity(): Promise<PlanPopularity[]> {
   const { data } = await supabase
     .from('subscriptions')
     .select('plan_id, subscription_plans!inner(name)')
+    .is('voided_at', null)
 
   const map = new Map<string, number>()
   data?.forEach((r) => {
@@ -71,6 +72,7 @@ export async function getRevenuePerPlan(range: { from: string; to: string }): Pr
     .select('paid_amount, created_at, subscription_plans!inner(name)')
     .gte('created_at', range.from + 'T00:00:00')
     .lte('created_at', range.to + 'T23:59:59')
+    .is('voided_at', null)
 
   const map = new Map<string, { revenue: number; count: number }>()
   data?.forEach((r) => {
@@ -93,7 +95,8 @@ export async function getAvgDiscount(range: { from: string; to: string }): Promi
       .from('subscriptions')
       .select('plan_id, paid_amount, created_at, subscription_plans!inner(price_dt)')
       .gte('created_at', range.from + 'T00:00:00')
-      .lte('created_at', range.to + 'T23:59:59'),
+      .lte('created_at', range.to + 'T23:59:59')
+      .is('voided_at', null),
     supabase
       .from('subscription_plan_activity_log')
       .select('plan_id, created_at, details')

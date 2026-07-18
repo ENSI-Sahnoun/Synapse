@@ -122,7 +122,8 @@ describe('getAvgDiscount', () => {
     const subscriptionsQuery = {
       select: vi.fn(() => subscriptionsQuery),
       gte: vi.fn(() => subscriptionsQuery),
-      lte: vi.fn(async () => ({ data: subscriptionRows })),
+      lte: vi.fn(() => subscriptionsQuery),
+      is: vi.fn(async () => ({ data: subscriptionRows })),
     }
     const logQuery = {
       select: vi.fn(() => logQuery),

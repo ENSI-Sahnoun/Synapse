@@ -59,9 +59,10 @@ export async function getBestSellers(
   const supabase = await createSupabaseClient()
   const { data } = await supabase
     .from('purchase_items')
-    .select('quantity, unit_price_dt, created_at, products!inner(id, name)')
+    .select('quantity, unit_price_dt, created_at, products!inner(id, name), purchases!inner(voided_at)')
     .gte('created_at', range.from + 'T00:00:00')
     .lte('created_at', range.to + 'T23:59:59')
+    .is('purchases.voided_at', null)
 
   const map = new Map<string, BestSeller>()
   data?.forEach((r) => {
@@ -84,9 +85,10 @@ export async function getSalesByCategory(range: { from: string; to: string }): P
   const supabase = await createSupabaseClient()
   const { data } = await supabase
     .from('purchase_items')
-    .select('quantity, unit_price_dt, created_at, products!inner(category)')
+    .select('quantity, unit_price_dt, created_at, products!inner(category), purchases!inner(voided_at)')
     .gte('created_at', range.from + 'T00:00:00')
     .lte('created_at', range.to + 'T23:59:59')
+    .is('purchases.voided_at', null)
 
   const map = new Map<string, number>()
   data?.forEach((r) => {

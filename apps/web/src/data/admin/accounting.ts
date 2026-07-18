@@ -84,6 +84,7 @@ export async function getPnl(filters: { from: string; to: string }): Promise<Pnl
     .select('paid_amount')
     .gte('created_at', filters.from + 'T00:00:00')
     .lte('created_at', filters.to + 'T23:59:59')
+    .is('voided_at', null)
 
   const subsTotal = subs?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0
 
@@ -100,10 +101,12 @@ export async function getPnl(filters: { from: string; to: string }): Promise<Pnl
     .select(
       `quantity, unit_price_dt,
        products!inner(account_category_id,
-         account_categories!inner(id, name))`,
+         account_categories!inner(id, name)),
+       purchases!inner(voided_at)`,
     )
     .gte('created_at', filters.from + 'T00:00:00')
     .lte('created_at', filters.to + 'T23:59:59')
+    .is('purchases.voided_at', null)
 
   const purchaseMap = new Map<string, { name: string; total: number }>()
   purchaseItems?.forEach((pi) => {
@@ -182,12 +185,14 @@ export async function getTransactions(filters: { from: string; to: string }): Pr
       .from('subscriptions')
       .select('paid_amount, created_at, subscription_plans(name)')
       .gte('created_at', filters.from + 'T00:00:00')
-      .lte('created_at', filters.to + 'T23:59:59'),
+      .lte('created_at', filters.to + 'T23:59:59')
+      .is('voided_at', null),
     supabase
       .from('purchases')
       .select('total_dt, created_at')
       .gte('created_at', filters.from + 'T00:00:00')
-      .lte('created_at', filters.to + 'T23:59:59'),
+      .lte('created_at', filters.to + 'T23:59:59')
+      .is('voided_at', null),
     supabase
       .from('expenses')
       .select('amount_dt, date, description, account_categories!inner(name)')
@@ -290,7 +295,8 @@ async function computeNetProfit(
       .from('subscriptions')
       .select('paid_amount')
       .gte('created_at', from + 'T00:00:00')
-      .lte('created_at', to + 'T23:59:59'),
+      .lte('created_at', to + 'T23:59:59')
+      .is('voided_at', null),
     supabase.from('expenses').select('amount_dt').gte('date', from).lte('date', to),
     supabase
       .from('locker_payments')
@@ -366,12 +372,14 @@ export async function getRevenueSplit(filters: { from: string; to: string }): Pr
       .from('subscriptions')
       .select('paid_amount, created_at')
       .gte('created_at', filters.from + 'T00:00:00')
-      .lte('created_at', filters.to + 'T23:59:59'),
+      .lte('created_at', filters.to + 'T23:59:59')
+      .is('voided_at', null),
     supabase
       .from('purchases')
       .select('total_dt, created_at')
       .gte('created_at', filters.from + 'T00:00:00')
-      .lte('created_at', filters.to + 'T23:59:59'),
+      .lte('created_at', filters.to + 'T23:59:59')
+      .is('voided_at', null),
     supabase
       .from('locker_payments')
       .select('amount_dt, created_at')
@@ -433,12 +441,14 @@ export async function getCashFlow(filters: { from: string; to: string }): Promis
       .from('subscriptions')
       .select('paid_amount, created_at')
       .gte('created_at', filters.from + 'T00:00:00')
-      .lte('created_at', filters.to + 'T23:59:59'),
+      .lte('created_at', filters.to + 'T23:59:59')
+      .is('voided_at', null),
     supabase
       .from('purchases')
       .select('total_dt, created_at')
       .gte('created_at', filters.from + 'T00:00:00')
-      .lte('created_at', filters.to + 'T23:59:59'),
+      .lte('created_at', filters.to + 'T23:59:59')
+      .is('voided_at', null),
     supabase.from('expenses').select('amount_dt, date').gte('date', filters.from).lte('date', filters.to),
     supabase
       .from('locker_payments')
