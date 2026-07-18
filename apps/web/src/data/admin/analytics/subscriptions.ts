@@ -1,4 +1,5 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { extractPriceChange } from '@/data/admin/price-history-helpers'
 
 export type PlanPopularity = { name: string; value: number }
 
@@ -33,11 +34,13 @@ export function classifySubscriptionStatus(
 }
 
 export function plansChangedSince(
-  logRows: { plan_id: string | null; created_at: string }[],
+  logRows: { plan_id: string | null; created_at: string; details: unknown }[],
 ): (planId: string, since: string) => boolean {
   const latestChangeByPlan = new Map<string, string>()
   for (const r of logRows) {
     if (!r.plan_id) continue
+    const priceChange = extractPriceChange(r.details)
+    if (!priceChange || priceChange.oldPrice === priceChange.newPrice) continue
     const current = latestChangeByPlan.get(r.plan_id)
     if (!current || r.created_at > current) latestChangeByPlan.set(r.plan_id, r.created_at)
   }
@@ -93,7 +96,7 @@ export async function getAvgDiscount(range: { from: string; to: string }): Promi
       .lte('created_at', range.to + 'T23:59:59'),
     supabase
       .from('subscription_plan_activity_log')
-      .select('plan_id, created_at')
+      .select('plan_id, created_at, details')
       .eq('action', 'plan_update'),
   ])
 
