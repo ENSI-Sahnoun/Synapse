@@ -9,11 +9,10 @@ import {
   useReducedMotion,
   useSpring,
 } from 'motion/react';
-import { ArrowRight, GraduationCap, Briefcase } from 'lucide-react';
+import { ArrowRight, GraduationCap, Briefcase, Rocket } from 'lucide-react';
 import { SPRING_TILT } from '../_lib/motion';
 import { useReveal } from '../_lib/useReveal';
 import { Reveal } from './Reveal';
-import { QrGlyph } from './QrGlyph';
 import { Backdrop } from './Backdrop';
 
 const CURVE = 'cubic-bezier(0.23, 1, 0.32, 1)';
@@ -239,16 +238,21 @@ function TiltCard({
   );
 }
 
-/** Student motif: a real, scannable QR with a soft breathing glow. */
+/** Student motif: a playful rocket badge with a soft breathing glow. */
 function StudentMotif() {
   const reduce = useReducedMotion();
   return (
     <motion.div
-      className="flex h-full items-center justify-center rounded-xl bg-white p-1.5 shadow-[0_4px_16px_-6px_rgba(80,47,28,0.3)] ring-1 ring-[var(--synapse-cream-300)]"
+      className="flex h-full items-center justify-center rounded-xl bg-[var(--synapse-cream-200)] ring-1 ring-[var(--synapse-cream-300)]"
       animate={reduce ? undefined : { boxShadow: ['0 4px 16px -6px rgba(80,47,28,0.3)', '0 4px 20px -4px rgba(233,121,32,0.35)', '0 4px 16px -6px rgba(80,47,28,0.3)'] }}
       transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
     >
-      <QrGlyph value="https://synapse.tn/checkin" size={56} dark="var(--synapse-brown-600)" className="size-full" />
+      <motion.span
+        animate={reduce ? undefined : { rotate: [-6, 6, -6], y: [0, -3, 0] }}
+        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <Rocket className="size-8 text-[var(--synapse-brown-600)]" />
+      </motion.span>
     </motion.div>
   );
 }

@@ -172,6 +172,24 @@ export const setDailyResetTime = adminActionClient
     return { success: true, time }
   })
 
+// Toggle whether the public landing page shows mock or real seat occupancy
+const setLandingSeatmapModeSchema = z.object({
+  mode: z.enum(['mock', 'real']),
+})
+
+export const setLandingSeatmapMode = adminActionClient
+  .schema(setLandingSeatmapModeSchema)
+  .action(async ({ parsedInput: { mode } }) => {
+    const supabase = await createSupabaseClient()
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'landing_seatmap_mode', value: mode }, { onConflict: 'key' })
+    if (error) throw new Error('Impossible de mettre à jour le plan de salle de la vitrine.')
+    revalidatePath('/admin/settings')
+    revalidatePath('/')
+    return { success: true, mode }
+  })
+
 // Update nav order/visibility for a role (admin edits both roles' nav from one screen)
 const setNavOrderSchema = z.object({
   role: z.enum(['admin', 'employee']),
