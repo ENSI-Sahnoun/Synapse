@@ -13,6 +13,7 @@ import { type ResolvedNavItem } from '@/lib/nav-items'
 import { ICON_MAP } from '@/lib/nav-icon-map'
 import { useNotificationsFeed } from '@/hooks/use-notifications-feed'
 import { countUnreadByHref } from '@/lib/notifications/nav-badges'
+import { NavBadge } from '@/components/ui/nav-badge'
 import Image from 'next/image'
 
 interface Props {
@@ -107,28 +108,7 @@ function MoreDrawer({ open, onClose, items, navCounts }: { open: boolean; onClos
               >
                 <div style={{ position: 'relative' }}>
                   <Icon size={22} style={{ color: 'var(--accent-brand)' }} />
-                  {!!navCounts[href] && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: -4,
-                        right: -8,
-                        minWidth: 16,
-                        height: 16,
-                        padding: '0 4px',
-                        borderRadius: 8,
-                        background: 'var(--destructive)',
-                        color: 'var(--destructive-foreground)',
-                        fontSize: 9,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {navCounts[href] > 9 ? '9+' : navCounts[href]}
-                    </span>
-                  )}
+                  <NavBadge count={navCounts[href]} />
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)', lineHeight: 1.2 }}>
                   {label}
@@ -338,28 +318,7 @@ export function EmployeeMobileShell({ fullName, role, navItems, initialNotificat
               >
                 <div style={{ position: 'relative' }}>
                   <Icon size={20} weight={active ? 'bold' : 'regular'} />
-                  {!!navCounts[href] && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: -4,
-                        right: -8,
-                        minWidth: 16,
-                        height: 16,
-                        padding: '0 4px',
-                        borderRadius: 8,
-                        background: 'var(--destructive)',
-                        color: 'var(--destructive-foreground)',
-                        fontSize: 9,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {navCounts[href] > 9 ? '9+' : navCounts[href]}
-                    </span>
-                  )}
+                  <NavBadge count={navCounts[href]} />
                 </div>
                 <span>{label}</span>
               </Link>
@@ -382,28 +341,7 @@ export function EmployeeMobileShell({ fullName, role, navItems, initialNotificat
             >
               <div style={{ position: 'relative' }}>
                 <DotsThree size={20} weight={moreActive ? 'bold' : 'regular'} />
-                {moreUnread > 0 && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: -4,
-                      right: -8,
-                      minWidth: 16,
-                      height: 16,
-                      padding: '0 4px',
-                      borderRadius: 8,
-                      background: 'var(--destructive)',
-                      color: 'var(--destructive-foreground)',
-                      fontSize: 9,
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {moreUnread > 9 ? '9+' : moreUnread}
-                  </span>
-                )}
+                <NavBadge count={moreUnread} />
               </div>
               <span>Plus</span>
             </button>

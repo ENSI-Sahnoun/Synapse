@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChartBar } from '@phosphor-icons/react'
 import { ICON_MAP } from '@/lib/nav-icon-map'
+import { NavBadge } from '@/components/ui/nav-badge'
 
 interface SidebarNavLinkProps {
   href: string
@@ -33,25 +34,7 @@ export function SidebarNavLink({ href, label, icon, count }: SidebarNavLinkProps
     >
       <Icon size={20} weight={active ? 'bold' : 'regular'} />
       <span style={{ flex: 1 }}>{label}</span>
-      {!!count && (
-        <span
-          style={{
-            minWidth: 18,
-            height: 18,
-            padding: '0 5px',
-            borderRadius: 9,
-            background: 'var(--destructive)',
-            color: 'var(--destructive-foreground)',
-            fontSize: 10,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {count > 99 ? '99+' : count}
-        </span>
-      )}
+      <NavBadge count={count} overlay={false} max={99} />
     </Link>
   )
 }
