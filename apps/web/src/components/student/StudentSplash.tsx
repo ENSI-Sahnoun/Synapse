@@ -7,7 +7,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 // start creates a fresh context (this resets); client navigations do not.
 let shownThisContext = false
 
-const MIN_DISPLAY_MS = 1500
+const MIN_DISPLAY_MS = 800
 
 // Overlays (e.g. CelebrationPopup) must not appear under/over the splash.
 let splashEnded = false

@@ -110,7 +110,7 @@ export default async function StudentQrPage() {
                   className="flex-shrink-0 flex items-center justify-center rounded-xl"
                   style={{ width: 40, height: 40, background: 'var(--synapse-green-50)' }}
                 >
-                  <Icon size={20} weight="duotone" style={{ color: 'var(--synapse-green-600, #16a34a)' }} />
+                  <Icon size={20} weight="duotone" style={{ color: 'var(--synapse-green-600)' }} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>

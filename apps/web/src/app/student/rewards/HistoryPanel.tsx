@@ -36,7 +36,9 @@ export function HistoryPanel({ ledger }: { ledger: LedgerEntry[] }) {
           className="flex items-center justify-between px-4 py-2.5 text-sm"
           initial={reduced ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: reduced ? 0 : i * 0.04 }}
+          // Cap the stagger — the ledger is unbounded, so an uncapped delay
+          // would leave the tail of a long history invisible for seconds.
+          transition={{ delay: reduced ? 0 : Math.min(i, 8) * 0.03 }}
         >
           <div>
             <p>{REASON_LABELS[entry.reason] ?? entry.reason}</p>

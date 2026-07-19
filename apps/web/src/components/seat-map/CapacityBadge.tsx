@@ -5,23 +5,26 @@ type OccupancyLevel = 'empty' | 'quiet' | 'moderate' | 'nearly-full' | 'full'
 const LEVEL_CONFIG: Record<OccupancyLevel, { label: string; className: string }> = {
   empty: {
     label: 'Vide',
-    className: 'bg-slate-100 text-slate-600 border-slate-200',
+    className:
+      'bg-[var(--synapse-stone-100)] text-[var(--synapse-stone-600)] border-[var(--synapse-stone-200)]',
   },
   quiet: {
     label: 'Calme',
-    className: 'bg-green-100 text-green-700 border-green-200',
+    className:
+      'bg-[var(--synapse-green-100)] text-[var(--synapse-green-700)] border-[var(--synapse-green-200)]',
   },
   moderate: {
     label: 'Modéré',
-    className: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    className: 'bg-[var(--warning-bg)] text-[var(--warning-text)] border-[var(--warning-border)]',
   },
   'nearly-full': {
     label: 'Presque plein',
-    className: 'bg-orange-100 text-orange-700 border-orange-200',
+    className:
+      'bg-[var(--synapse-orange-100)] text-[var(--synapse-orange-700)] border-[var(--synapse-orange-200)]',
   },
   full: {
     label: 'Complet',
-    className: 'bg-red-100 text-red-700 border-red-200',
+    className: 'bg-[var(--error-bg)] text-[var(--error-text)] border-[var(--error-border)]',
   },
 }
 

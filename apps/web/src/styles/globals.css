@@ -58,8 +58,12 @@
   --synapse-stone-950: #110D09;
 
   --synapse-green-50:  #EDFAF4;
+  --synapse-green-100: #DCEFE4;
+  --synapse-green-200: #B9DFC9;
   --synapse-green-500: #3D8B5F;
+  --synapse-green-600: #2F7350; /* white text = 5.74:1 ✓ — AA fixes + replaces stray #16a34a */
   --synapse-green-700: #276040;
+  --synapse-green-800: #1B4530;
 
   /* ── Semantic aliases (design system) ────────────────────── */
   --accent-brand:        var(--synapse-brown-500);
@@ -73,6 +77,10 @@
   --bg-sidebar: var(--synapse-stone-900);
 
   --text-brand:     var(--synapse-brown-600);
+  /* secondary = stone-600 (#665C54, 6.9:1 ✓ on white/cream). tertiary = stone-500
+     (#857B72) — AA only for large/bold; use --text-secondary for small critical text. */
+  --text-secondary: var(--synapse-stone-600);
+  --text-tertiary:  var(--synapse-stone-500);
   --border-subtle:  var(--synapse-cream-200);
   --border-default: var(--synapse-cream-300);
   --border-focus:   var(--synapse-brown-400);
@@ -115,8 +123,26 @@
   --warning: #D97706;
   --warning-foreground: #FFFBEB;
 
+  /* Status surface trios (bg/border/text) for banners, badges and inline alerts.
+     These are ALSO re-declared on the sonner toaster below — deliberately, not by
+     accident: sonner ships its own element-level defaults for these same names, and
+     an element-level declaration beats an inherited :root one, so the toaster block
+     has to keep winning locally. Keep the two in sync. */
+  --success-bg: var(--synapse-green-50);
+  --success-border: color-mix(in oklab, var(--success) 32%, white);
+  --success-text: var(--synapse-green-700);
+
+  --error-bg: color-mix(in oklab, var(--destructive) 6%, white);
+  --error-border: color-mix(in oklab, var(--destructive) 28%, white);
+  --error-text: var(--destructive);
+
+  --warning-bg: color-mix(in oklab, var(--warning) 12%, white);
+  --warning-border: color-mix(in oklab, var(--warning) 32%, white);
+  --warning-text: color-mix(in oklab, var(--warning) 55%, black);
+
   --font-display: 'Outfit', system-ui, sans-serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, monospace;
 
   --radius: 0.5rem;
 
@@ -241,9 +267,26 @@
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Also collapse stagger delays — without this, a delayed entrance keyframe
+       using `backwards` fill still holds its hidden `from` state for the full
+       delay, so content pops in sequentially even with motion disabled. */
+    animation-delay: 0ms !important;
     scroll-behavior: auto !important;
     transition-property: opacity, color, background-color, border-color, box-shadow !important;
   }
+}
+
+/* Entrance keyframes that must never hide server-rendered content. Each declares
+   ONLY its `from` state, so the element's natural style — the real value the
+   server sent — is both the final frame and what SSR paints. A JS-driven
+   `initial={{ opacity: 0 }}` cannot do this: it bakes the hidden state into the
+   server HTML, leaving the surface blank until hydration lands. */
+@keyframes progress-grow {
+  from { width: 0; }
+}
+
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(10px); }
 }
 
 /* ── Toast alerts (sonner) ────────────────────────────────────

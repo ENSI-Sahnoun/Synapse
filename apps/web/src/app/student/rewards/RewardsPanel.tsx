@@ -37,13 +37,14 @@ const STATUS_COLORS: Record<string, string> = {
 
 const GOLD = '#c9a227'
 
-function ProgressRing({ pct, unlocked }: { pct: number; unlocked: boolean }) {
+function ProgressRing({ pct, unlocked, index, reduced }: { pct: number; unlocked: boolean; index: number; reduced: boolean }) {
   const r = 20
   const c = 2 * Math.PI * r
+  const offset = c * (1 - Math.min(pct, 100) / 100)
   return (
     <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden>
       <circle cx="26" cy="26" r={r} fill="none" stroke="var(--synapse-cream-300)" strokeWidth="4" />
-      <circle
+      <motion.circle
         cx="26"
         cy="26"
         r={r}
@@ -52,8 +53,13 @@ function ProgressRing({ pct, unlocked }: { pct: number; unlocked: boolean }) {
         strokeWidth="4"
         strokeLinecap="round"
         strokeDasharray={c}
-        strokeDashoffset={c * (1 - Math.min(pct, 100) / 100)}
+        strokeDashoffset={offset}
         transform="rotate(-90 26 26)"
+        // Sweep the ring from empty to its real value, in step with the card
+        // entrance stagger. Reduced motion keeps the static final offset.
+        initial={reduced ? false : { strokeDashoffset: c }}
+        animate={{ strokeDashoffset: offset }}
+        transition={reduced ? { duration: 0 } : { duration: 0.6, ease: [0.23, 1, 0.32, 1], delay: index * 0.06 }}
       />
       <text x="26" y="30" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--synapse-brown-700)">
         {Math.floor(Math.min(pct, 100))}%
@@ -96,7 +102,7 @@ export function RewardsPanel({
               animate={{ opacity: canRedeem ? 1 : 0.75, y: 0 }}
               transition={{ delay: reduced ? 0 : i * 0.06 }}
             >
-              <ProgressRing pct={pct} unlocked={canRedeem} />
+              <ProgressRing pct={pct} unlocked={canRedeem} index={i} reduced={!!reduced} />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{rule.name}</p>
                 <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>

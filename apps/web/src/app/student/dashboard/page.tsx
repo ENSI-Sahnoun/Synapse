@@ -12,6 +12,7 @@ import { HoldToSendQr } from '@/components/student/HoldToSendQr'
 import { PresenceBanner } from './PresenceBanner'
 import { ImportantAnnouncements } from './ImportantAnnouncements'
 import { LockerStatus } from './LockerStatus'
+import { SubscriptionProgressBar } from './SubscriptionProgressBar'
 import { GamificationTeaser } from '@/components/student/GamificationTeaser'
 import { DiversSeatPrompt } from '@/components/student/DiversSeatPrompt'
 import { StudentPresenceSync } from '@/components/student/StudentPresenceSync'
@@ -75,8 +76,8 @@ export default async function StudentDashboardPage() {
   // stretch of the day, days-mode keeps the original 50%/20% tiers.
   const isCritical = showHoursMode ? hoursRemaining <= 4 : progressPct <= 20
   const isWarning = !showHoursMode && progressPct > 20 && progressPct <= 50
-  const planColor = isCritical ? '#dc2626' : isWarning ? 'var(--synapse-orange-600, #ea580c)' : 'var(--synapse-green-500)'
-  const planColorBg = isCritical ? '#fee2e2' : isWarning ? 'rgba(234,88,12,0.1)' : 'var(--synapse-green-50)'
+  const planColor = isCritical ? 'var(--destructive)' : isWarning ? 'var(--synapse-orange-600, #ea580c)' : 'var(--synapse-green-500)'
+  const planColorBg = isCritical ? 'var(--error-bg)' : isWarning ? 'rgba(234,88,12,0.1)' : 'var(--synapse-green-50)'
 
   const firstName = profile.full_name?.split(' ')[0] || 'étudiant'
   const hour = new Date().getHours()
@@ -135,7 +136,7 @@ export default async function StudentDashboardPage() {
           <div className="px-5 pb-4">
             <Link
               href="/student/qr"
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold border transition-colors"
+              className="flex items-center justify-center gap-2 w-full py-3 min-h-11 rounded-lg text-sm font-semibold border transition-colors"
               style={{
                 background: 'white',
                 borderColor: 'var(--synapse-cream-300)',
@@ -186,13 +187,8 @@ export default async function StudentDashboardPage() {
                 : `${daysRemaining} jours restants`}
             </p>
 
-            {/* Progress bar */}
-            <div className="h-1.5 rounded-full overflow-hidden mb-3" style={{ background: 'var(--synapse-cream-200)' }}>
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${progressPct}%`, background: planColor }}
-              />
-            </div>
+            {/* Progress bar — animates in on mount (see SubscriptionProgressBar) */}
+            <SubscriptionProgressBar pct={progressPct} color={planColor} />
 
             {isCritical && (
               <p className="text-xs flex items-center gap-1 mb-3" style={{ color: planColor }}>
@@ -207,7 +203,7 @@ export default async function StudentDashboardPage() {
           </div>
         ) : subscriptionState === 'expired' && latestSubscription ? (
           <div className="p-5 text-center space-y-1">
-            <p className="font-semibold text-sm" style={{ color: '#dc2626' }}>
+            <p className="font-semibold text-sm" style={{ color: 'var(--destructive)' }}>
               Votre abonnement a expiré
             </p>
             <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>

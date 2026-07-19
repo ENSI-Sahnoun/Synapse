@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { Calendar } from '@/components/ui/calendar'
 import { differenceInMinutes, format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -35,6 +36,7 @@ function formatDuration(checkedIn: string, checkedOut: string | null): string {
 }
 
 export function StudentHistoryClient({ sessions }: { sessions: Session[] }) {
+  const reduced = useReducedMotion()
   const years = useMemo(
     () => [...new Set(sessions.map((s) => parseISO(s.checked_in_at).getFullYear()))].sort((a, b) => b - a),
     [sessions],
@@ -135,7 +137,7 @@ export function StudentHistoryClient({ sessions }: { sessions: Session[] }) {
                   style={{
                     padding: '16px 8px',
                     fontSize: 17,
-                    background: isSelected ? 'var(--accent-brand)' : 'var(--synapse-cream-50, #faf8f5)',
+                    background: isSelected ? 'var(--accent-brand)' : 'var(--synapse-cream-50)',
                     color: isSelected ? '#fff' : 'var(--text-secondary)',
                   }}
                 >
@@ -163,8 +165,8 @@ export function StudentHistoryClient({ sessions }: { sessions: Session[] }) {
                   style={{
                     padding: '14px 6px',
                     fontSize: 14,
-                    background: isSelected ? 'var(--accent-brand)' : visited ? 'var(--synapse-green-50, #f0faf4)' : 'var(--synapse-cream-50, #faf8f5)',
-                    color: isSelected ? '#fff' : visited ? 'var(--synapse-green-600, #16a34a)' : 'var(--muted-foreground)',
+                    background: isSelected ? 'var(--accent-brand)' : visited ? 'var(--synapse-green-50)' : 'var(--synapse-cream-50)',
+                    color: isSelected ? '#fff' : visited ? 'var(--synapse-green-600)' : 'var(--muted-foreground)',
                     opacity: visited ? 1 : 0.5,
                     cursor: visited ? 'pointer' : 'not-allowed',
                   }}
@@ -188,41 +190,54 @@ export function StudentHistoryClient({ sessions }: { sessions: Session[] }) {
           selected={selectedDay}
           onSelect={setSelectedDay}
           modifiers={{ visited: visitedDates }}
-          modifiersClassNames={{ visited: 'bg-[var(--synapse-green-50,#f0faf4)] text-[var(--synapse-green-600,#16a34a)] font-bold' }}
+          modifiersClassNames={{ visited: 'bg-[var(--synapse-green-50)] text-[var(--synapse-green-600)] font-bold' }}
           disabled={(date) => !visitedDayKeys.has(format(date, 'yyyy-MM-dd'))}
           locale={fr}
           className="w-full [--cell-size:2.5rem]"
-          classNames={{ today: 'bg-[var(--synapse-green-500,#22c55e)] text-white rounded-md' }}
+          classNames={{ today: 'bg-[var(--synapse-green-600)] text-white rounded-md' }}
         />
       </div>
 
-      {selectedDay && (
-        <div className="relative isolate z-10 mt-4 clear-both rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
-          <div className="px-4 py-3 border-b text-sm font-bold capitalize" style={{ borderColor: 'var(--border-subtle)' }}>
-            {format(selectedDay, 'EEEE d MMMM yyyy', { locale: fr })}
-          </div>
-          {selectedDaySessions.map((s, i) => (
-            <div
-              key={s.id}
-              className="flex items-center justify-between px-4 py-4"
-              style={{ borderBottom: i < selectedDaySessions.length - 1 ? '1px solid var(--border-subtle)' : undefined }}
-            >
-              <div>
-                <p className="text-base font-bold" style={{ color: s.roomName === 'Divers' ? 'var(--synapse-orange-600, #ea580c)' : s.roomName === 'Salle Inconnue' ? 'var(--destructive)' : 'var(--synapse-green-600, #16a34a)' }}>
-                  {s.roomName}
-                </p>
-                <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-                  {format(parseISO(s.checked_in_at), 'HH:mm')}
-                  {s.checked_out_at && ` → ${format(parseISO(s.checked_out_at), 'HH:mm')}`}
-                </p>
+      {/* Keyed on the day so switching days replays the reveal instead of
+          swapping the contents in place. */}
+      <AnimatePresence initial={false} mode="wait">
+        {selectedDay && (
+          <motion.div
+            key={format(selectedDay, 'yyyy-MM-dd')}
+            className="overflow-hidden"
+            initial={reduced ? { opacity: 0 } : { height: 0, opacity: 0, y: -6 }}
+            animate={reduced ? { opacity: 1 } : { height: 'auto', opacity: 1, y: 0 }}
+            exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+          >
+            <div className="relative isolate z-10 mt-4 clear-both rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
+              <div className="px-4 py-3 border-b text-sm font-bold capitalize" style={{ borderColor: 'var(--border-subtle)' }}>
+                {format(selectedDay, 'EEEE d MMMM yyyy', { locale: fr })}
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'var(--synapse-cream-100)', color: 'var(--synapse-brown-600)' }}>
-                {formatDuration(s.checked_in_at, s.checked_out_at)}
-              </span>
+              {selectedDaySessions.map((s, i) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between px-4 py-4"
+                  style={{ borderBottom: i < selectedDaySessions.length - 1 ? '1px solid var(--border-subtle)' : undefined }}
+                >
+                  <div>
+                    <p className="text-base font-bold" style={{ color: s.roomName === 'Divers' ? 'var(--synapse-orange-600)' : s.roomName === 'Salle Inconnue' ? 'var(--destructive)' : 'var(--synapse-green-600)' }}>
+                      {s.roomName}
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
+                      {format(parseISO(s.checked_in_at), 'HH:mm')}
+                      {s.checked_out_at && ` → ${format(parseISO(s.checked_out_at), 'HH:mm')}`}
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'var(--synapse-cream-100)', color: 'var(--synapse-brown-600)' }}>
+                    {formatDuration(s.checked_in_at, s.checked_out_at)}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -21,16 +21,21 @@ export function StudentHeaderMenu({ fullName, initials }: StudentHeaderMenuProps
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
+        {/* 44px hit area, 32px avatar — touch target without a bigger visual. */}
         <button
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold cursor-pointer"
-          style={{ backgroundColor: 'var(--synapse-brown-100)', color: 'var(--accent-brand)' }}
+          className="w-11 h-11 -mx-1.5 flex items-center justify-center cursor-pointer"
           aria-label="Menu compte"
         >
-          {initials}
+          <span
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+            style={{ backgroundColor: 'var(--synapse-brown-100)', color: 'var(--accent-brand)' }}
+          >
+            {initials}
+          </span>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="truncate">{fullName ?? 'Mon compte'}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>

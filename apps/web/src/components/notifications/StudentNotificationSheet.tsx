@@ -3,11 +3,12 @@
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence } from 'motion/react'
-import { Bell } from '@phosphor-icons/react/dist/ssr'
+import { Bell, X } from '@phosphor-icons/react/dist/ssr'
 import { createClient } from '@/supabase-clients/client'
 import { notificationHref } from '@/lib/notification-links'
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -38,9 +39,12 @@ export function StudentNotificationSheet({
   useEffect(() => {
     const supabase = createClient()
     let channel: ReturnType<typeof supabase.channel> | null = null
+    // The auth round-trip can resolve after unmount; without this flag we would
+    // subscribe a channel nothing will ever tear down.
+    let cancelled = false
     supabase.auth.getUser().then(({ data }) => {
       const uid = data.user?.id
-      if (!uid) return
+      if (!uid || cancelled) return
       channel = supabase
         .channel(`notifications:${uid}:${Math.random().toString(36).slice(2, 8)}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` }, (payload) => {
@@ -64,23 +68,29 @@ export function StudentNotificationSheet({
         })
         .subscribe()
     })
-    return () => { if (channel) void supabase.removeChannel(channel) }
+    return () => {
+      cancelled = true
+      if (channel) void supabase.removeChannel(channel)
+    }
   }, [])
 
   function handleMarkRead(id: string) {
+    // Only an actually-unread row moves the badge, otherwise re-taps drift it down.
+    const wasUnread = notifications.find((n) => n.id === id)?.is_read === false
     startTransition(async () => {
       await markNotificationRead({ notificationId: id })
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
       )
-      setUnreadCount((prev) => Math.max(0, prev - 1))
+      if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1))
     })
   }
 
   // Actionable notification tapped: mark read, close the sheet, go to its page.
   function handleOpen(id: string, href: string) {
+    const wasUnread = notifications.find((n) => n.id === id)?.is_read === false
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
-    setUnreadCount((prev) => Math.max(0, prev - 1))
+    if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1))
     setOpen(false)
     startTransition(async () => {
       await markNotificationRead({ notificationId: id })
@@ -118,21 +128,31 @@ export function StudentNotificationSheet({
       <SheetTrigger asChild>
         <button
           type="button"
-          className="relative cursor-pointer transition-colors duration-150"
-          aria-label="Notifications"
+          className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center transition-colors duration-150"
+          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} non lues` : 'Notifications'}
           style={{ color: 'var(--muted-foreground)' }}
         >
-          <Bell size={20} weight="regular" />
-          {unreadCount > 0 && (
-            <span
-              className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-semibold text-white"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
+          {/* Inner wrapper keeps the badge pinned to the icon, not to the 44px hit area */}
+          <span className="relative flex">
+            <Bell size={20} weight="regular" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-semibold text-white"
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </span>
         </button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl px-0">
+      {/* hideClose: the default top-right X would sit on top of the header actions. */}
+      <SheetContent side="bottom" hideClose className="flex h-[80vh] flex-col rounded-t-2xl px-0 pt-3">
+        {/* Drag-handle grabber — reads as a draggable bottom sheet on mobile */}
+        <div
+          aria-hidden="true"
+          className="mx-auto mb-3 h-1 w-10 rounded-full"
+          style={{ background: 'var(--border-default)' }}
+        />
         <SheetHeader className="flex-row items-center justify-between border-b px-4 pb-2">
           <SheetTitle className="text-base">Notifications</SheetTitle>
           <div className="flex items-center gap-3">
@@ -154,9 +174,15 @@ export function StudentNotificationSheet({
                 Tout effacer
               </button>
             )}
+            <SheetClose
+              aria-label="Fermer"
+              className="-mr-2 flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <X size={16} weight="bold" />
+            </SheetClose>
           </div>
         </SheetHeader>
-        <ScrollArea className="h-full">
+        <ScrollArea className="min-h-0 flex-1">
           {notifications.length === 0 ? (
             <p className="p-8 text-center text-sm text-muted-foreground">
               Aucune notification

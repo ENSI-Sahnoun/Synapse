@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
 import { Bell, EnvelopeSimple, LockKey, At, CaretDown, ShieldCheck, Trophy } from '@phosphor-icons/react'
@@ -17,8 +18,15 @@ interface Props {
   initialOptOut: boolean
 }
 
-const inputCls = 'w-full px-3 py-2.5 text-sm rounded-lg border outline-none transition-colors'
+const inputCls =
+  'w-full px-3 py-2.5 text-sm rounded-lg border outline-none transition-colors focus:ring-2 focus:ring-[var(--border-focus)] focus:border-[var(--border-focus)]'
 const inputStyle = { borderColor: 'var(--border-default)', fontFamily: 'var(--font-body)', background: 'white' }
+
+// Collapsible bodies expand a touch slower than they collapse, so the caret
+// rotation and the height reveal land together instead of the body popping in.
+const COLLAPSE_EASE = [0.23, 1, 0.32, 1] as const
+const collapseEnter = { duration: 0.24, ease: COLLAPSE_EASE }
+const collapseExit = { duration: 0.16, ease: COLLAPSE_EASE }
 
 function isIosNotInstalledPwa(): boolean {
   if (typeof navigator === 'undefined') return false
@@ -31,6 +39,7 @@ function isIosNotInstalledPwa(): boolean {
 }
 
 export function StudentSettingsClient({ initialPush, initialEmailDigest, currentEmail, credentialsSet, initialOptOut }: Props) {
+  const reduced = useReducedMotion()
   const [pushPrefEnabled, setPushPrefEnabled] = useState(initialPush)
   const [emailEnabled, setEmailEnabled] = useState(initialEmailDigest)
   const [, startTransition] = useTransition()
@@ -147,19 +156,19 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
     <div className="space-y-4">
       {/* Secure account — shown until email + password are set */}
       {!secured && (
-        <div id="secure" className="rounded-xl border overflow-hidden" style={{ background: '#FFFBEB', borderColor: '#FDE68A' }}>
+        <div id="secure" className="rounded-xl border overflow-hidden" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
           <div className="flex items-center gap-3 px-4 py-3">
-            <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: '#FEF3C7' }}>
-              <ShieldCheck size={17} style={{ color: '#D97706' }} />
+            <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: 'var(--synapse-orange-100)' }}>
+              <ShieldCheck size={17} style={{ color: 'var(--warning)' }} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold">Sécuriser mon compte</p>
-              <p className="text-[11px] mt-0.5" style={{ color: '#92400E' }}>
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--warning-text)' }}>
                 Ajoutez un email et un mot de passe pour ne pas perdre l'accès
               </p>
             </div>
           </div>
-          <form onSubmit={handleSecureSubmit} className="px-4 pb-4 space-y-2.5 border-t" style={{ borderColor: '#FDE68A' }}>
+          <form onSubmit={handleSecureSubmit} className="px-4 pb-4 space-y-2.5 border-t" style={{ borderColor: 'var(--warning-border)' }}>
             <div className="pt-3">
               <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
                 Votre email
@@ -179,11 +188,11 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
               <input name="confirm" type="password" required placeholder="••••••••" className={inputCls} style={inputStyle} />
             </div>
             {secureMsg && (
-              <p className="text-xs" style={{ color: secureMsg.startsWith('✓') ? 'var(--synapse-green-500)' : 'var(--destructive)' }}>
+              <p className="text-xs" style={{ color: secureMsg.startsWith('✓') ? 'var(--synapse-green-700)' : 'var(--destructive)' }}>
                 {secureMsg}
               </p>
             )}
-            <button type="submit" disabled={securing} className="w-full py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-60" style={{ background: '#D97706' }}>
+            <button type="submit" disabled={securing} className="w-full py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-60" style={{ background: 'var(--warning)' }}>
               {securing ? 'Enregistrement…' : 'Sécuriser mon compte'}
             </button>
           </form>
@@ -193,8 +202,8 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
       {/* Notification toggles */}
       <div className="rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
         <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: '#fef3c7' }}>
-            <Bell size={17} style={{ color: '#d97706' }} />
+          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: 'var(--synapse-orange-100)' }}>
+            <Bell size={17} style={{ color: 'var(--warning)' }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">Notifications push</p>
@@ -222,8 +231,8 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
           ) : null}
         </div>
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: '#f0fdf4' }}>
-            <EnvelopeSimple size={17} style={{ color: '#16a34a' }} />
+          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: 'var(--synapse-green-100)' }}>
+            <EnvelopeSimple size={17} style={{ color: 'var(--synapse-green-600)' }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">Résumé email</p>
@@ -236,8 +245,8 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
       {/* Leaderboard opt-out */}
       <div className="rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: '#fef9c3' }}>
-            <Trophy size={17} weight="duotone" style={{ color: '#ca8a04' }} />
+          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: 'var(--synapse-cream-200)' }}>
+            <Trophy size={17} weight="duotone" style={{ color: 'var(--synapse-orange-600)' }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">Apparaître dans le classement</p>
@@ -256,8 +265,8 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
           onClick={() => { setEmailOpen((o) => !o); setEmailMsg(null) }}
           className="w-full flex items-center gap-3 px-4 py-3"
         >
-          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: '#dbeafe' }}>
-            <At size={17} style={{ color: '#2563eb' }} />
+          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: 'var(--synapse-brown-100)' }}>
+            <At size={17} style={{ color: 'var(--text-brand)' }} />
           </div>
           <div className="flex-1 text-left min-w-0">
             <p className="text-sm font-semibold">Changer d'email</p>
@@ -269,24 +278,35 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
           />
         </button>
 
-        {emailOpen && (
-          <form onSubmit={handleEmailSubmit} className="px-4 pb-4 space-y-2.5 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-            <div className="pt-3">
-              <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
-                Nouvel email
-              </label>
-              <input name="email" type="email" required placeholder={currentEmail} className={inputCls} style={inputStyle} />
-            </div>
-            {emailMsg && (
-              <p className="text-xs" style={{ color: emailMsg.startsWith('✓') ? 'var(--synapse-green-500)' : 'var(--destructive)' }}>
-                {emailMsg}
-              </p>
-            )}
-            <button type="submit" className="w-full py-2.5 rounded-lg text-sm font-semibold text-white" style={{ background: 'var(--accent-brand)' }}>
-              Envoyer le lien de confirmation
-            </button>
-          </form>
-        )}
+        <AnimatePresence initial={false}>
+          {emailOpen && (
+            <motion.div
+              key="email-body"
+              className="overflow-hidden"
+              initial={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
+              animate={reduced ? { opacity: 1 } : { height: 'auto', opacity: 1, transition: collapseEnter }}
+              exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0, transition: collapseExit }}
+              transition={collapseEnter}
+            >
+              <form onSubmit={handleEmailSubmit} className="px-4 pb-4 space-y-2.5 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div className="pt-3">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+                    Nouvel email
+                  </label>
+                  <input name="email" type="email" required placeholder={currentEmail} className={inputCls} style={inputStyle} />
+                </div>
+                {emailMsg && (
+                  <p className="text-xs" style={{ color: emailMsg.startsWith('✓') ? 'var(--synapse-green-700)' : 'var(--destructive)' }}>
+                    {emailMsg}
+                  </p>
+                )}
+                <button type="submit" className="w-full py-2.5 rounded-lg text-sm font-semibold text-white" style={{ background: 'var(--accent-brand)' }}>
+                  Envoyer le lien de confirmation
+                </button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Password — collapsed by default */}
@@ -296,8 +316,8 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
           onClick={() => { setPasswordOpen((o) => !o); setPasswordMsg(null) }}
           className="w-full flex items-center gap-3 px-4 py-3"
         >
-          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: '#ede9fe' }}>
-            <LockKey size={17} style={{ color: '#7c3aed' }} />
+          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: 'var(--synapse-stone-100)' }}>
+            <LockKey size={17} style={{ color: 'var(--synapse-stone-700)' }} />
           </div>
           <div className="flex-1 text-left">
             <p className="text-sm font-semibold">Changer le mot de passe</p>
@@ -308,36 +328,47 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
           />
         </button>
 
-        {passwordOpen && (
-          <form onSubmit={handlePasswordSubmit} className="px-4 pb-4 space-y-2.5 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-            <div className="pt-3">
-              <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
-                Mot de passe actuel
-              </label>
-              <input name="current_password" type="password" required placeholder="••••••••" className={inputCls} style={inputStyle} />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
-                Nouveau mot de passe
-              </label>
-              <input name="password" type="password" required minLength={8} placeholder="••••••••" className={inputCls} style={inputStyle} />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
-                Confirmer
-              </label>
-              <input name="confirm" type="password" required placeholder="••••••••" className={inputCls} style={inputStyle} />
-            </div>
-            {passwordMsg && (
-              <p className="text-xs" style={{ color: passwordMsg.startsWith('✓') ? 'var(--synapse-green-500)' : 'var(--destructive)' }}>
-                {passwordMsg}
-              </p>
-            )}
-            <button type="submit" className="w-full py-2.5 rounded-lg text-sm font-semibold text-white" style={{ background: 'var(--accent-brand)' }}>
-              Mettre à jour
-            </button>
-          </form>
-        )}
+        <AnimatePresence initial={false}>
+          {passwordOpen && (
+            <motion.div
+              key="password-body"
+              className="overflow-hidden"
+              initial={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
+              animate={reduced ? { opacity: 1 } : { height: 'auto', opacity: 1, transition: collapseEnter }}
+              exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0, transition: collapseExit }}
+              transition={collapseEnter}
+            >
+              <form onSubmit={handlePasswordSubmit} className="px-4 pb-4 space-y-2.5 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div className="pt-3">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+                    Mot de passe actuel
+                  </label>
+                  <input name="current_password" type="password" required placeholder="••••••••" className={inputCls} style={inputStyle} />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+                    Nouveau mot de passe
+                  </label>
+                  <input name="password" type="password" required minLength={8} placeholder="••••••••" className={inputCls} style={inputStyle} />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+                    Confirmer
+                  </label>
+                  <input name="confirm" type="password" required placeholder="••••••••" className={inputCls} style={inputStyle} />
+                </div>
+                {passwordMsg && (
+                  <p className="text-xs" style={{ color: passwordMsg.startsWith('✓') ? 'var(--synapse-green-700)' : 'var(--destructive)' }}>
+                    {passwordMsg}
+                  </p>
+                )}
+                <button type="submit" className="w-full py-2.5 rounded-lg text-sm font-semibold text-white" style={{ background: 'var(--accent-brand)' }}>
+                  Mettre à jour
+                </button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )

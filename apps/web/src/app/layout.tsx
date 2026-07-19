@@ -9,6 +9,8 @@ import '@fontsource/outfit/500.css'
 import '@fontsource/outfit/600.css'
 import '@fontsource/outfit/700.css'
 import '@fontsource/outfit/800.css'
+import '@fontsource/roboto-mono/400.css'
+import '@fontsource/roboto-mono/500.css'
 import type { Viewport } from 'next'
 import { DynamicLayoutProviders } from './DynamicLayoutProviders'
 

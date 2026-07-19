@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -46,7 +46,7 @@ function metaFor(type: string): { Icon: PhosphorIcon; label: string; tone: Tone 
 const TONE: Record<Tone, { fg: string; bg: string }> = {
   green: { fg: 'var(--synapse-green-700)', bg: 'var(--synapse-green-50)' },
   amber: { fg: 'var(--synapse-orange-500)', bg: 'var(--synapse-orange-50)' },
-  red: { fg: 'var(--destructive)', bg: '#fee2e2' },
+  red: { fg: 'var(--destructive)', bg: 'color-mix(in srgb, var(--destructive) 12%, white)' },
   orange: { fg: 'var(--synapse-orange-700)', bg: 'var(--synapse-orange-100)' },
   brand: { fg: 'var(--synapse-brown-600)', bg: 'var(--synapse-brown-50)' },
   neutral: { fg: 'var(--muted-foreground)', bg: 'var(--muted)' },
@@ -60,6 +60,7 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
   const { Icon, label, tone } = metaFor(notification.type)
   const colors = TONE[tone]
   const actionable = !!href && !!onOpen
+  const reduceMotion = useReducedMotion()
 
   const [dragX, setDragX] = useState(0)
   const startX = useRef<number | null>(null)
@@ -109,7 +110,9 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
       <div
         className={cn(
           'relative flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-[background-color,transform] active:scale-[0.99]',
-          isUnread ? 'bg-blue-50 hover:bg-blue-100' : 'bg-background hover:bg-muted',
+          isUnread
+            ? 'bg-[var(--primary-light)] hover:bg-[var(--synapse-brown-100)]'
+            : 'bg-background hover:bg-muted',
         )}
         style={{
           transform: `translateX(${dragX}px)`,
@@ -134,10 +137,13 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
               {label}
             </p>
             {isUnread && (
+              // One-shot pop on mount instead of a permanent loop: the dot alone
+              // already carries the "unread" meaning once it has landed.
               <motion.span
-                className="h-1.5 w-1.5 rounded-full bg-blue-500"
-                animate={{ opacity: [1, 0.35, 1], scale: [1, 0.8, 1] }}
-                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                className="h-1.5 w-1.5 rounded-full bg-[var(--accent-orange)]"
+                initial={reduceMotion ? false : { scale: 0.4, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
               />
             )}
           </div>

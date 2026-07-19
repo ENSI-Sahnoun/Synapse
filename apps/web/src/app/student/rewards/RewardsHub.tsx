@@ -61,14 +61,14 @@ export function RewardsHub({
           <button
             key={t.id}
             onClick={() => setActive(t.id)}
-            className="relative text-xs font-semibold px-3.5 py-2 rounded-full whitespace-nowrap"
+            className="relative flex items-center min-h-11 text-xs font-semibold px-3.5 py-2 rounded-full whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
             style={{ color: t.id === active ? 'white' : 'var(--synapse-brown-700)' }}
           >
             {t.id === active && (
               <motion.span
                 layoutId="tab-pill"
                 className="absolute inset-0 rounded-full"
-                style={{ background: 'var(--synapse-green-500)' }}
+                style={{ background: 'var(--synapse-green-600)' }}
                 transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 32 }}
               />
             )}

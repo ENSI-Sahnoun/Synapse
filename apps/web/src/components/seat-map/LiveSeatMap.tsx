@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect, Text, Group } from 'react-konva'
 import { motion } from 'motion/react'
 import { ArrowsOut, X } from '@phosphor-icons/react'
+import { toast } from 'sonner'
 import { createClient } from '@/supabase-clients/client'
 import { CapacityBadge } from './CapacityBadge'
 import type { RoomTable, Seat } from '@/data/admin/seat-map'
@@ -171,8 +172,12 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
   const occupiedCount = seats.filter((s) => s.status === 'occupied' || s.status === 'reserved').length
   const isRoomClosed = room.status === 'closed' || room.status === 'reserved'
 
-  // Prefetch occupant/reservation names so hovering a seat shows them instantly
+  // Prefetch occupant/reservation names so hovering a seat shows them instantly.
+  // Staff only: students are RLS-blocked from other people's attendance and
+  // reservation rows, and hover never fires on touch anyway — so for them this
+  // is two round-trips that can only ever return nothing.
   useEffect(() => {
+    if (mode === 'student') return
     const supabase = createClient()
     const occupiedSeatIds = seats.filter((s) => s.status === 'occupied').map((s) => s.id)
     const reservedSeatIds = seats.filter((s) => s.status === 'reserved').map((s) => s.id)
@@ -212,7 +217,7 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
 
     if (occupiedSeatIds.length > 0 || reservedSeatIds.length > 0) load()
     else { setOccupantNames({}); setAttendedSeatIds(new Set()) }
-  }, [seats])
+  }, [seats, mode])
 
   useEffect(() => {
     const supabase = createClient()
@@ -303,7 +308,22 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
   )
 
   function handleSeatClick(seat: Seat) {
-    if (!isSeatClickable(seat)) return
+    if (!isSeatClickable(seat)) {
+      // A rejected tap is otherwise completely silent, which reads as a broken
+      // map. Students get told why; staff surfaces keep the quiet early-return.
+      if (mode === 'student') {
+        if (isRoomClosed) {
+          toast.info(room.status === 'closed' ? 'Salle fermée' : 'Salle réservée')
+        } else if (seat.status === 'occupied') {
+          toast.info('Place occupée')
+        } else if (seat.status === 'reserved') {
+          toast.info('Place réservée')
+        } else if (seat.status === 'out_of_service') {
+          toast.info('Hors service')
+        }
+      }
+      return
+    }
     onSeatClick?.(seat)
   }
 
@@ -477,7 +497,11 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
 
       <div className={fullscreen ? 'flex-1 min-h-0' : ''}>{canvasBox}</div>
 
-      {!fullscreen && legend}
+      {/* Fullscreen is exactly where seats are tappable, so the student view
+          keeps the colour key there too. Staff keep the inline-only legend. */}
+      {(!fullscreen || mode === 'student') && (
+        <div className={fullscreen ? 'shrink-0' : undefined}>{legend}</div>
+      )}
     </motion.div>
   )
 }

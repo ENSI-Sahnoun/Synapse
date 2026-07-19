@@ -31,11 +31,11 @@ export default async function StudentShopPage() {
         <div className="flex items-center gap-2">
           <div
             className="flex items-center justify-center rounded-lg"
-            style={{ width: 28, height: 28, background: 'var(--synapse-blue-100, #dbeafe)' }}
+            style={{ width: 28, height: 28, background: 'var(--synapse-brown-100)' }}
           >
-            <GraduationCap size={16} style={{ color: 'var(--synapse-blue-600, #2563eb)' }} weight="bold" />
+            <GraduationCap size={16} style={{ color: 'var(--synapse-brown-600)' }} weight="bold" />
           </div>
-          <h2 className="font-semibold text-sm uppercase tracking-wide" style={{ color: 'var(--synapse-blue-600, #2563eb)' }}>
+          <h2 className="font-semibold text-sm uppercase tracking-wide" style={{ color: 'var(--synapse-brown-600)' }}>
             Abonnements
           </h2>
         </div>
@@ -44,7 +44,7 @@ export default async function StudentShopPage() {
             <div
               key={plan.id}
               className="rounded-xl border p-4 flex items-center justify-between"
-              style={{ background: 'white', borderColor: 'var(--synapse-blue-100, #dbeafe)' }}
+              style={{ background: 'white', borderColor: 'var(--synapse-brown-100)' }}
             >
               <div>
                 <p className="font-semibold text-sm">{plan.name}</p>
@@ -52,7 +52,7 @@ export default async function StudentShopPage() {
                   {plan.duration_days} jours
                 </p>
               </div>
-              <p className="font-bold text-lg" style={{ fontFamily: 'var(--font-display)', color: 'var(--synapse-blue-600, #2563eb)' }}>
+              <p className="font-bold text-lg" style={{ fontFamily: 'var(--font-display)', color: 'var(--synapse-brown-600)' }}>
                 {formatDt(plan.price_dt)}
               </p>
             </div>
@@ -68,7 +68,7 @@ export default async function StudentShopPage() {
         <div className="flex items-center gap-2">
           <div
             className="flex items-center justify-center rounded-lg"
-            style={{ width: 28, height: 28, background: 'var(--synapse-orange-100, #ffedd5)' }}
+            style={{ width: 28, height: 28, background: 'var(--synapse-orange-100)' }}
           >
             <Lock size={16} style={{ color: 'var(--synapse-orange-600)' }} weight="bold" />
           </div>
@@ -78,7 +78,7 @@ export default async function StudentShopPage() {
         </div>
         <div
           className="rounded-xl border p-4 flex items-center justify-between"
-          style={{ background: 'white', borderColor: 'var(--synapse-orange-100, #ffedd5)' }}
+          style={{ background: 'white', borderColor: 'var(--synapse-orange-100)' }}
         >
           <div>
             <p className="font-semibold text-sm">Location casier</p>
@@ -97,11 +97,11 @@ export default async function StudentShopPage() {
         <div className="flex items-center gap-2">
           <div
             className="flex items-center justify-center rounded-lg"
-            style={{ width: 28, height: 28, background: 'var(--synapse-purple-100, #f3e8ff)' }}
+            style={{ width: 28, height: 28, background: 'var(--synapse-green-100)' }}
           >
-            <ShoppingBag size={16} style={{ color: 'var(--synapse-purple-600, #9333ea)' }} weight="bold" />
+            <ShoppingBag size={16} style={{ color: 'var(--synapse-green-700)' }} weight="bold" />
           </div>
-          <h2 className="font-semibold text-sm uppercase tracking-wide" style={{ color: 'var(--synapse-purple-600, #9333ea)' }}>
+          <h2 className="font-semibold text-sm uppercase tracking-wide" style={{ color: 'var(--synapse-green-700)' }}>
             Boutique
           </h2>
         </div>
@@ -125,13 +125,13 @@ export default async function StudentShopPage() {
                     className="relative rounded-lg border overflow-hidden flex flex-col"
                     style={{
                       background: 'white',
-                      borderColor: 'var(--synapse-purple-100, #f3e8ff)',
+                      borderColor: 'var(--synapse-green-100)',
                       opacity: outOfStock ? 0.6 : 1,
                     }}
                   >
                     <div
                       className="aspect-square flex items-center justify-center"
-                      style={{ background: 'var(--synapse-purple-50, #faf5ff)' }}
+                      style={{ background: 'var(--synapse-green-50)' }}
                     >
                       {p.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -155,7 +155,7 @@ export default async function StudentShopPage() {
                       <p className="text-[11px] font-medium leading-tight truncate">{p.name}</p>
                       <p
                         className="text-xs font-bold"
-                        style={{ fontFamily: 'var(--font-display)', color: 'var(--synapse-purple-600, #9333ea)' }}
+                        style={{ fontFamily: 'var(--font-display)', color: 'var(--synapse-green-700)' }}
                       >
                         {formatDt(p.price_dt)}
                       </p>

@@ -72,10 +72,10 @@ export function LeaderboardPanel({
           <button
             key={c.category}
             onClick={() => setActive(c.category)}
-            className="text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap transition-colors"
+            className="flex items-center min-h-11 text-xs font-semibold px-4 py-1.5 rounded-full whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
             style={
               c.category === active
-                ? { background: 'var(--synapse-green-500)', color: 'white' }
+                ? { background: 'var(--synapse-green-600)', color: 'white' }
                 : { background: 'white', color: 'var(--synapse-brown-700)' }
             }
           >
@@ -144,7 +144,7 @@ export function LeaderboardPanel({
       {/* My rank */}
       <div
         className="mt-4 mx-5 mb-4 rounded-lg px-4 py-2.5 flex items-center justify-between"
-        style={{ background: 'var(--synapse-green-50)', color: 'var(--synapse-green-500)' }}
+        style={{ background: 'var(--synapse-green-50)', color: 'var(--synapse-green-700)' }}
       >
         <span className="text-xs font-semibold">Votre position</span>
         <span className="text-sm font-bold">

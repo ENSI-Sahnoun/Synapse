@@ -64,16 +64,16 @@ export function ImportantAnnouncements({ initial }: { initial: ImportantNotifica
           exit={{ opacity: 0, height: 0, marginBottom: 0 }}
           transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
           className="rounded-xl flex items-start gap-3 px-4 py-3 mb-3 overflow-hidden"
-          style={{ background: '#fee2e2', border: '1px solid #fecaca' }}
+          style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)' }}
         >
-          <Megaphone size={18} weight="fill" style={{ color: '#dc2626', flexShrink: 0, marginTop: 2 }} />
-          <p className="text-sm font-semibold flex-1" style={{ color: '#991b1b' }}>{n.message}</p>
+          <Megaphone size={18} weight="fill" style={{ color: 'var(--destructive)', flexShrink: 0, marginTop: 2 }} />
+          <p className="text-sm font-semibold flex-1" style={{ color: 'var(--error-text)' }}>{n.message}</p>
           <button
             onClick={() => dismiss(n.id)}
             aria-label="Fermer l'annonce"
-            className="shrink-0 -m-1 p-1 rounded-full hover:bg-black/5"
+            className="shrink-0 -m-2 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-black/5"
           >
-            <X size={16} style={{ color: '#991b1b' }} />
+            <X size={16} style={{ color: 'var(--error-text)' }} />
           </button>
         </motion.div>
       ))}

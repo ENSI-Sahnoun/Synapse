@@ -10,14 +10,14 @@ export function SecureAccountBanner() {
     <Link
       href="/student/settings#secure"
       className="flex items-center gap-3 px-4 py-2.5"
-      style={{ background: '#FEF3C7', borderBottom: '1px solid #FDE68A' }}
+      style={{ background: 'var(--warning-bg)', borderBottom: '1px solid var(--warning-border)' }}
     >
-      <ShieldWarning size={18} weight="fill" style={{ color: '#D97706', flexShrink: 0 }} />
-      <p className="flex-1 text-xs leading-snug" style={{ color: '#92400E' }}>
+      <ShieldWarning size={18} weight="fill" style={{ color: 'var(--warning-text)', flexShrink: 0 }} />
+      <p className="flex-1 text-xs leading-snug" style={{ color: 'var(--warning-text)' }}>
         <span className="font-semibold">Sécurisez votre compte.</span> Ajoutez un
         email et un mot de passe pour ne pas perdre l'accès.
       </p>
-      <span className="text-xs font-semibold whitespace-nowrap" style={{ color: '#D97706' }}>
+      <span className="text-xs font-semibold whitespace-nowrap" style={{ color: 'var(--warning-text)' }}>
         Configurer →
       </span>
     </Link>

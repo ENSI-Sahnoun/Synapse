@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Armchair, X } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
 
 // Shown to a student who is checked in but has no seat ("Divers"). Nudges them
 // to pick a seat. Dismissing it ("Plus tard") suppresses it for the rest of
@@ -14,6 +15,7 @@ const dismissKey = (attendanceId: string) => `divers-dismissed:${attendanceId}`
 export function DiversSeatPrompt({ attendanceId }: { attendanceId: string }) {
   // Start closed to avoid a flash before we read sessionStorage on mount.
   const [open, setOpen] = useState(false)
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     if (!sessionStorage.getItem(dismissKey(attendanceId))) setOpen(true)
@@ -37,19 +39,23 @@ export function DiversSeatPrompt({ attendanceId }: { attendanceId: string }) {
         >
           <motion.div
             className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
-            initial={{ y: 40, opacity: 0, scale: 0.97 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 40, opacity: 0, scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            // Tween on --ease-drawer rather than a spring: the old 380/30 spring
+            // (zeta ~0.77) visibly overshot on a sheet this size.
+            initial={reducedMotion ? { opacity: 0 } : { y: 40, opacity: 0, scale: 0.97 }}
+            animate={reducedMotion ? { opacity: 1 } : { y: 0, opacity: 1, scale: 1 }}
+            exit={reducedMotion ? { opacity: 0 } : { y: 40, opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={dismiss}
               aria-label="Fermer"
-              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+              className="absolute right-2 top-2 size-11 text-gray-400 hover:text-gray-600"
             >
               <X size={20} weight="bold" />
-            </button>
+            </Button>
 
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--synapse-green-50)]">
               <Armchair size={28} weight="duotone" className="text-[var(--synapse-green-500)]" />
@@ -62,18 +68,15 @@ export function DiversSeatPrompt({ attendanceId }: { attendanceId: string }) {
             </p>
 
             <div className="mt-5 flex gap-3">
-              <button
-                onClick={dismiss}
-                className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-700"
-              >
+              <Button variant="outline" onClick={dismiss} className="min-h-11 flex-1">
                 Plus tard
-              </button>
-              <Link
-                href="/student/rooms"
-                className="flex-1 rounded-lg bg-[var(--synapse-green-500)] py-2.5 text-center text-sm font-semibold text-white"
+              </Button>
+              <Button
+                asChild
+                className="min-h-11 flex-1 bg-[var(--synapse-green-600)] font-semibold text-white hover:bg-[var(--synapse-green-700)]"
               >
-                Choisir ma place
-              </Link>
+                <Link href="/student/rooms">Choisir ma place</Link>
+              </Button>
             </div>
           </motion.div>
         </motion.div>

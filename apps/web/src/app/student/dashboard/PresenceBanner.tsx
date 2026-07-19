@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Armchair, ArrowCounterClockwise } from '@phosphor-icons/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { Armchair, ArrowCounterClockwise, CircleNotch } from '@phosphor-icons/react'
 import { moveSelfToDivers, undoMoveSelfToDivers, checkOutSelf } from '@/actions/student/seat-swap'
 import type { MyPresence } from '@/data/student/profile'
 
@@ -12,6 +13,7 @@ const UNDO_WINDOW_MS = 60_000
 
 export function PresenceBanner({ presence }: { presence: MyPresence }) {
   const router = useRouter()
+  const reduceMotion = useReducedMotion()
   const [undoInfo, setUndoInfo] = useState<{ seatId: string; roomId: string } | null>(null)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -67,6 +69,21 @@ export function PresenceBanner({ presence }: { presence: MyPresence }) {
   const labelColor = isAbsent ? 'var(--muted-foreground)' : 'var(--synapse-green-600, #16a34a)'
   const valueColor = isAbsent ? 'var(--text-secondary)' : 'var(--synapse-green-800, #166534)'
 
+  const isMoving = moveStatus === 'executing'
+  const isCheckingOut = checkOutStatus === 'executing'
+  const isUndoing = undoStatus === 'executing'
+
+  // Height collapse reads as the row growing out of the banner; under reduced
+  // motion it degrades to a plain cross-fade.
+  const reveal = reduceMotion
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+    : {
+        initial: { opacity: 0, height: 0 },
+        animate: { opacity: 1, height: 'auto' as const },
+        exit: { opacity: 0, height: 0 },
+      }
+  const revealTransition = { duration: 0.22, ease: [0.23, 1, 0.32, 1] as const }
+
   return (
     <div className="space-y-2">
       <div
@@ -103,60 +120,76 @@ export function PresenceBanner({ presence }: { presence: MyPresence }) {
         {presence.status === 'seated' && (
           <button
             onClick={() => moveToDivers({})}
-            disabled={moveStatus === 'executing'}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
+            disabled={isMoving}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 min-h-[44px] rounded-lg border disabled:opacity-60"
             style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}
           >
-            Passer en Divers
+            {isMoving && <CircleNotch size={14} weight="bold" className="animate-spin" />}
+            {isMoving ? 'Déplacement…' : 'Passer en Divers'}
           </button>
         )}
       </div>
 
       {(presence.status === 'seated' || presence.status === 'divers') && (
-        confirmCheckout ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium flex-1" style={{ color: 'var(--text-secondary)' }}>
-              Confirmer la sortie ?
-            </span>
-            <button
-              onClick={() => setConfirmCheckout(false)}
-              disabled={checkOutStatus === 'executing'}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
-              style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
-            >
-              Annuler
-            </button>
-            <button
-              onClick={() => checkOut({})}
-              disabled={checkOutStatus === 'executing'}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg"
-              style={{ background: 'var(--accent-brand)', color: '#fff' }}
-            >
-              Sortir
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setConfirmCheckout(true)}
-            className="w-full text-xs font-semibold px-3 py-2 rounded-lg border"
-            style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
-          >
-            Terminer ma session
-          </button>
-        )
+        <AnimatePresence initial={false} mode="wait">
+          {confirmCheckout ? (
+            <motion.div key="confirm" {...reveal} transition={revealTransition} className="overflow-hidden">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium flex-1" style={{ color: 'var(--text-secondary)' }}>
+                  Confirmer la sortie ?
+                </span>
+                <button
+                  onClick={() => setConfirmCheckout(false)}
+                  disabled={isCheckingOut}
+                  className="text-sm font-semibold px-3 min-h-[44px] rounded-lg border disabled:opacity-60"
+                  style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => checkOut({})}
+                  disabled={isCheckingOut}
+                  className="flex items-center gap-1.5 text-sm font-semibold px-3 min-h-[44px] rounded-lg disabled:opacity-60"
+                  style={{ background: 'var(--accent-brand)', color: '#fff' }}
+                >
+                  {isCheckingOut && <CircleNotch size={14} weight="bold" className="animate-spin" />}
+                  {isCheckingOut ? 'Sortie…' : 'Sortir'}
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div key="terminate" {...reveal} transition={revealTransition} className="overflow-hidden">
+              <button
+                onClick={() => setConfirmCheckout(true)}
+                className="w-full text-sm font-semibold px-3 py-2.5 min-h-[44px] rounded-lg border"
+                style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+              >
+                Terminer ma session
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       )}
 
-      {undoInfo && (
-        <button
-          onClick={() => undo(undoInfo)}
-          disabled={undoStatus === 'executing'}
-          className="w-full flex items-center justify-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg border"
-          style={{ borderColor: 'var(--border-default)', color: 'var(--accent-brand)' }}
-        >
-          <ArrowCounterClockwise size={14} />
-          Annuler — reprendre ma place
-        </button>
-      )}
+      <AnimatePresence initial={false}>
+        {undoInfo && (
+          <motion.div key="undo" {...reveal} transition={revealTransition} className="overflow-hidden">
+            <button
+              onClick={() => undo(undoInfo)}
+              disabled={isUndoing}
+              className="w-full flex items-center justify-center gap-2 text-sm font-semibold px-3 py-2.5 min-h-[44px] rounded-lg border disabled:opacity-60"
+              style={{ borderColor: 'var(--border-default)', color: 'var(--accent-brand)' }}
+            >
+              {isUndoing ? (
+                <CircleNotch size={14} weight="bold" className="animate-spin" />
+              ) : (
+                <ArrowCounterClockwise size={14} />
+              )}
+              {isUndoing ? 'Reprise…' : 'Annuler — reprendre ma place'}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

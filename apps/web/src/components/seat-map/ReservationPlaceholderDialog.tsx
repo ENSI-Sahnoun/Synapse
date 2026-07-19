@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useAction } from 'next-safe-action/hooks'
+import { useRouter } from 'next/navigation'
 import { createReservation } from '@/actions/student/reservations'
 import { toast } from 'sonner'
 import type { Seat } from '@/data/admin/seat-map'
@@ -21,6 +22,7 @@ type Props = {
 }
 
 export function ReservationPlaceholderDialog({ seat, open, onOpenChange }: Props) {
+  const router = useRouter()
   const { execute, isPending } = useAction(createReservation, {
     onSuccess: ({ data }) => {
       if (data?.error) {
@@ -33,6 +35,10 @@ export function ReservationPlaceholderDialog({ seat, open, onOpenChange }: Props
           : `Place ${seat?.label} réservée pour ${data?.holdMinutes} minutes.`
       )
       onOpenChange(false)
+      // Same landing as the sibling swap/claim flows — leaving the student on
+      // the map with nothing changed made a successful reservation look like a
+      // no-op.
+      router.push('/student/rooms')
     },
     onError: () => toast.error('Erreur lors de la réservation. Veuillez réessayer.'),
   })

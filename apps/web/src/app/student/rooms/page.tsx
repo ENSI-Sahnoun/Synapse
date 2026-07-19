@@ -1,4 +1,4 @@
-import { getRoomsWithSeatCounts } from '@/data/admin/rooms'
+import { getRoomsWithSeatCounts, type RoomWithSeatCount } from '@/data/admin/rooms'
 import { getMyPresence } from '@/data/student/profile'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase'
@@ -6,6 +6,7 @@ import { ActiveReservationBanner } from '@/components/student/ActiveReservationB
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
+import { RoomCardsStagger } from './RoomCardsStagger'
 
 type StatusConfig = {
   label: string
@@ -21,7 +22,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
     dot: 'var(--synapse-green-500)',
     bar: 'var(--synapse-green-500)',
     border: 'var(--border-subtle)',
-    bg: 'white',
+    bg: 'var(--surface)',
   },
   closed: {
     label: 'Fermée',
@@ -37,6 +38,177 @@ const STATUS_MAP: Record<string, StatusConfig> = {
     border: 'var(--synapse-cream-300)',
     bg: 'var(--synapse-cream-50)',
   },
+}
+
+function RoomCard({
+  room,
+  clickable,
+  isMyRoom,
+}: {
+  room: RoomWithSeatCount
+  clickable: boolean
+  isMyRoom: boolean
+}) {
+  const status = room.status ?? 'closed'
+  const cfg = STATUS_MAP[status] ?? STATUS_MAP.closed
+  const pct =
+    room.seat_count > 0
+      ? Math.round((room.occupied_count / room.seat_count) * 100)
+      : 0
+  const free = room.seat_count - room.occupied_count
+
+  const inner = (
+    <div
+      // Hover/press feedback has to live in a class — an inline style can't
+      // express :hover/:active, so the old inline box-shadow transition never
+      // had anything to transition to.
+      className="transition-[box-shadow,transform] duration-[120ms] ease-[var(--ease-out)] hover:shadow-md active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
+      style={{
+        background: cfg.bg,
+        border: isMyRoom ? '2px solid var(--success)' : `1px solid ${cfg.border}`,
+        borderRadius: 16,
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        opacity: clickable ? 1 : 0.7,
+      }}
+    >
+      {isMyRoom && (
+        <span
+          style={{
+            alignSelf: 'flex-start',
+            fontSize: 11,
+            fontWeight: 700,
+            padding: '2px 8px',
+            borderRadius: 99,
+            background: 'var(--synapse-green-600)',
+            color: 'var(--surface)',
+          }}
+        >
+          Vous êtes ici
+        </span>
+      )}
+      {/* Header row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-display)' }}>
+            {room.name}
+          </div>
+          {room.status_note && (
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--text-secondary)',
+                marginTop: 3,
+                lineHeight: 1.4,
+                maxWidth: 220,
+              }}
+            >
+              {room.status_note}
+            </div>
+          )}
+        </div>
+
+        {/* Status badge */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '4px 10px',
+            borderRadius: 99,
+            background: status === 'open' ? 'var(--synapse-green-50)' : 'var(--synapse-cream-200)',
+            border: `1px solid ${cfg.border}`,
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: cfg.dot,
+              flexShrink: 0,
+            }}
+          />
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: status === 'open' ? 'var(--synapse-green-700)' : 'var(--synapse-stone-600)',
+            }}
+          >
+            {cfg.label}
+          </span>
+        </div>
+      </div>
+
+      {/* Occupancy bar (only for open rooms with seat data) */}
+      {room.seat_count > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div
+            style={{
+              height: 6,
+              background: 'var(--synapse-cream-200)',
+              borderRadius: 99,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${pct}%`,
+                background:
+                  pct >= 90
+                    ? 'var(--destructive)'
+                    : pct >= 70
+                      ? 'var(--synapse-orange-500)'
+                      : cfg.bar,
+                borderRadius: 99,
+                transition: 'width 0.4s',
+              }}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+                fontWeight: 500,
+              }}
+            >
+              {clickable
+                ? free > 0
+                  ? `${free} place${free > 1 ? 's' : ''} disponible${free > 1 ? 's' : ''}`
+                  : 'Complet'
+                : `${room.occupied_count}/${room.seat_count} places`}
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                color: 'var(--text-secondary)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              {room.occupied_count}/{room.seat_count}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  // Always link through, even when full/closed/reserved — students can still
+  // see the room and who's where, they just can't reserve/interact there.
+  return (
+    <Link
+      href={`/student/rooms/${room.id}/map`}
+      style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}
+    >
+      {inner}
+    </Link>
+  )
 }
 
 export default async function StudentRoomsPage() {
@@ -68,157 +240,6 @@ export default async function StudentRoomsPage() {
   const openRooms = rooms.filter((r) => r.status === 'open')
   const unavailable = rooms.filter((r) => r.status !== 'open')
 
-  function RoomCard({
-    room,
-    clickable,
-  }: {
-    room: (typeof rooms)[0]
-    clickable: boolean
-  }) {
-    const status = room.status ?? 'closed'
-    const cfg = STATUS_MAP[status] ?? STATUS_MAP.closed
-    const pct =
-      room.seat_count > 0
-        ? Math.round((room.occupied_count / room.seat_count) * 100)
-        : 0
-    const free = room.seat_count - room.occupied_count
-    const isMyRoom = room.id === myRoomId
-
-    const inner = (
-      <div
-        style={{
-          background: cfg.bg,
-          border: isMyRoom ? '2px solid #22c55e' : `1px solid ${cfg.border}`,
-          borderRadius: 16,
-          padding: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-          opacity: clickable ? 1 : 0.7,
-          transition: 'box-shadow 0.15s',
-        }}
-      >
-        {isMyRoom && (
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#22c55e' }}>Vous êtes ici</span>
-        )}
-        {/* Header row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-display)' }}>
-              {room.name}
-            </div>
-            {room.status_note && (
-              <div
-                style={{
-                  fontSize: 11,
-                  color: 'var(--text-secondary)',
-                  marginTop: 3,
-                  lineHeight: 1.4,
-                  maxWidth: 220,
-                }}
-              >
-                {room.status_note}
-              </div>
-            )}
-          </div>
-
-          {/* Status badge */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '4px 10px',
-              borderRadius: 99,
-              background: status === 'open' ? 'var(--synapse-green-50, #edfaf4)' : 'var(--synapse-cream-200)',
-              border: `1px solid ${cfg.border}`,
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: cfg.dot,
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: status === 'open' ? 'var(--synapse-green-700)' : 'var(--synapse-stone-600)',
-              }}
-            >
-              {cfg.label}
-            </span>
-          </div>
-        </div>
-
-        {/* Occupancy bar (only for open rooms with seat data) */}
-        {room.seat_count > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div
-              style={{
-                height: 6,
-                background: 'var(--synapse-cream-200)',
-                borderRadius: 99,
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  height: '100%',
-                  width: `${pct}%`,
-                  background:
-                    pct >= 90 ? '#dc2626' : pct >= 70 ? 'var(--synapse-orange-500)' : cfg.bar,
-                  borderRadius: 99,
-                  transition: 'width 0.4s',
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-secondary)',
-                  fontWeight: 500,
-                }}
-              >
-                {clickable
-                  ? free > 0
-                    ? `${free} place${free > 1 ? 's' : ''} disponible${free > 1 ? 's' : ''}`
-                    : 'Complet'
-                  : `${room.occupied_count}/${room.seat_count} places`}
-              </span>
-              <span
-                style={{
-                  fontSize: 11,
-                  color: 'var(--text-tertiary)',
-                  fontFamily: 'var(--font-mono)',
-                }}
-              >
-                {room.occupied_count}/{room.seat_count}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-
-    // Always link through, even when full/closed/reserved — students can still
-    // see the room and who's where, they just can't reserve/interact there.
-    return (
-      <Link
-        href={`/student/rooms/${room.id}/map`}
-        style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}
-      >
-        {inner}
-      </Link>
-    )
-  }
-
   return (
     <div
       style={{
@@ -245,7 +266,14 @@ export default async function StudentRoomsPage() {
 
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {!subscription && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-red-700 text-sm">
+          <div
+            className="rounded-lg border p-4 text-sm"
+            style={{
+              background: 'var(--error-bg)',
+              borderColor: 'var(--error-border)',
+              color: 'var(--error-text)',
+            }}
+          >
             Vous devez avoir un abonnement actif pour réserver une place.
           </div>
         )}
@@ -253,7 +281,14 @@ export default async function StudentRoomsPage() {
         {activeReservation && <ActiveReservationBanner reservation={activeReservation} examMode={examMode} />}
 
         {subscription && !activeReservation && examMode && (
-          <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-blue-800 text-sm">
+          <div
+            className="rounded-lg border p-3 text-sm"
+            style={{
+              background: 'var(--warning-bg)',
+              borderColor: 'var(--warning-border)',
+              color: 'var(--warning-text)',
+            }}
+          >
             <strong>Mode examen activé</strong> — une réservation est obligatoire pour accéder à l&apos;espace.
             Choisissez une salle puis une place.
           </div>
@@ -268,27 +303,29 @@ export default async function StudentRoomsPage() {
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
-                color: 'var(--text-tertiary)',
+                color: 'var(--text-secondary)',
                 marginBottom: 2,
               }}
             >
               Disponibles
             </div>
-            {openRooms.map((room) => (
-              <RoomCard key={room.id} room={room} clickable />
-            ))}
+            <RoomCardsStagger>
+              {openRooms.map((room) => (
+                <RoomCard key={room.id} room={room} clickable isMyRoom={room.id === myRoomId} />
+              ))}
+            </RoomCardsStagger>
           </>
         )}
 
         {openRooms.length === 0 && (
           <div
             style={{
-              background: 'white',
+              background: 'var(--surface)',
               border: '1px solid var(--border-subtle)',
               borderRadius: 16,
               padding: '32px 20px',
               textAlign: 'center',
-              color: 'var(--text-tertiary)',
+              color: 'var(--text-secondary)',
               fontSize: 14,
             }}
           >
@@ -305,16 +342,18 @@ export default async function StudentRoomsPage() {
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
-                color: 'var(--text-tertiary)',
+                color: 'var(--text-secondary)',
                 marginTop: 8,
                 marginBottom: 2,
               }}
             >
               Non disponibles
             </div>
-            {unavailable.map((room) => (
-              <RoomCard key={room.id} room={room} clickable={false} />
-            ))}
+            <RoomCardsStagger>
+              {unavailable.map((room) => (
+                <RoomCard key={room.id} room={room} clickable={false} isMyRoom={room.id === myRoomId} />
+              ))}
+            </RoomCardsStagger>
           </>
         )}
       </div>
