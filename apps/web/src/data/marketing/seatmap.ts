@@ -3,16 +3,18 @@ import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 
 export type LandingSeatmapMode = 'mock' | 'real'
 
-export type PublicSeatSnapshot = {
-  total: number
-  occupied: number
+export type PublicSeatRow = {
+  id: string
+  status: string
 }
 
 /**
  * Landing page is public/unauthenticated (no session), and `settings`/`seats`
- * RLS both require `auth.uid()`. Reads here go through the service-role
- * client and only ever return an aggregate count — no row-level data leaves
- * this module.
+ * RLS both required `auth.uid()` — reads here go through the service-role
+ * client. `seats` also now has a narrow anon policy + column grant (id,
+ * room_id, status only — see migration 20260719000000) purely so the
+ * browser's own Realtime socket can receive postgres_changes events; this
+ * server-side read still uses the service role and isn't bound by that.
  */
 export async function getLandingSeatmapMode(): Promise<LandingSeatmapMode> {
   const supabase = createSupabaseAdminClient()
@@ -20,11 +22,8 @@ export async function getLandingSeatmapMode(): Promise<LandingSeatmapMode> {
   return data?.value === 'real' ? 'real' : 'mock'
 }
 
-export async function getPublicSeatSnapshot(): Promise<PublicSeatSnapshot> {
+export async function getPublicSeatRows(): Promise<PublicSeatRow[]> {
   const supabase = createSupabaseAdminClient()
-  const [{ count: total }, { count: occupied }] = await Promise.all([
-    supabase.from('seats').select('*', { count: 'exact', head: true }).neq('status', 'out_of_service'),
-    supabase.from('seats').select('*', { count: 'exact', head: true }).eq('status', 'occupied'),
-  ])
-  return { total: total ?? 0, occupied: occupied ?? 0 }
+  const { data } = await supabase.from('seats').select('id, status').neq('status', 'out_of_service')
+  return data ?? []
 }

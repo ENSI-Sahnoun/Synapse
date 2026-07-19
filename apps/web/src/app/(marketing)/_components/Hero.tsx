@@ -7,14 +7,14 @@ import { ArrowRight } from 'lucide-react';
 import { EASE_OUT } from '../_lib/motion';
 import { SeatMapHero } from './SeatMapHero';
 import { SectionDivider } from './SectionDivider';
-import type { LandingSeatmapMode, PublicSeatSnapshot } from '@/data/marketing/seatmap';
+import type { LandingSeatmapMode, PublicSeatRow } from '@/data/marketing/seatmap';
 
 export function Hero({
   seatmapMode,
-  seatmapSnapshot,
+  seatmapRows,
 }: {
   seatmapMode: LandingSeatmapMode;
-  seatmapSnapshot: PublicSeatSnapshot | null;
+  seatmapRows: PublicSeatRow[] | null;
 }) {
   const reduce = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
@@ -119,7 +119,7 @@ export function Hero({
           transition={{ duration: 1, ease: EASE_OUT, delay: 0.2 }}
           style={{ y: roomY }}
         >
-          <SeatMapHero mode={seatmapMode} initialSnapshot={seatmapSnapshot} />
+          <SeatMapHero mode={seatmapMode} initialRows={seatmapRows} />
         </motion.div>
       </div>
 

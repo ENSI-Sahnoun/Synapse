@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { User } from 'lucide-react';
 import { EASE_OUT } from '../_lib/motion';
-import { fetchPublicSeatSnapshot } from '@/actions/marketing/seatmap';
-import type { LandingSeatmapMode, PublicSeatSnapshot } from '@/data/marketing/seatmap';
+import { createClient } from '@/supabase-clients/client';
+import type { LandingSeatmapMode, PublicSeatRow } from '@/data/marketing/seatmap';
 
 const MOCK_COLS = 9;
 const MOCK_ROWS = 5;
@@ -35,7 +35,6 @@ function rankOrder(n: number) {
 const MOCK_RANK = rankOrder(MOCK_TOTAL);
 const STEP = 0.032; // seconds between seat entrances
 const MOCK_REVEAL_MS = MOCK_TOTAL * STEP * 1000;
-const POLL_MS = 20_000;
 
 // Pick a grid shape from a real total seat count — landscape-ish, capped so a
 // big venue doesn't produce a wall of tiny icons.
@@ -46,42 +45,85 @@ function gridDims(total: number) {
   return { cols, rows };
 }
 
-export function SeatMapHero({
-  mode,
-  initialSnapshot,
-}: {
-  mode: LandingSeatmapMode;
-  initialSnapshot: PublicSeatSnapshot | null;
-}) {
-  return mode === 'real' ? (
-    <RealSeatMap initial={initialSnapshot ?? { total: 0, occupied: 0 }} />
-  ) : (
-    <MockSeatMap />
-  );
+// Stable per-id hash (SSR === client, no Math.random) — used only to scatter
+// display order so the grid doesn't look mechanically sorted by insertion.
+function hashId(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return h >>> 0;
 }
 
-/** Live venue occupancy, aggregated across every room. Polls every 20s. */
-function RealSeatMap({ initial }: { initial: PublicSeatSnapshot }) {
+export function SeatMapHero({
+  mode,
+  initialRows,
+}: {
+  mode: LandingSeatmapMode;
+  initialRows: PublicSeatRow[] | null;
+}) {
+  return mode === 'real' ? <RealSeatMap initial={initialRows ?? []} /> : <MockSeatMap />;
+}
+
+/** Live venue occupancy, aggregated across every room. Updates over a Supabase Realtime socket. */
+function RealSeatMap({ initial }: { initial: PublicSeatRow[] }) {
   const reduce = useReducedMotion();
-  const [{ total, occupied }, setSnapshot] = useState(initial);
-  const [, startTransition] = useTransition();
+  const [rows, setRows] = useState(initial);
+
+  // Re-sync when the server sends fresh rows (e.g. after navigation).
+  useEffect(() => {
+    setRows(initial);
+  }, [initial]);
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      startTransition(async () => {
-        const next = await fetchPublicSeatSnapshot();
-        setSnapshot(next);
+    const supabase = createClient();
+    let disposed = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const build = () =>
+      supabase
+        .channel('landing-seat-occupancy')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'seats' },
+          (payload) => {
+            setRows((prev) => {
+              if (payload.eventType === 'INSERT') {
+                const row = payload.new as PublicSeatRow;
+                if (prev.some((r) => r.id === row.id)) return prev;
+                return [...prev, row];
+              }
+              if (payload.eventType === 'UPDATE') {
+                const row = payload.new as PublicSeatRow;
+                return prev.map((r) => (r.id === row.id ? row : r));
+              }
+              const old = payload.old as PublicSeatRow;
+              return prev.filter((r) => r.id !== old.id);
+            });
+          },
+        )
+        .subscribe();
+
+    // Auth must be on the socket before the first join, or the subscription
+    // is treated as fully anonymous and RLS silently drops every event.
+    void supabase.realtime
+      .setAuth()
+      .catch(() => {})
+      .then(() => {
+        if (disposed) return;
+        channel = build();
       });
-    }, POLL_MS);
-    return () => window.clearInterval(id);
+
+    return () => {
+      disposed = true;
+      if (channel) void supabase.removeChannel(channel);
+    };
   }, []);
 
-  const { cols, rows } = gridDims(total);
-  const cellCount = cols * rows;
-  // Rank only the real seats (0..total-1) — ranking the padded grid could hand
-  // an "occupied" slot to a padding cell that never renders, leaving every
-  // visible seat blank even though the count is right.
-  const rank = rankOrder(total);
+  const visible = rows.filter((r) => r.status !== 'out_of_service');
+  const ordered = [...visible].sort((a, b) => hashId(a.id) - hashId(b.id));
+  const total = ordered.length;
+  const occupied = ordered.filter((r) => r.status === 'occupied').length;
+  const { cols, rows: gridRows } = gridDims(total);
+  const cellCount = cols * gridRows;
   const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
 
   return (
@@ -93,8 +135,9 @@ function RealSeatMap({ initial }: { initial: PublicSeatSnapshot }) {
           style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
         >
           {Array.from({ length: cellCount }, (_, i) => {
-            if (i >= total) return <div key={i} aria-hidden />;
-            return <Seat key={i} occupied={rank[i] < occupied} rank={rank[i]} reduce={!!reduce} />;
+            const seat = ordered[i];
+            if (!seat) return <div key={i} aria-hidden />;
+            return <Seat key={seat.id} occupied={seat.status === 'occupied'} rank={i} reduce={!!reduce} />;
           })}
         </div>
       </RoomFrame>
