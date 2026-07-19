@@ -1,7 +1,8 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { Group, Rect, Text } from 'react-konva'
-import type Konva from 'konva'
+import Konva from 'konva'
 
 export type SeatTokenData = {
   localId: string
@@ -42,6 +43,27 @@ export function SeatToken({ seat, isSelected, onDragEnd, onClick }: Props) {
   const strokeW = isSelected ? 2.5 : 1.5
   const opacity = seat.status === 'out_of_service' ? 0.55 : 1
   const backY = -(SEAT_H / 2) - BACK_GAP - BACK_H
+
+  const backRef = useRef<Konva.Rect>(null)
+  const padRef = useRef<Konva.Rect>(null)
+
+  // Tween status/selection color changes — covers both a local click and a
+  // remote realtime update landing on someone else's screen. Critically
+  // damped, no bounce: nothing here should look like it's moving/settling,
+  // just recoloring.
+  useEffect(() => {
+    const opts = { duration: 0.2, easing: Konva.Easings.EaseOut }
+    backRef.current?.to({ fill, stroke, strokeWidth: strokeW, ...opts })
+    padRef.current?.to({
+      fill,
+      stroke,
+      strokeWidth: strokeW,
+      shadowBlur: isSelected ? 8 : 2,
+      shadowColor: isSelected ? '#f59e0b' : '#00000044',
+      shadowOffsetY: isSelected ? 0 : 1,
+      ...opts,
+    })
+  }, [fill, stroke, strokeW, isSelected])
 
   function handleDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
     onDragEnd(seat.localId, e.target.x(), e.target.y())

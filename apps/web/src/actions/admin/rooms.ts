@@ -17,7 +17,7 @@ export const createRoomAction = adminActionClient
     const supabase = await createSupabaseClient()
     const { data, error } = await supabase
       .from('rooms')
-      .insert({ name: parsedInput.name, capacity: parsedInput.capacity, status: 'open' })
+      .insert({ name: parsedInput.name, status: 'open' })
       .select()
       .single()
 
@@ -35,7 +35,6 @@ export const updateRoomAction = adminActionClient
       .from('rooms')
       .update({
         ...(parsedInput.name !== undefined && { name: parsedInput.name }),
-        ...(parsedInput.capacity !== undefined && { capacity: parsedInput.capacity }),
       })
       .eq('id', parsedInput.id)
       .select()

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAction } from 'next-safe-action/hooks'
-import { LiveSeatMap } from '@/components/seat-map/LiveSeatMap'
+import { LiveSeatMap } from '@/components/seat-map/LiveSeatMapDynamic'
 import {
   assignSeatAction,
   changeSeatAction,

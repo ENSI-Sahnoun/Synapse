@@ -1,5 +1,6 @@
 'use client'
 
+import { AnimatePresence, motion } from 'motion/react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -43,18 +44,37 @@ export function PropertiesPanel({
   onTableRotate,
   onSeatRotate,
 }: Props) {
+  const panelTransition = { duration: 0.2, ease: [0.23, 1, 0.32, 1] as const }
+
   if (!selection) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground p-4 text-center">
-        Sélectionnez un élément pour modifier ses propriétés
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="empty"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={panelTransition}
+          className="flex h-full items-center justify-center text-sm text-muted-foreground p-4 text-center"
+        >
+          Sélectionnez un élément pour modifier ses propriétés
+        </motion.div>
+      </AnimatePresence>
     )
   }
 
   if (selection.type === 'table') {
     const table = selection.item
     return (
-      <div className="space-y-4 p-4">
+      <AnimatePresence mode="wait">
+      <motion.div
+        key={`table-${table.localId}`}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={panelTransition}
+        className="space-y-4 p-4"
+      >
         <h3 className="font-semibold text-sm">Table</h3>
 
         <div className="space-y-1">
@@ -136,14 +156,23 @@ export function PropertiesPanel({
             Supprimer la table
           </Button>
         </div>
-      </div>
+      </motion.div>
+      </AnimatePresence>
     )
   }
 
   // seat
   const seat = selection.item
   return (
-    <div className="space-y-4 p-4">
+    <AnimatePresence mode="wait">
+    <motion.div
+      key={`seat-${seat.localId}`}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={panelTransition}
+      className="space-y-4 p-4"
+    >
       <h3 className="font-semibold text-sm">Chaise</h3>
 
       <div className="space-y-1">
@@ -224,6 +253,7 @@ export function PropertiesPanel({
           Supprimer la chaise
         </Button>
       </div>
-    </div>
+    </motion.div>
+    </AnimatePresence>
   )
 }

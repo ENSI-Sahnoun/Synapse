@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect, Text, Group } from 'react-konva'
+import { motion } from 'motion/react'
 import { ArrowsOut, X } from '@phosphor-icons/react'
 import { createClient } from '@/supabase-clients/client'
 import { CapacityBadge } from './CapacityBadge'
-import { DoorGlyph } from './TableToken'
 import type { RoomTable, Seat } from '@/data/admin/seat-map'
 import type { Room } from '@/data/admin/rooms'
 
@@ -35,7 +35,7 @@ const SEAT_FILL: Record<string, string> = {
   out_of_service: '#9ca3af',
 }
 
-type Props = {
+export type LiveSeatMapProps = {
   room: Room
   initialTables: RoomTable[]
   initialSeats: Seat[]
@@ -49,7 +49,7 @@ type Props = {
   hideRoomName?: boolean
 }
 
-export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatClick, highlightSeatId, allowFullscreen, hideRoomName }: Props) {
+export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatClick, highlightSeatId, allowFullscreen, hideRoomName }: LiveSeatMapProps) {
   const [tables, setTables] = useState<RoomTable[]>(initialTables)
   const [seats, setSeats] = useState<Seat[]>(initialSeats)
   const [occupantNames, setOccupantNames] = useState<Record<string, string>>({})
@@ -366,19 +366,12 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
         <Stage width={rotated ? bounds.h : bounds.w} height={rotated ? bounds.w : bounds.h}>
           <Layer rotation={rotated ? 90 : 0} x={rotated ? bounds.h : 0}>
            <Group x={-bounds.x} y={-bounds.y}>
-            {tables.map((table) => {
+            {tables.filter((table) => table.table_type !== 'door').map((table) => {
               const w = table.width
               const h = table.height
               const lx = -w / 2
               const ly = -h / 2
               const LEG = 8
-              if (table.table_type === 'door') {
-                return (
-                  <Group key={table.id} x={table.position_x} y={table.position_y} rotation={table.rotation} listening={false}>
-                    <DoorGlyph width={w} />
-                  </Group>
-                )
-              }
               const fill = TABLE_FILL[table.status] ?? '#fde8c8'
               const stroke = TABLE_STROKE[table.status] ?? '#a16207'
               return (
@@ -448,8 +441,14 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
   // classNames/styles toggle. Branching into two separate return trees
   // caused React to lose track of the canvas container's DOM node across
   // the fullscreen transition (stale ResizeObserver, wrong scale/position).
+  // `layout` animates the class-driven position/size change (relative → fixed)
+  // via FLIP without unmounting, so the Konva stage/ResizeObserver survive it.
   return (
-    <div className={fullscreen ? 'fixed inset-0 z-40 flex flex-col gap-3 bg-white p-4' : 'space-y-3'}>
+    <motion.div
+      layout
+      transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+      className={fullscreen ? 'fixed inset-0 z-40 flex flex-col gap-3 bg-white p-4' : 'space-y-3'}
+    >
       <div className="flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3">
           {(!hideRoomName || fullscreen) && <h2 className="font-semibold">{room.name}</h2>}
@@ -479,6 +478,6 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
       <div className={fullscreen ? 'flex-1 min-h-0' : ''}>{canvasBox}</div>
 
       {!fullscreen && legend}
-    </div>
+    </motion.div>
   )
 }

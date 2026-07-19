@@ -32,7 +32,7 @@ export function EditRoomDialog({ room }: { room: Room }) {
 
   const form = useForm<UpdateRoomInput>({
     resolver: zodResolver(updateRoomSchema),
-    defaultValues: { id: room.id, name: room.name, capacity: room.capacity },
+    defaultValues: { id: room.id, name: room.name },
   })
 
   const { execute, isPending } = useAction(updateRoomAction, {
@@ -66,24 +66,6 @@ export function EditRoomDialog({ room }: { room: Room }) {
                   <FormLabel>Nom de la salle</FormLabel>
                   <FormControl>
                     <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="capacity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Capacité (places)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

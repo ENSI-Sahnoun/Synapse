@@ -93,6 +93,35 @@ export function ProductsTable({ products, categoryEmojis, categoryOrder }: Props
     if (cats.length > 1) persistCatOrder({ ids: cats.map((c) => c.id) })
   }
 
+  const renderThumb = (p: AdminProduct) =>
+    p.image_url ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded object-cover" />
+    ) : (
+      <div className="h-10 w-10 rounded bg-muted flex items-center justify-center text-lg">
+        {categoryEmojis[p.category] ?? '📦'}
+      </div>
+    )
+
+  const renderStatus = (p: AdminProduct) => (
+    <span
+      className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}
+    >
+      {p.is_active ? 'Actif' : 'Archivé'}
+    </span>
+  )
+
+  const renderActions = (p: AdminProduct) => (
+    <div className="flex flex-wrap gap-2 justify-end">
+      <Button asChild variant="outline" size="sm">
+        <Link href={`/admin/products/${p.id}/edit`}>Modifier</Link>
+      </Button>
+      <RestockDialog product={p} />
+      {p.is_active ? <ArchiveProductButton id={p.id} /> : <RestoreProductButton id={p.id} />}
+      <DeleteProductButton id={p.id} />
+    </div>
+  )
+
   return (
     <div className="space-y-4">
       <Input
@@ -102,7 +131,7 @@ export function ProductsTable({ products, categoryEmojis, categoryOrder }: Props
         className="max-w-sm"
       />
       {!searching && (
-        <p className="text-xs text-muted-foreground">Glissez une ligne pour réordonner (par catégorie).</p>
+        <p className="hidden md:block text-xs text-muted-foreground">Glissez une ligne pour réordonner (par catégorie).</p>
       )}
 
       {total === 0 ? (
@@ -136,61 +165,62 @@ export function ProductsTable({ products, categoryEmojis, categoryOrder }: Props
               <span>{category}</span>
               <span className="text-muted-foreground text-sm">({list.length})</span>
             </div>
-            <table className="w-full text-sm">
-              <tbody>
-                {list.map((p) => (
-                  <tr
-                    key={p.id}
-                    draggable={!searching}
-                    onDragStart={() => setDragId(p.id)}
-                    onDragOver={(e) => { if (!searching) { e.preventDefault(); handleDragOver(p.id, category) } }}
-                    onDrop={() => { if (!searching && dragId) handleDrop(category) }}
-                    onDragEnd={() => setDragId(null)}
-                    className={`border-t ${dragId === p.id ? 'opacity-40' : ''} ${!searching ? 'cursor-move' : ''}`}
-                  >
-                    <td className="px-2 py-2 w-6 text-center text-muted-foreground select-none">
-                      {!searching && '⠿'}
-                    </td>
-                    <td className="px-2 py-2 w-12">
-                      {p.image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.image_url} alt={p.name} className="h-9 w-9 rounded object-cover" />
-                      ) : (
-                        <div className="h-9 w-9 rounded bg-muted flex items-center justify-center text-lg">
-                          {categoryEmojis[p.category] ?? '📦'}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 font-medium">{p.name}</td>
-                    <td className="px-4 py-2">{Number(p.price_dt).toFixed(2)} DT</td>
-                    <td className="px-4 py-2">
-                      <span className={p.stock_quantity <= 5 ? 'text-destructive font-medium' : ''}>
-                        {p.stock_quantity}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
-                        {p.is_active ? 'Actif' : 'Archivé'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2 justify-end">
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/admin/products/${p.id}/edit`}>Modifier</Link>
-                        </Button>
-                        <RestockDialog product={p} />
-                        {p.is_active ? (
-                          <ArchiveProductButton id={p.id} />
-                        ) : (
-                          <RestoreProductButton id={p.id} />
-                        )}
-                        <DeleteProductButton id={p.id} />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Desktop: dense table with its own scroll container so a wide row
+                never drags the whole page sideways. Drag-to-reorder is desktop-only. */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <tbody>
+                  {list.map((p) => (
+                    <tr
+                      key={p.id}
+                      draggable={!searching}
+                      onDragStart={() => setDragId(p.id)}
+                      onDragOver={(e) => { if (!searching) { e.preventDefault(); handleDragOver(p.id, category) } }}
+                      onDrop={() => { if (!searching && dragId) handleDrop(category) }}
+                      onDragEnd={() => setDragId(null)}
+                      className={`border-t ${dragId === p.id ? 'opacity-40' : ''} ${!searching ? 'cursor-move' : ''}`}
+                    >
+                      <td className="px-2 py-2 w-6 text-center text-muted-foreground select-none">
+                        {!searching && '⠿'}
+                      </td>
+                      <td className="px-2 py-2 w-12">{renderThumb(p)}</td>
+                      <td className="px-4 py-2 font-medium">{p.name}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">{Number(p.price_dt).toFixed(2)} DT</td>
+                      <td className="px-4 py-2">
+                        <span className={p.stock_quantity <= 5 ? 'text-destructive font-medium' : ''}>
+                          {p.stock_quantity}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">{renderStatus(p)}</td>
+                      <td className="px-4 py-2">{renderActions(p)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile: stacked cards so every action stays reachable (the old
+                overflow-hidden table clipped the action buttons off-screen). */}
+            <ul className="md:hidden divide-y">
+              {list.map((p) => (
+                <li key={p.id} className="flex flex-col gap-3 p-3">
+                  <div className="flex items-center gap-3">
+                    {renderThumb(p)}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium leading-tight truncate">{p.name}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {Number(p.price_dt).toFixed(2)} DT · Stock{' '}
+                        <span className={p.stock_quantity <= 5 ? 'text-destructive font-medium' : ''}>
+                          {p.stock_quantity}
+                        </span>
+                      </p>
+                    </div>
+                    {renderStatus(p)}
+                  </div>
+                  {renderActions(p)}
+                </li>
+              ))}
+            </ul>
           </div>
           )
         })

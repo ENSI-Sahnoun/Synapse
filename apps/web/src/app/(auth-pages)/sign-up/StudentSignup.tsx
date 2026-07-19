@@ -13,6 +13,9 @@ import { studentSignupSchema, type StudentSignupInput } from '@/utils/zod-schema
 import Link from 'next/link'
 import { useState } from 'react'
 import { markPwaInstallTrigger } from '@/components/pwa/usePwaInstall'
+import { AnimatePresence, motion } from 'motion/react'
+
+const EASE_OUT = [0.23, 1, 0.32, 1] as const
 
 export function StudentSignup({
   embedded = false,
@@ -54,7 +57,12 @@ export function StudentSignup({
 
   if (emailConfirmPending) {
     return (
-      <div className={embedded ? 'space-y-4 text-center' : 'max-w-md mx-auto p-6 space-y-4 text-center'}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.35, ease: EASE_OUT }}
+        className={embedded ? 'space-y-4 text-center' : 'max-w-md mx-auto p-6 space-y-4 text-center'}
+      >
         <h2 className="text-xl font-semibold">Vérifiez votre email</h2>
         <p className="text-muted-foreground text-sm">
           Un lien de confirmation a été envoyé à <strong>{form.getValues('email')}</strong>.
@@ -69,7 +77,7 @@ export function StudentSignup({
             Retour à la connexion
           </Link>
         )}
-      </div>
+      </motion.div>
     )
   }
 

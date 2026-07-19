@@ -8,15 +8,15 @@ export default async function SubscriptionPlansPage() {
   const plans = await listSubscriptionPlans()
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 px-4 md:px-0">
       <LiveRefresher tables={['subscription_plans']} />
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Formules d'abonnement</h1>
         <Button asChild>
           <Link href="/admin/subscription-plans/new">Nouvelle formule</Link>
         </Button>
       </div>
-      <div className="border rounded-md">
+      <div className="border rounded-md overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">

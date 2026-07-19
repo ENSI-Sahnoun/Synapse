@@ -2,12 +2,26 @@
 // plugin doesn't support Turbopack (Next 16 default), and the Turbopack
 // variant is still preview-only. Caches the app shell + same-origin static
 // assets only; never touches API/data requests (avoids stale bookings data).
-const CACHE_NAME = 'synapse-shell-v2';
-const SHELL_URLS = ['/', '/manifest.json', '/logos/icon-192.png', '/logos/icon-512.png'];
+const CACHE_NAME = 'synapse-shell-v3';
+// Next serves the manifest from app/manifest.ts at /manifest.webmanifest — NOT
+// /manifest.json. Precaching the wrong path used to 404 and, because
+// cache.addAll is atomic, reject the whole install (the SW never activated →
+// no offline shell, and navigator.serviceWorker.ready never resolved so push
+// hung too). Cache each URL independently so one bad asset can't kill install.
+const SHELL_URLS = ['/', '/manifest.webmanifest', '/logos/icon-192.png', '/logos/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_URLS)).then(() => self.skipWaiting())
+    caches
+      .open(CACHE_NAME)
+      .then((cache) =>
+        Promise.all(
+          SHELL_URLS.map((url) =>
+            cache.add(url).catch((err) => console.warn('[sw] precache skipped', url, err))
+          )
+        )
+      )
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -26,7 +40,7 @@ function isCacheableStaticAsset(url) {
     (url.pathname.startsWith('/_next/static/') ||
       url.pathname.startsWith('/logos/') ||
       url.pathname.startsWith('/fonts/') ||
-      url.pathname === '/manifest.json')
+      url.pathname === '/manifest.webmanifest')
   );
 }
 

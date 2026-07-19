@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef } from 'react'
-import { Group, Rect, Text, Line, Arc } from 'react-konva'
-import type Konva from 'konva'
+import { useEffect, useRef } from 'react'
+import { Group, Rect, Text } from 'react-konva'
+import Konva from 'konva'
 
 export type TableData = {
   localId: string       // always a UUID (client-generated for new, DB id for persisted)
@@ -14,26 +14,6 @@ export type TableData = {
   width: number
   height: number
   rotation: number      // 0–345, multiples of 15
-  table_type?: 'table' | 'door'
-}
-
-// Shared door glyph (open state): frame opening along local X, hinge at left,
-// leaf swung 90° "open", plus a dashed quarter-circle swing arc. Group rotation
-// aligns it to whichever wall it sits on. Used in the editor and live maps.
-export function DoorGlyph({ width, selected = false }: { width: number; selected?: boolean }) {
-  const w = width
-  const hx = -w / 2 // hinge x (left end of the opening)
-  const stroke = selected ? '#b45309' : '#7c3aed'
-  return (
-    <>
-      {/* wall opening (frame) */}
-      <Line points={[-w / 2, 0, w / 2, 0]} stroke={stroke} strokeWidth={selected ? 3 : 2} />
-      {/* door leaf, hinged at left, swung open (perpendicular to the wall) */}
-      <Line points={[hx, 0, hx, w]} stroke={stroke} strokeWidth={selected ? 3 : 2} />
-      {/* swing arc from leaf-open back to the wall line */}
-      <Arc x={hx} y={0} innerRadius={w} outerRadius={w} angle={90} rotation={0} stroke={stroke} strokeWidth={1} dash={[4, 4]} />
-    </>
-  )
 }
 
 type Props = {
@@ -46,6 +26,25 @@ type Props = {
 
 export function TableToken({ table, isSelected, onSelect, onDragEnd }: Props) {
   const dragStart = useRef({ x: 0, y: 0 })
+  const surfaceRef = useRef<Konva.Rect>(null)
+
+  // Tween the selection glow instead of snapping — critically damped, no
+  // bounce, since this sits on a canvas where the table's own position must
+  // never appear to drift.
+  useEffect(() => {
+    const node = surfaceRef.current
+    if (!node) return
+    node.to({
+      fill: isSelected ? '#fef3c7' : '#fde8c8',
+      stroke: isSelected ? '#f59e0b' : '#a16207',
+      strokeWidth: isSelected ? 2.5 : 1.5,
+      shadowBlur: isSelected ? 10 : 3,
+      shadowColor: isSelected ? '#f59e0b' : '#00000033',
+      shadowOffsetY: isSelected ? 0 : 1,
+      duration: 0.15,
+      easing: Konva.Easings.EaseOut,
+    })
+  }, [isSelected])
 
   function handleDragStart(e: Konva.KonvaEventObject<DragEvent>) {
     dragStart.current = { x: e.target.x(), y: e.target.y() }
@@ -76,12 +75,9 @@ export function TableToken({ table, isSelected, onSelect, onDragEnd }: Props) {
       onClick={() => onSelect(table.localId)}
       onTap={() => onSelect(table.localId)}
     >
-      {table.table_type === 'door' ? (
-        <DoorGlyph width={w} selected={isSelected} />
-      ) : (
-      <>
       {/* Table surface — warm wood tone */}
       <Rect
+        ref={surfaceRef}
         x={lx}
         y={ly}
         width={w}
@@ -127,8 +123,6 @@ export function TableToken({ table, isSelected, onSelect, onDragEnd }: Props) {
           listening={false}
         />
       ) : null}
-      </>
-      )}
     </Group>
   )
 }

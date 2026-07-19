@@ -61,6 +61,13 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/update-password') ||
     pathname.startsWith('/kiosk/setup')
 
+  // Public marketing pages (landing, contact): reachable by everyone —
+  // authenticated or not — with no redirect in either direction. The session
+  // cookie refresh from getUser() above is still carried on the response.
+  if (pathname === '/' || pathname === '/contact') {
+    return supabaseResponse
+  }
+
   // Redirect logged-in users away from auth pages
   if (isPublicPath && user) {
     const role = await getUserRole(supabase, user.id)

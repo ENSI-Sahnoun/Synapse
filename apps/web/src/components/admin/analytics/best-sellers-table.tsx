@@ -22,7 +22,7 @@ export function BestSellersTable({ data }: Props) {
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                <TableCell colSpan={3} className="animate-in fade-in duration-200 text-center text-muted-foreground">
                   Aucune vente sur la période
                 </TableCell>
               </TableRow>

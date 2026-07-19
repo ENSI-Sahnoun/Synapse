@@ -57,7 +57,7 @@ export function EditPlanForm({ plan }: EditPlanFormProps) {
 
       <div className="space-y-1">
         <Label>Prix (DT) *</Label>
-        <Input type="number" step="0.5" {...form.register('price_dt', { valueAsNumber: true })} />
+        <Input type="number" step="0.001" min="0" {...form.register('price_dt', { valueAsNumber: true })} />
       </div>
 
       <div className="space-y-1">

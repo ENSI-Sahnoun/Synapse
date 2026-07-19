@@ -10,7 +10,7 @@ export function ExportButtons({ from, to }: Props) {
   const excelUrl = `/api/admin/accounting/export/excel?from=${from}&to=${to}`
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       <Button variant="outline" size="sm" asChild>
         <a href={pdfUrl} download>Exporter PDF (par catégorie)</a>
       </Button>

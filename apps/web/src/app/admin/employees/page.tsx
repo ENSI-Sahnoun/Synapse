@@ -29,11 +29,11 @@ export default async function AdminEmployeesPage({
         </p>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">
           Employés{showArchived ? ' — Archivés' : ''}
         </h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Suspense><ArchivedToggle /></Suspense>
           {!showArchived && (
             <>
@@ -48,7 +48,7 @@ export default async function AdminEmployeesPage({
         </div>
       </div>
 
-      <div className="border rounded-md">
+      <div className="border rounded-md overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
@@ -98,7 +98,7 @@ export default async function AdminEmployeesPage({
       <h2 className="text-xl font-semibold pt-4">
         Comptes kiosque{showArchived ? ' — Archivés' : ''}
       </h2>
-      <div className="border rounded-md">
+      <div className="border rounded-md overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">

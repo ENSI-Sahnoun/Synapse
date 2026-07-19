@@ -69,9 +69,9 @@ export default async function AccountingPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6 p-6">
       <LiveRefresher tables={['purchases', 'expenses']} />
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Comptabilité</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <ExportButtons from={from} to={to} />
           <Button variant="outline" asChild>
             <Link href="/admin/accounting/categories">Gérer les catégories</Link>

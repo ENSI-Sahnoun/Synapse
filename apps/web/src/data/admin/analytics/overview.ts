@@ -35,80 +35,65 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
   const supabase = await createSupabaseClient()
 
   const todayStr = today()
+  const dayStart = todayStr + 'T00:00:00'
+  const dayEnd = startOfTomorrow()
 
-  // Students currently inside (open attendance rows)
-  const { count: studentsInside } = await supabase
-    .from('attendance')
-    .select('*', { count: 'exact', head: true })
-    .is('checked_out_at', null)
+  const weekLater = new Date()
+  weekLater.setDate(weekLater.getDate() + 7)
+  const weekLaterStr = weekLater.toISOString().slice(0, 10)
 
-  // Seat occupancy
-  const { count: totalSeats } = await supabase
-    .from('seats')
-    .select('*', { count: 'exact', head: true })
-    .neq('status', 'out_of_service')
+  // All nine reads are independent — fire them in parallel. This function runs
+  // on every dashboard load AND on every realtime tick, so the serial waterfall
+  // it replaced multiplied Supabase latency ~9x on the busiest surface.
+  const [
+    studentsInsideRes,
+    totalSeatsRes,
+    occupiedSeatsRes,
+    lockers,
+    subRevenueRes,
+    purchaseRevenueRes,
+    lockerRevenueRes,
+    expiringSoonRes,
+    lowStockRes,
+  ] = await Promise.all([
+    supabase.from('attendance').select('*', { count: 'exact', head: true }).is('checked_out_at', null),
+    supabase.from('seats').select('*', { count: 'exact', head: true }).neq('status', 'out_of_service'),
+    supabase.from('seats').select('*', { count: 'exact', head: true }).eq('status', 'occupied'),
+    getLockersWithStatus(),
+    supabase.from('subscriptions').select('paid_amount').gte('created_at', dayStart).lt('created_at', dayEnd),
+    supabase.from('purchases').select('total_dt').gte('created_at', dayStart).lt('created_at', dayEnd),
+    supabase.from('locker_payments').select('amount_dt').gte('created_at', dayStart).lt('created_at', dayEnd),
+    supabase
+      .from('subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .gte('end_date', todayStr)
+      .lte('end_date', weekLaterStr),
+    supabase
+      .from('products')
+      .select('id, name, stock_quantity')
+      .eq('is_active', true)
+      .lte('stock_quantity', 5)
+      .order('stock_quantity', { ascending: true })
+      .limit(10),
+  ])
 
-  const { count: occupiedSeats } = await supabase
-    .from('seats')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'occupied')
-
-  // Locker occupancy
-  const lockers = await getLockersWithStatus()
   const lockerOccupancy = {
     occupied: lockers.filter((l) => l.status === 'occupied').length,
     total: lockers.length,
   }
 
-  // Today's revenue: subscriptions + purchases + lockers
-  const { data: subRevenue } = await supabase
-    .from('subscriptions')
-    .select('paid_amount')
-    .gte('created_at', todayStr + 'T00:00:00')
-    .lt('created_at', startOfTomorrow())
-
-  const { data: purchaseRevenue } = await supabase
-    .from('purchases')
-    .select('total_dt')
-    .gte('created_at', todayStr + 'T00:00:00')
-    .lt('created_at', startOfTomorrow())
-
-  const { data: lockerRevenue } = await supabase
-    .from('locker_payments')
-    .select('amount_dt')
-    .gte('created_at', todayStr + 'T00:00:00')
-    .lt('created_at', startOfTomorrow())
-
   const todayRevenue =
-    (subRevenue?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0) +
-    (purchaseRevenue?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0) +
-    (lockerRevenue?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0)
-
-  // Subscriptions expiring this week
-  const weekLater = new Date()
-  weekLater.setDate(weekLater.getDate() + 7)
-  const { count: expiringSoonCount } = await supabase
-    .from('subscriptions')
-    .select('*', { count: 'exact', head: true })
-    .gte('end_date', todayStr)
-    .lte('end_date', weekLater.toISOString().slice(0, 10))
-
-  // Low-stock products (stock <= 5)
-  const { data: lowStockProducts } = await supabase
-    .from('products')
-    .select('id, name, stock_quantity')
-    .eq('is_active', true)
-    .lte('stock_quantity', 5)
-    .order('stock_quantity', { ascending: true })
-    .limit(10)
+    (subRevenueRes.data?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0) +
+    (purchaseRevenueRes.data?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0) +
+    (lockerRevenueRes.data?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0)
 
   return {
-    studentsInside: studentsInside ?? 0,
-    seatOccupancy: { occupied: occupiedSeats ?? 0, total: totalSeats ?? 60 },
+    studentsInside: studentsInsideRes.count ?? 0,
+    seatOccupancy: { occupied: occupiedSeatsRes.count ?? 0, total: totalSeatsRes.count ?? 60 },
     lockerOccupancy,
     todayRevenue,
-    expiringSoonCount: expiringSoonCount ?? 0,
-    lowStockProducts: lowStockProducts ?? [],
+    expiringSoonCount: expiringSoonRes.count ?? 0,
+    lowStockProducts: lowStockRes.data ?? [],
   }
 }
 
@@ -118,35 +103,28 @@ export async function getDailySummary(): Promise<DailySummary> {
   const start = todayStr + 'T00:00:00'
   const end = startOfTomorrow()
 
-  const { count: newStudents } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .eq('role', 'student')
-    .gte('created_at', start)
-    .lt('created_at', end)
+  const [newStudentsRes, subsRes, purchasesRes, footfallRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'student')
+      .gte('created_at', start)
+      .lt('created_at', end),
+    supabase.from('subscriptions').select('paid_amount').gte('created_at', start).lt('created_at', end),
+    supabase.from('purchases').select('total_dt').gte('created_at', start).lt('created_at', end),
+    supabase
+      .from('attendance')
+      .select('*', { count: 'exact', head: true })
+      .gte('checked_in_at', start)
+      .lt('checked_in_at', end),
+  ])
 
-  const { data: subs } = await supabase
-    .from('subscriptions')
-    .select('paid_amount')
-    .gte('created_at', start)
-    .lt('created_at', end)
-
+  const newStudents = newStudentsRes.count
+  const subs = subsRes.data
   const subscriptionsSold = subs?.length ?? 0
   const subscriptionsRevenue = subs?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0
-
-  const { data: purchases } = await supabase
-    .from('purchases')
-    .select('total_dt')
-    .gte('created_at', start)
-    .lt('created_at', end)
-
-  const inStoreSales = purchases?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0
-
-  const { count: footfall } = await supabase
-    .from('attendance')
-    .select('*', { count: 'exact', head: true })
-    .gte('checked_in_at', start)
-    .lt('checked_in_at', end)
+  const inStoreSales = purchasesRes.data?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0
+  const footfall = footfallRes.count
 
   return {
     newStudents: newStudents ?? 0,
@@ -212,6 +190,24 @@ export type OverviewKpis = {
   activeSubscriptionsDelta: number
   newStudents: number
   newStudentsDelta: number
+  cashDiscrepancy: number
+  cashDiscrepancyDelta: number
+}
+
+const CASH_DISCREPANCY_CATEGORY_ID = '00000000-0000-0000-0000-0000000000ec'
+
+async function sumCashDiscrepancy(
+  supabase: Awaited<ReturnType<typeof createSupabaseClient>>,
+  from: string,
+  to: string,
+): Promise<number> {
+  const { data } = await supabase
+    .from('expenses')
+    .select('amount_dt')
+    .eq('account_category_id', CASH_DISCREPANCY_CATEGORY_ID)
+    .gte('date', from)
+    .lte('date', to)
+  return data?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0
 }
 
 async function countActiveSubscriptions(
@@ -244,7 +240,7 @@ export async function getOverviewKpis(range: { from: string; to: string }): Prom
   const supabase = await createSupabaseClient()
   const prev = previousPeriod(range.from, range.to)
 
-  const [current, previousSummary, activeNow, activePrev, newStudents, newStudentsPrev] =
+  const [current, previousSummary, activeNow, activePrev, newStudents, newStudentsPrev, cashDiscrepancy, cashDiscrepancyPrev] =
     await Promise.all([
       getFinanceSummary(range),
       getFinanceSummary(prev),
@@ -252,6 +248,8 @@ export async function getOverviewKpis(range: { from: string; to: string }): Prom
       countActiveSubscriptions(supabase, prev.to),
       countNewStudents(supabase, range.from, range.to),
       countNewStudents(supabase, prev.from, prev.to),
+      sumCashDiscrepancy(supabase, range.from, range.to),
+      sumCashDiscrepancy(supabase, prev.from, prev.to),
     ])
 
   return {
@@ -267,5 +265,7 @@ export async function getOverviewKpis(range: { from: string; to: string }): Prom
     activeSubscriptionsDelta: diffDelta(activeNow, activePrev),
     newStudents,
     newStudentsDelta: diffDelta(newStudents, newStudentsPrev),
+    cashDiscrepancy,
+    cashDiscrepancyDelta: diffDelta(cashDiscrepancy, cashDiscrepancyPrev),
   }
 }

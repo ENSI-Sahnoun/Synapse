@@ -1,4 +1,4 @@
-import { getRooms } from '@/data/admin/rooms'
+import { getRoomsWithSeatCounts } from '@/data/admin/rooms'
 import { CreateRoomDialog } from './CreateRoomDialog'
 import { EditRoomDialog } from './EditRoomDialog'
 import { SetRoomStatusDialog } from './SetRoomStatusDialog'
@@ -17,18 +17,18 @@ import { GridFour } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 
 export default async function AdminRoomsPage() {
-  const rooms = await getRooms()
+  const rooms = await getRoomsWithSeatCounts()
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Salles</h1>
           <p className="text-muted-foreground text-sm">
             {rooms.length} salle{rooms.length !== 1 ? 's' : ''} configurée{rooms.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" asChild>
             <Link href="/admin/rooms/floor-plan">
               <GridFour className="mr-1 h-4 w-4" />
@@ -40,12 +40,12 @@ export default async function AdminRoomsPage() {
       </div>
 
       {rooms.length === 0 ? (
-        <div className="text-muted-foreground rounded-lg border border-dashed p-12 text-center">
+        <div className="text-muted-foreground animate-in fade-in duration-200 rounded-lg border border-dashed p-12 text-center">
           <p className="text-lg font-medium">Aucune salle</p>
           <p className="text-sm">Créez votre première salle pour commencer.</p>
         </div>
       ) : (
-        <div className="rounded-lg border">
+        <div className="animate-in fade-in duration-200 rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -60,7 +60,7 @@ export default async function AdminRoomsPage() {
               {rooms.map((room) => (
                 <TableRow key={room.id}>
                   <TableCell className="font-medium">{room.name}</TableCell>
-                  <TableCell className="text-right">{room.capacity}</TableCell>
+                  <TableCell className="text-right">{room.seat_count}</TableCell>
                   <TableCell>
                     <RoomStatusBadge status={room.status as 'open' | 'closed' | 'reserved'} />
                   </TableCell>

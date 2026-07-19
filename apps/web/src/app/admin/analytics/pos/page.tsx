@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { defaultDateRange } from '@/lib/date-range'
+import { BackButton } from '@/components/admin/shared/back-button'
 import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
@@ -29,6 +30,7 @@ export default async function PosAnalyticsPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6 p-6">
+      <BackButton />
       <h1 className="text-2xl font-bold">Analyse — Boutique &amp; produits</h1>
       <DateRangeFilter from={from} to={to} />
 
@@ -65,7 +67,7 @@ async function PosAnalyticsContent({ from, to }: { from: string; to: string }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Marge brute par produit</CardTitle>
+          <CardTitle>Ventes par produits</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -81,21 +83,27 @@ async function PosAnalyticsContent({ from, to }: { from: string; to: string }) {
             <TableBody>
               {margin.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="animate-in fade-in duration-200 text-center text-muted-foreground">
                     Aucune vente sur la période
                   </TableCell>
                 </TableRow>
               ) : (
                 margin.map((r) => (
-                  <TableRow key={r.productId}>
+                  <TableRow key={r.productId} className={r.costMissing ? 'bg-amber-50 dark:bg-amber-950/20' : undefined}>
                     <TableCell>
                       {r.productName}
                       {r.costMissing && <span className="ml-1 text-xs text-amber-600">⚠ coût manquant</span>}
                     </TableCell>
-                    <TableCell className="text-right">{r.quantitySold}</TableCell>
-                    <TableCell className="text-right font-mono">{r.revenue.toFixed(3)}</TableCell>
-                    <TableCell className="text-right font-mono">{r.cogs.toFixed(3)}</TableCell>
-                    <TableCell className="text-right font-mono">{r.margin.toFixed(3)}</TableCell>
+                    <TableCell className="text-right text-blue-600">{r.quantitySold}</TableCell>
+                    <TableCell className="text-right font-mono text-emerald-600">{r.revenue.toFixed(3)}</TableCell>
+                    <TableCell className="text-right font-mono text-red-600">{r.cogs.toFixed(3)}</TableCell>
+                    <TableCell
+                      className={`text-right font-mono font-semibold ${
+                        r.margin > 0 ? 'text-emerald-600' : r.margin < 0 ? 'text-red-600' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {r.margin.toFixed(3)}
+                    </TableCell>
                   </TableRow>
                 ))
               )}

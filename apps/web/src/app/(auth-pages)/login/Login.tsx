@@ -3,18 +3,21 @@ import { Email } from '@/components/Auth/Email';
 import { EmailAndPassword } from '@/components/Auth/EmailAndPassword';
 import { QrLoginPanel } from '@/components/Auth/QrLoginPanel';
 import { RedirectingPleaseWaitCard } from '@/components/Auth/RedirectingPleaseWaitCard';
-import { RenderProviders } from '@/components/Auth/RenderProviders';
 import { StudentSignup } from '@/app/(auth-pages)/sign-up/StudentSignup';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  resetPasswordAction,
-  signInWithPasswordAction,
-  signInWithProviderAction,
-} from '@/data/auth/auth';
+import { resetPasswordAction, signInWithPasswordAction } from '@/data/auth/auth';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { markPwaInstallTrigger } from '@/components/pwa/usePwaInstall';
+import { AnimatePresence, motion } from 'motion/react';
+
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+
+const panelTransition = {
+  duration: 0.25,
+  ease: EASE_OUT,
+};
 
 const QR_COLS = 10;
 const QR_ROWS = 14;
@@ -198,24 +201,6 @@ export function Login({
     }
   );
 
-  const { execute: executeProvider, status: providerStatus } = useAction(
-    signInWithProviderAction,
-    {
-      onExecute: () => {
-        toastRef.current = toast.loading('Redirection...');
-      },
-      onSuccess: (payload) => {
-        toast.success('Redirection...', { id: toastRef.current });
-        toastRef.current = undefined;
-        window.location.href = payload.data?.url || '/';
-      },
-      onError: () => {
-        toast.error('Échec de la connexion', { id: toastRef.current });
-        toastRef.current = undefined;
-      },
-    }
-  );
-
   const { execute: executeReset, status: resetStatus } = useAction(
     resetPasswordAction,
     {
@@ -275,144 +260,158 @@ export function Login({
         </div>
 
         {/* Auth panel */}
-        <div className="flex-1 p-6 md:p-10">
-          {mode === 'signup' ? (
-            <>
-              <h1
-                className="text-xl"
-                style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+        <div className="flex-1 overflow-hidden p-6 md:p-10">
+          <AnimatePresence mode="wait" initial={false}>
+            {mode === 'signup' ? (
+              <motion.div
+                key="signup"
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={panelTransition}
               >
-                Créer un compte
-              </h1>
-              <p className="mt-1 mb-5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                Espace Synapse — étudiants uniquement.
-              </p>
-              <StudentSignup embedded onBack={() => setMode('login')} />
-            </>
-          ) : mode === 'forgot' ? (
-            <>
-              <h1
-                className="text-xl"
-                style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+                <h1
+                  className="text-xl"
+                  style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+                >
+                  Créer un compte
+                </h1>
+                <p className="mt-1 mb-5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  Espace Synapse — étudiants uniquement.
+                </p>
+                <StudentSignup embedded onBack={() => setMode('login')} />
+              </motion.div>
+            ) : mode === 'forgot' ? (
+              <motion.div
+                key="forgot"
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={panelTransition}
               >
-                Mot de passe oublié
-              </h1>
-              {resetSent ? (
-                <div className="mt-4 space-y-4">
-                  <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                    Un lien de réinitialisation a été envoyé à votre email.
-                    Vérifiez votre boîte de réception.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setResetSent(false);
-                      setMode('login');
-                    }}
-                    className="text-sm font-medium hover:underline"
-                    style={{ color: 'var(--text-brand)' }}
-                  >
-                    ← Retour à la connexion
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <p className="mt-1 mb-5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                    Entrez votre email pour recevoir un lien de
-                    réinitialisation.
-                  </p>
-                  <Email
-                    onSubmit={(email) => executeReset({ email })}
-                    isLoading={resetStatus === 'executing'}
-                    view="forgot-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setMode('login')}
-                    className="mt-4 text-sm font-medium hover:underline"
-                    style={{ color: 'var(--text-brand)' }}
-                  >
-                    ← Retour à la connexion
-                  </button>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <h1
-                className="text-xl"
-                style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+                <h1
+                  className="text-xl"
+                  style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+                >
+                  Mot de passe oublié
+                </h1>
+                <AnimatePresence mode="wait" initial={false}>
+                  {resetSent ? (
+                    <motion.div
+                      key="sent"
+                      initial={{ opacity: 0, scale: 0.97 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={panelTransition}
+                      className="mt-4 space-y-4"
+                    >
+                      <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                        Un lien de réinitialisation a été envoyé à votre email.
+                        Vérifiez votre boîte de réception.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetSent(false);
+                          setMode('login');
+                        }}
+                        className="text-sm font-medium hover:underline"
+                        style={{ color: 'var(--text-brand)' }}
+                      >
+                        ← Retour à la connexion
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="form"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={panelTransition}
+                    >
+                      <p className="mt-1 mb-5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                        Entrez votre email pour recevoir un lien de
+                        réinitialisation.
+                      </p>
+                      <Email
+                        onSubmit={(email) => executeReset({ email })}
+                        isLoading={resetStatus === 'executing'}
+                        view="forgot-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMode('login')}
+                        className="mt-4 text-sm font-medium hover:underline"
+                        style={{ color: 'var(--text-brand)' }}
+                      >
+                        ← Retour à la connexion
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="login"
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 12 }}
+                transition={panelTransition}
               >
-                Connexion
-              </h1>
-              <p className="mt-1 mb-5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                Heureux de vous revoir.
-              </p>
+                <h1
+                  className="text-xl"
+                  style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+                >
+                  Connexion
+                </h1>
+                <p className="mt-1 mb-5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  Heureux de vous revoir.
+                </p>
 
-              <Tabs defaultValue="password">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="password">Mot de passe</TabsTrigger>
-                  <TabsTrigger value="qr">Carte QR</TabsTrigger>
-                  <TabsTrigger value="social">Social</TabsTrigger>
-                </TabsList>
+                <Tabs defaultValue="password">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="password">Mot de passe</TabsTrigger>
+                    <TabsTrigger value="qr">Carte QR</TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="password" className="pt-5">
-                  <EmailAndPassword
-                    isLoading={passwordStatus === 'executing'}
-                    onSubmit={(data) => {
-                      executePassword({
-                        email: data.email,
-                        password: data.password,
-                      });
-                    }}
-                    view="sign-in"
-                  />
-                  <div className="mt-4 flex items-center justify-between text-sm">
-                    <button
-                      type="button"
-                      onClick={() => setMode('forgot')}
-                      className="font-medium hover:underline"
-                      style={{ color: 'var(--text-brand)' }}
-                    >
-                      Mot de passe oublié ?
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMode('signup')}
-                      className="font-medium hover:underline"
-                      style={{ color: 'var(--text-brand)' }}
-                    >
-                      Créer un compte
-                    </button>
-                  </div>
-                </TabsContent>
+                  <TabsContent value="password" className="pt-5">
+                    <EmailAndPassword
+                      isLoading={passwordStatus === 'executing'}
+                      onSubmit={(data) => {
+                        executePassword({
+                          email: data.email,
+                          password: data.password,
+                        });
+                      }}
+                      view="sign-in"
+                    />
+                    <div className="mt-4 flex items-center justify-between text-sm">
+                      <button
+                        type="button"
+                        onClick={() => setMode('forgot')}
+                        className="font-medium hover:underline"
+                        style={{ color: 'var(--text-brand)' }}
+                      >
+                        Mot de passe oublié ?
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMode('signup')}
+                        className="font-medium hover:underline"
+                        style={{ color: 'var(--text-brand)' }}
+                      >
+                        Créer un compte
+                      </button>
+                    </div>
+                  </TabsContent>
 
-                <TabsContent value="qr" className="pt-5">
-                  <QrLoginPanel onSuccess={(redirectTo) => goTo(redirectTo)} />
-                </TabsContent>
-
-                <TabsContent value="social" className="pt-5">
-                  <RenderProviders
-                    providers={['google', 'github', 'twitter']}
-                    isLoading={providerStatus === 'executing'}
-                    onProviderLoginRequested={(
-                      provider: 'google' | 'github' | 'twitter'
-                    ) => executeProvider({ provider, next })}
-                  />
-                  <div className="mt-4 text-right text-sm">
-                    <button
-                      type="button"
-                      onClick={() => setMode('signup')}
-                      className="font-medium hover:underline"
-                      style={{ color: 'var(--text-brand)' }}
-                    >
-                      Créer un compte
-                    </button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </>
-          )}
+                  <TabsContent value="qr" className="pt-5">
+                    <QrLoginPanel onSuccess={(redirectTo) => goTo(redirectTo)} />
+                  </TabsContent>
+                </Tabs>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

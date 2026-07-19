@@ -45,7 +45,6 @@ function dbTableToData(t: RoomTable): TableData {
     width: t.width,
     height: t.height,
     rotation: t.rotation,
-    table_type: (t.table_type as 'table' | 'door' | null) ?? 'table',
   }
 }
 
@@ -142,28 +141,6 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
   // so they reflect the actual pixel movement, not a state-derived diff that can go stale.
   const handleTableDragEnd = useCallback(
     (localId: string, x: number, y: number, dx: number, dy: number) => {
-      const dragged = tables.find((t) => t.localId === localId)
-
-      // Doors clip to the nearest wall (canvas edge): pin the center onto that
-      // edge and orient the opening along the wall (0° top/bottom, 90° sides).
-      if (dragged?.table_type === 'door') {
-        const distances = [
-          { edge: 'top', d: y, x: snap(x), y: 0, rotation: 0 },
-          { edge: 'bottom', d: CANVAS_HEIGHT - y, x: snap(x), y: CANVAS_HEIGHT, rotation: 0 },
-          { edge: 'left', d: x, x: 0, y: snap(y), rotation: 90 },
-          { edge: 'right', d: CANVAS_WIDTH - x, x: CANVAS_WIDTH, y: snap(y), rotation: 90 },
-        ]
-        const nearest = distances.reduce((a, b) => (b.d < a.d ? b : a))
-        setTables((prev) =>
-          prev.map((t) =>
-            t.localId === localId
-              ? { ...t, position_x: nearest.x, position_y: nearest.y, rotation: nearest.rotation }
-              : t,
-          ),
-        )
-        return
-      }
-
       const snappedX = snap(x)
       const snappedY = snap(y)
       // Apply snap correction to the delta so chairs land on grid too
@@ -182,7 +159,7 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
         ),
       )
     },
-    [snap, tables],
+    [snap],
   )
 
   const handleSeatRotate = useCallback((localId: string, delta: number) => {
@@ -290,23 +267,6 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
     }
     setSeats((prev) => [...prev, newSeat])
   }, [roomId, seats, snap])
-
-  // --- Add door (clips to nearest wall; starts on the top wall, centered) ---
-  const handleAddDoor = useCallback(() => {
-    const door: TableData = {
-      localId: crypto.randomUUID(),
-      id: undefined,
-      room_id: roomId,
-      label: '',
-      position_x: snap(CANVAS_WIDTH / 2),
-      position_y: 0,
-      width: 60,
-      height: 10,
-      rotation: 0,
-      table_type: 'door',
-    }
-    setTables((prev) => [...prev, door])
-  }, [roomId, snap])
 
   // --- Add chair to existing table ---
   const handleAddChairToTable = useCallback(
@@ -436,7 +396,6 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
         width: t.width,
         height: t.height,
         rotation: t.rotation,
-        table_type: t.table_type ?? 'table',
       })),
       seats: seats.map((s) => ({
         // localId is a real uuid (db id for existing seats, generated for new).
@@ -503,11 +462,6 @@ export function EditorCanvas({ roomId, initialTables, initialSeats }: Props) {
             Chaise indépendante
           </Button>
 
-          {/* Add door (snaps to nearest wall) */}
-          <Button variant="outline" size="sm" onClick={handleAddDoor}>
-            <Plus className="mr-1 h-4 w-4" />
-            Porte
-          </Button>
 
           {/* Distribute — only when something selected */}
           {hasSelection && (

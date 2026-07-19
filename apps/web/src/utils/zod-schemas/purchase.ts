@@ -10,6 +10,7 @@ export const createPurchaseSchema = z.object({
   // null = anonymous purchase (no loyalty points)
   student_id: z.string().uuid().nullable().default(null),
   items: z.array(purchaseItemSchema).min(1, 'Le panier est vide'),
+  discount_dt: z.coerce.number().min(0, 'Réduction invalide').default(0),
 })
 
 export type CreatePurchaseInput = z.infer<typeof createPurchaseSchema>

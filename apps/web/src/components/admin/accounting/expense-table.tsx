@@ -25,7 +25,7 @@ export function ExpenseTable({ expenses }: Props) {
 
   if (expenses.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
+      <p className="animate-in fade-in duration-200 py-8 text-center text-sm text-muted-foreground">
         Aucune dépense pour cette période.
       </p>
     )

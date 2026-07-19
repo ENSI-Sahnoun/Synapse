@@ -40,10 +40,11 @@ export function KpiTiles({ kpis }: Props) {
       unit: 'count',
     },
     {
-      label: 'Nouveaux étudiants',
-      value: kpis.newStudents.toString(),
-      delta: kpis.newStudentsDelta,
-      unit: 'count',
+      label: 'Écart de caisse',
+      value: `${kpis.cashDiscrepancy.toFixed(3)} DT`,
+      delta: kpis.cashDiscrepancyDelta,
+      unit: 'DT',
+      invert: true,
     },
     { label: 'Dépenses', value: `${kpis.expenses.toFixed(3)} DT`, delta: kpis.expensesDelta, unit: 'DT', invert: true },
   ]

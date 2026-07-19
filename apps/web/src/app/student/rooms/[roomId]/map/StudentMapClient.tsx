@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LiveSeatMap } from '@/components/seat-map/LiveSeatMap'
+import { LiveSeatMap } from '@/components/seat-map/LiveSeatMapDynamic'
 import { ReservationPlaceholderDialog } from '@/components/seat-map/ReservationPlaceholderDialog'
 import { SeatSwapRequestDialog } from '@/components/seat-map/SeatSwapRequestDialog'
 import { ClaimSeatDialog } from '@/components/seat-map/ClaimSeatDialog'

@@ -21,9 +21,9 @@ export default async function AdminLoyaltyPage() {
   ])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 md:px-0">
       <LiveRefresher tables={['loyalty_rules']} />
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Règles de fidélité</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -33,7 +33,7 @@ export default async function AdminLoyaltyPage() {
         <LoyaltyRuleDialog mode="create" />
       </div>
 
-      <div className="border rounded-md">
+      <div className="border rounded-md overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
@@ -49,7 +49,7 @@ export default async function AdminLoyaltyPage() {
           <tbody>
             {rules.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="animate-in fade-in duration-200 px-4 py-8 text-center text-muted-foreground">
                   Aucune règle définie.
                 </td>
               </tr>

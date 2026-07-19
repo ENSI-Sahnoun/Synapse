@@ -68,6 +68,11 @@ export function PosClient({
   const [nameResults, setNameResults] = useState<StudentInfo[]>([])
   const [search, setSearch] = useState('')
 
+  const [discountOpen, setDiscountOpen] = useState(false)
+  const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('percentage')
+  const [discountInput, setDiscountInput] = useState('')
+  const [discountValue, setDiscountValue] = useState(0)
+
   const [movementOpen, setMovementOpen] = useState(false)
   const [movementType, setMovementType] = useState<'in' | 'out'>('in')
   const [movementAmount, setMovementAmount] = useState('')
@@ -154,7 +159,12 @@ export function PosClient({
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur de recherche'),
   })
 
-  const totalDt = cart.reduce((sum, item) => sum + item.product.price_dt * item.quantity, 0)
+  const subtotalDt = cart.reduce((sum, item) => sum + item.product.price_dt * item.quantity, 0)
+  const appliedDiscountDt =
+    discountType === 'percentage'
+      ? (subtotalDt * Math.min(Math.max(discountValue, 0), 100)) / 100
+      : Math.min(discountValue, subtotalDt)
+  const totalDt = Math.max(0, subtotalDt - appliedDiscountDt)
 
   const { execute, status } = useAction(createPurchaseAction, {
     onSuccess: ({ data }) => {
@@ -165,6 +175,8 @@ export function PosClient({
       toast.success(msg)
       setReceiptData({ totalDt, studentName: pendingStudent?.fullName ?? null, items: cart })
       setCart([])
+      setDiscountValue(0)
+      setDiscountInput('')
       setAssignOpen(false)
       setAssignStep('choose')
       setPendingStudent(null)
@@ -258,7 +270,23 @@ export function PosClient({
         quantity: i.quantity,
         unit_price_dt: i.product.price_dt,
       })),
+      discount_dt: appliedDiscountDt,
     })
+  }
+
+  function submitDiscount(e: React.FormEvent) {
+    e.preventDefault()
+    const value = Number(discountInput)
+    if (Number.isNaN(value) || value < 0) {
+      toast.error('Réduction invalide')
+      return
+    }
+    if (discountType === 'percentage' && value > 100) {
+      toast.error('Réduction invalide')
+      return
+    }
+    setDiscountValue(value)
+    setDiscountOpen(false)
   }
 
   function handleStudentScanned(student: StudentInfo) {
@@ -766,6 +794,42 @@ export function PosClient({
                   </div>
                 ))}
               </div>
+
+              <div style={{ padding: '0 16px 8px' }}>
+                <button
+                  onClick={() => {
+                    setDiscountInput(discountValue > 0 ? String(discountValue) : '')
+                    setDiscountOpen(true)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 0',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px dashed var(--border-default)',
+                    background: 'transparent',
+                    color: 'var(--muted-foreground)',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {appliedDiscountDt > 0 ? `Réduction: -${formatDt(appliedDiscountDt)} ✎` : '+ Ajouter Réduction'}
+                </button>
+              </div>
+
+              <div style={{ padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--muted-foreground)' }}>
+                  <span>Sous-total</span>
+                  <span>{formatDt(subtotalDt)}</span>
+                </div>
+                {appliedDiscountDt > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#dc2626' }}>
+                    <span>Réduction</span>
+                    <span>-{formatDt(appliedDiscountDt)}</span>
+                  </div>
+                )}
+              </div>
+
               <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, fontSize: 15 }}>
                 <span>Total</span>
                 <span style={{ color: 'var(--accent-brand)' }}>{formatDt(totalDt)}</span>
@@ -1090,6 +1154,131 @@ export function PosClient({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Réduction dialog */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.4)',
+          zIndex: 50,
+          display: discountOpen ? 'block' : 'none',
+        }}
+        onClick={() => setDiscountOpen(false)}
+      />
+      <div style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        width: '100%',
+        maxWidth: 340,
+        background: '#fff',
+        borderRadius: 'var(--radius-xl)',
+        zIndex: 51,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+        transition: 'transform 0.2s ease, opacity 0.2s ease',
+        transform: `translate(-50%, -50%) scale(${discountOpen ? 1 : 0.95})`,
+        opacity: discountOpen ? 1 : 0,
+        pointerEvents: discountOpen ? 'auto' : 'none',
+      }}>
+        <form onSubmit={submitDiscount} style={{ padding: '20px 20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <span style={{ fontWeight: 700, fontSize: 17 }}>Réduction</span>
+            <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>
+              Sous-total: {formatDt(subtotalDt)}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: 4, padding: 3, background: 'var(--surface-subtle)', borderRadius: 'var(--radius-md)' }}>
+            {(['percentage', 'amount'] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setDiscountType(type)}
+                style={{
+                  flex: 1,
+                  padding: '6px 0',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  background: discountType === type ? '#fff' : 'transparent',
+                  boxShadow: discountType === type ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+                  color: discountType === type ? 'var(--foreground)' : 'var(--muted-foreground)',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                {type === 'percentage' ? 'Pourcentage' : 'Montant'}
+              </button>
+            ))}
+          </div>
+
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>
+              {discountType === 'percentage' ? 'Réduction (%)' : 'Montant (DT)'}
+            </label>
+            <input
+              autoFocus
+              type="number"
+              step={discountType === 'percentage' ? '1' : '0.001'}
+              min="0"
+              max={discountType === 'percentage' ? 100 : subtotalDt}
+              inputMode="decimal"
+              value={discountInput}
+              onChange={(e) => setDiscountInput(e.target.value)}
+              placeholder={discountType === 'percentage' ? '0' : '0.000'}
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 14 }}
+            />
+            {discountType === 'percentage' && discountInput !== '' && !Number.isNaN(Number(discountInput)) && (
+              <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>
+                = {formatDt((subtotalDt * Math.min(Math.max(Number(discountInput), 0), 100)) / 100)}
+              </p>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            {appliedDiscountDt > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDiscountValue(0)
+                  setDiscountInput('')
+                  setDiscountOpen(false)
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px 0',
+                  border: '1.5px solid var(--border-default)',
+                  borderRadius: 'var(--radius-lg)',
+                  background: 'transparent',
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+              >
+                Retirer
+              </button>
+            )}
+            <button
+              type="submit"
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--accent-brand)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 14,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Appliquer
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Mouvement de caisse dialog */}

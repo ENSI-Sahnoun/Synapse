@@ -94,8 +94,8 @@ export default async function NotificationsPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Canaux de notification</h2>
-        <div className="rounded-lg border overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-lg border overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="bg-muted/50 border-b">
                 <th className="text-left p-4 font-medium text-muted-foreground">

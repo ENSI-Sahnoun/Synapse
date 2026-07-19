@@ -2,6 +2,7 @@
 
 import { employeeActionClient } from '@/lib/safe-action'
 import { createPurchaseSchema } from '@/utils/zod-schemas/purchase'
+import type { Json } from '@/lib/database.types'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { revalidatePath } from 'next/cache'
 import { notifyAllStaff } from '@/data/notifications/inapp'
@@ -10,7 +11,7 @@ import { buildPurchaseMessage } from '@/lib/notification-message-builders'
 export const createPurchaseAction = employeeActionClient
   .schema(createPurchaseSchema)
   .action(async ({ parsedInput }) => {
-    const { student_id, items } = parsedInput
+    const { student_id, items, discount_dt } = parsedInput
     const supabase = await createSupabaseClient()
 
     const { data, error } = await supabase.rpc('pos_checkout', {
@@ -18,7 +19,8 @@ export const createPurchaseAction = employeeActionClient
       // (anonymous purchase). Regenerate types once project is linked.
       p_student_id: (student_id ?? null) as unknown as string,
       p_items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
-    })
+      p_discount_dt: discount_dt,
+    } as unknown as { p_student_id: string; p_items: Json })
 
     if (error) throw new Error(error.message)
 

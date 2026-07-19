@@ -9,6 +9,7 @@ import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { defaultDateRange } from '@/lib/date-range'
+import { BackButton } from '@/components/admin/shared/back-button'
 import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,7 @@ export default async function AttendanceAnalyticsPage({ searchParams }: PageProp
 
   return (
     <div className="space-y-6 p-6">
+      <BackButton />
       <h1 className="text-2xl font-bold">Analyse — Fréquentation &amp; occupation</h1>
       <DateRangeFilter from={from} to={to} />
 
@@ -88,7 +90,7 @@ async function AttendanceAnalyticsContent({ from, to }: { from: string; to: stri
           </CardHeader>
           <CardContent className="space-y-1">
             {entrySplit.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune donnée</p>
+              <p className="animate-in fade-in duration-200 text-sm text-muted-foreground">Aucune donnée</p>
             ) : (
               entrySplit.map((e) => (
                 <p key={e.method} className="text-sm">

@@ -21,17 +21,25 @@ export default async function EmployeeRoomsPage() {
   const roomList = rooms ?? []
   const roomIds = roomList.map(r => r.id)
 
-  const { data: openAtt } = roomIds.length > 0
-    ? await supabase
-        .from('attendance')
-        .select('room_id')
-        .is('checked_out_at', null)
-        .in('room_id', roomIds)
-    : { data: [] }
+  const [{ data: openAtt }, { data: seatRows }] = roomIds.length > 0
+    ? await Promise.all([
+        supabase
+          .from('attendance')
+          .select('room_id')
+          .is('checked_out_at', null)
+          .in('room_id', roomIds),
+        supabase.from('seats').select('room_id').in('room_id', roomIds),
+      ])
+    : [{ data: [] }, { data: [] }]
 
   const occupiedCounts: Record<string, number> = {}
   for (const a of openAtt ?? []) {
     if (a.room_id) occupiedCounts[a.room_id] = (occupiedCounts[a.room_id] ?? 0) + 1
+  }
+
+  const seatCounts: Record<string, number> = {}
+  for (const s of seatRows ?? []) {
+    if (s.room_id) seatCounts[s.room_id] = (seatCounts[s.room_id] ?? 0) + 1
   }
 
   const { data: unassignedRows } = await supabase
@@ -59,7 +67,8 @@ export default async function EmployeeRoomsPage() {
 
       {roomList.map(room => {
         const occupied = occupiedCounts[room.id] ?? 0
-        const pct = room.capacity > 0 ? Math.min((occupied / room.capacity) * 100, 100) : 0
+        const capacity = seatCounts[room.id] ?? 0
+        const pct = capacity > 0 ? Math.min((occupied / capacity) * 100, 100) : 0
         const isFull = pct >= 90
         const isClosed = room.status === 'closed'
         const isReserved = room.status === 'reserved'
@@ -90,7 +99,7 @@ export default async function EmployeeRoomsPage() {
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15 }}>{room.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>
-                  {occupied} / {room.capacity} places
+                  {occupied} / {capacity} places
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

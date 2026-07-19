@@ -49,6 +49,12 @@ apps/database/supabase/snippets/
 .claude/
 .superpowers/
 .cursor/
+.agents/
+plans/
+skills-lock.json
 
 # design/planning docs, not shipped with project
 docs/superpowers/
+
+# local screenshot/debug scratch
+apps/web/shot.mjs

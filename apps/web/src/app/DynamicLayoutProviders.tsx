@@ -13,6 +13,9 @@ export function DynamicLayoutProviders({ children }: { children: React.ReactNode
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const isKiosk = pathname?.startsWith('/kiosk');
+  // Public marketing pages: no logged-in-app chrome (notifications, install /
+  // push prompts, airdrop popups). Keep the toaster for the contact form.
+  const isMarketing = pathname === '/' || pathname === '/contact';
 
   useEffect(() => {
     setMounted(true);
@@ -50,12 +53,12 @@ export function DynamicLayoutProviders({ children }: { children: React.ReactNode
               },
             }}
           />
-          <NotificationToaster />
-          <AirdropPopup />
-          <PushPromptModal />
+          {!isMarketing && <NotificationToaster />}
+          {!isMarketing && <AirdropPopup />}
+          {!isMarketing && <PushPromptModal />}
         </Suspense>
       )}
-      {!isKiosk && <InstallPromptModal />}
+      {!isKiosk && !isMarketing && <InstallPromptModal />}
     </>
   );
 }

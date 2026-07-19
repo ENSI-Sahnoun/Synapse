@@ -15,8 +15,12 @@ import { DynamicLayoutProviders } from './DynamicLayoutProviders'
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // viewport-fit:cover is required for env(safe-area-inset-*) to resolve to
+  // real values on notched phones — without it the bottom navs, toasts and
+  // drawers that rely on the inset all get 0. Pinch-zoom is intentionally left
+  // enabled (no maximumScale/userScalable) for WCAG 1.4.4 (Resize text).
+  viewportFit: 'cover',
+  themeColor: '#A2724A',
 }
 
 export const metadata = {

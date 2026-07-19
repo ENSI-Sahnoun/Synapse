@@ -1,11 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
+import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { FinancialsResetCard } from './FinancialsResetCard'
 import { AttendanceResetCard } from './AttendanceResetCard'
 import { NotificationsResetCard } from './NotificationsResetCard'
+
+const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const
 
 export function DangerZoneSection() {
   const [open, setOpen] = useState(false)
@@ -23,10 +26,24 @@ export function DangerZoneSection() {
             Suppression définitive et irréversible. Les comptes étudiants ne sont jamais touchés.
           </p>
         </div>
-        {open ? <ChevronDown className="size-5 shrink-0" /> : <ChevronRight className="size-5 shrink-0" />}
+        <motion.span
+          animate={{ rotate: open ? 90 : 0 }}
+          transition={{ duration: 0.2, ease: EASE_IN_OUT }}
+          className="shrink-0"
+        >
+          <ChevronDown className="size-5" />
+        </motion.span>
       </button>
 
-      {open && (
+      <motion.div
+        initial={false}
+        animate={{
+          height: open ? 'auto' : 0,
+          opacity: open ? 1 : 0,
+        }}
+        transition={{ duration: 0.25, ease: EASE_IN_OUT }}
+        className="overflow-hidden"
+      >
         <div className="flex flex-col gap-4">
           <Button
             type="button"
@@ -41,7 +58,7 @@ export function DangerZoneSection() {
           <AttendanceResetCard />
           <NotificationsResetCard />
         </div>
-      )}
+      </motion.div>
     </section>
   )
 }

@@ -31,7 +31,7 @@ export function CreateRoomDialog() {
 
   const form = useForm<CreateRoomInput>({
     resolver: zodResolver(createRoomSchema),
-    defaultValues: { name: '', capacity: 10 },
+    defaultValues: { name: '' },
   })
 
   const { execute, isPending } = useAction(createRoomAction, {
@@ -67,24 +67,6 @@ export function CreateRoomDialog() {
                   <FormLabel>Nom de la salle</FormLabel>
                   <FormControl>
                     <Input placeholder="Salle principale" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="capacity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Capacité (places)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

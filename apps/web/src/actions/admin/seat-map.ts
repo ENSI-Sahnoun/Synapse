@@ -15,6 +15,14 @@ export const upsertSeatMapAction = adminActionClient
     const supabase = await createSupabaseClient()
     const { room_id, tables, seats } = parsedInput
 
+    // Doors were removed as a feature; clean up any leftover door rows on save.
+    const { error: doorError } = await supabase
+      .from('tables')
+      .delete()
+      .eq('room_id', room_id)
+      .eq('table_type', 'door')
+    if (doorError) throw new Error(doorError.message)
+
     if (tables.length > 0) {
       const { error: tableError } = await supabase
         .from('tables')
@@ -28,7 +36,6 @@ export const upsertSeatMapAction = adminActionClient
             width: t.width,
             height: t.height,
             rotation: t.rotation,
-            table_type: t.table_type,
           })),
           { onConflict: 'id', ignoreDuplicates: false },
         )

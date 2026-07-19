@@ -11,6 +11,11 @@
 @import 'tw-animate-css';
 
 :root {
+  /* ── Motion easing (see emil-design-eng / apple-design) ──── */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
   /* ── Synapse primitive palette ───────────────────────────── */
   --synapse-brown-50:  #FBF7F3;
   --synapse-brown-100: #F3E9DE;
@@ -91,7 +96,9 @@
   --secondary-foreground: var(--synapse-stone-950);
 
   --muted: var(--synapse-cream-100);
-  --muted-foreground: var(--synapse-stone-500);
+  /* stone-500 (#857B72) was ~3.9:1 on the cream bg — fails WCAG AA for the
+     10-12px nav/secondary text it's used on. stone-600 (#665C54) is ~6.9:1. */
+  --muted-foreground: var(--synapse-stone-600);
 
   --accent: var(--synapse-cream-50);
   --accent-foreground: var(--synapse-brown-600);
@@ -175,6 +182,7 @@
   --animate-marquee: marquee 30s linear infinite;
   --animate-orbit: orbit calc(var(--duration) * 1s) linear infinite;
   --animate-skeleton-shimmer: skeleton-shimmer 1.6s ease-in-out infinite;
+  --breakpoint-xs: 400px;
   --breakpoint-2xl: 1400px;
   --width-8xl: 88rem;
 
@@ -320,29 +328,6 @@
   }
 }
 
-/* @layer base {
-  * {
-    @reference border-border;
-  }
-  body {
-    @reference bg-background text-foreground;
-    font-feature-settings:
-      "rlig" 1,
-      "calt" 1;
-  }
-} */
-
-/* @theme inline {
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-} */
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still

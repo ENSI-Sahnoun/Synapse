@@ -13,6 +13,7 @@ export interface EmailPayload {
   to: string          // student email
   subject: string
   html: string
+  replyTo?: string    // where a human reply should go (e.g. a contact-form sender)
 }
 
 export async function sendEmail(payload: EmailPayload): Promise<void> {
@@ -21,6 +22,7 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
     to: payload.to,
     subject: payload.subject,
     html: payload.html,
+    ...(payload.replyTo ? { replyTo: payload.replyTo } : {}),
   })
 
   if (error) {
@@ -81,6 +83,45 @@ export function buildRenewalReminderEmail(opts: {
       <p>Votre abonnement <strong>${planName}</strong> a expiré le <strong>${expiryDate}</strong>.</p>
       <p>Il n'est pas trop tard pour revenir — revenez nous voir pour vous réinscrire.</p>
       <p>— L'équipe Synapse, Sfax</p>
+    `,
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * Contact-form message → email sent to the Synapse inbox. `replyTo` is set to
+ * the visitor's address so the team can reply straight from their mailbox.
+ */
+export function buildContactEmail(opts: {
+  inbox: string
+  name: string
+  email: string
+  phone?: string
+  typeLabel: string
+  message: string
+}): EmailPayload {
+  const { inbox, name, email, phone, typeLabel, message } = opts
+  return {
+    to: inbox,
+    replyTo: email,
+    subject: `Nouveau contact professionnel — ${escapeHtml(name)}`,
+    html: `
+      <h2 style="margin:0 0 12px;font-family:sans-serif">Nouveau message depuis le site Synapse</h2>
+      <table style="font-family:sans-serif;font-size:14px;border-collapse:collapse">
+        <tr><td style="padding:4px 12px 4px 0;color:#665C54">Nom</td><td><strong>${escapeHtml(name)}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#665C54">E-mail</td><td>${escapeHtml(email)}</td></tr>
+        ${phone ? `<tr><td style="padding:4px 12px 4px 0;color:#665C54">Téléphone</td><td>${escapeHtml(phone)}</td></tr>` : ''}
+        <tr><td style="padding:4px 12px 4px 0;color:#665C54">Profil</td><td>${escapeHtml(typeLabel)}</td></tr>
+      </table>
+      <p style="font-family:sans-serif;font-size:14px;color:#665C54;margin:16px 0 4px">Message</p>
+      <p style="font-family:sans-serif;font-size:15px;line-height:1.6;white-space:pre-wrap">${escapeHtml(message)}</p>
     `,
   }
 }

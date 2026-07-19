@@ -417,6 +417,7 @@ export async function getExpensesByCategory(filters: { from: string; to: string 
   const map = new Map<string, number>()
   data?.forEach((r) => {
     const cat = r.account_categories as unknown as { name: string }
+    if (cat.name === 'Écart de caisse') return
     map.set(cat.name, (map.get(cat.name) ?? 0) + Number(r.amount_dt))
   })
 

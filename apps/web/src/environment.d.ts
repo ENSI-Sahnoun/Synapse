@@ -18,6 +18,7 @@ declare global {
       WHATSAPP_PHONE_NUMBER_ID: string;
       SUPABASE_SERVICE_ROLE_KEY: string;
       CRON_SECRET: string;
+      CONTACT_INBOX_EMAIL?: string;
     }
   }
 }

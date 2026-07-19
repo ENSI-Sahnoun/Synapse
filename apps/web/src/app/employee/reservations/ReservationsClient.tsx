@@ -102,7 +102,9 @@ export function ReservationsClient({ initialReservations }: { initialReservation
   }
 
   return (
+    <>
     <div
+      className="hidden md:block"
       style={{
         background: 'white',
         border: '1px solid var(--border-subtle)',
@@ -282,5 +284,119 @@ export function ReservationsClient({ initialReservations }: { initialReservation
           </tbody>
         </table>
     </div>
+
+    {/* Mobile: stacked cards — the desktop table's Confirmer/Annuler actions sat
+        off the right edge on phones (the table has minWidth:700). */}
+    <ul className="md:hidden space-y-3">
+      {reservations.map((r) => (
+        <li
+          key={r.id}
+          className="rounded-xl border p-3"
+          style={{
+            borderColor: 'var(--border-subtle)',
+            background: flashId === r.id ? '#fef9c3' : 'white',
+            transition: 'background 0.6s ease',
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                background: r.is_priority ? 'var(--synapse-orange-100)' : 'var(--synapse-cream-200)',
+                color: r.is_priority ? 'var(--synapse-orange-600)' : 'var(--accent-brand)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              {initials(r.student_name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 font-semibold" style={{ color: 'var(--foreground)' }}>
+                <span className="truncate">{r.student_name}</span>
+                {r.is_priority && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      padding: '1px 5px',
+                      borderRadius: 99,
+                      background: 'var(--synapse-orange-100)',
+                      color: 'var(--synapse-orange-600)',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      flexShrink: 0,
+                    }}
+                  >
+                    Priorité
+                  </span>
+                )}
+              </div>
+              <div className="mt-0.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                {r.room_name} · {r.seat_label}
+                {r.queue_position != null && <> · File #{r.queue_position}</>}
+              </div>
+            </div>
+            <ExpiryBadge expiresAt={r.expires_at} />
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={() => accept({ reservationId: r.id })}
+              disabled={busy}
+              className="flex-1"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                minHeight: 44,
+                borderRadius: 10,
+                border: '1px solid #bbf7d0',
+                background: '#f0fdf4',
+                color: '#15803d',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: busy ? 'not-allowed' : 'pointer',
+                opacity: busy ? 0.5 : 1,
+                fontFamily: 'var(--font-body)',
+              }}
+            >
+              <Check size={16} weight="bold" />
+              Confirmer
+            </button>
+            <button
+              onClick={() => cancel({ reservationId: r.id })}
+              disabled={busy}
+              className="flex-1"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                minHeight: 44,
+                borderRadius: 10,
+                border: '1px solid #fecaca',
+                background: '#fef2f2',
+                color: '#dc2626',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: busy ? 'not-allowed' : 'pointer',
+                opacity: busy ? 0.5 : 1,
+                fontFamily: 'var(--font-body)',
+              }}
+            >
+              <X size={16} weight="bold" />
+              Annuler
+            </button>
+          </div>
+        </li>
+      ))}
+    </ul>
+    </>
   )
 }

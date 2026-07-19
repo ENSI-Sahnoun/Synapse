@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, type CSSProperties } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MagnifyingGlass, CaretLeft, CaretRight, QrCode, SignIn, SignOut, Armchair, PaperPlaneTilt, PencilSimple } from '@phosphor-icons/react'
@@ -20,6 +20,22 @@ import { EditIdentityDialog } from './EditIdentityDialog'
 import { SendAnnouncementDialog } from './SendAnnouncementDialog'
 import { DropToKioskButton } from '@/components/employee/DropToKioskButton'
 import { isDailyPlan } from '@/lib/subscription-status'
+
+// 40px centered hit area for the per-student header actions (was ~26px). Meets
+// touch-target guidance and keeps the destructive check-out reliably separable
+// from its neighbours on a busy floor.
+const ICON_ACTION_STYLE: CSSProperties = {
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  width: 40,
+  height: 40,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 10,
+  flexShrink: 0,
+}
 
 interface Student {
   id: string
@@ -632,13 +648,28 @@ function DetailView({
       >
         <Avatar name={student.full_name} size={48} />
         <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-secondary)' }}>{student.full_name ?? '—'}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span
+              style={{
+                fontWeight: 700,
+                fontSize: 16,
+                color: 'var(--text-secondary)',
+                flex: '1 1 auto',
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                marginRight: 4,
+              }}
+            >
+              {student.full_name ?? '—'}
+            </span>
             {student.qr_token && (
               <button
                 onClick={() => setShowQr((v) => !v)}
                 title="QR code"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: showQr ? 'var(--accent-brand)' : 'var(--text-tertiary)' }}
+                aria-label="QR code"
+                style={{ ...ICON_ACTION_STYLE, color: showQr ? 'var(--accent-brand)' : 'var(--text-tertiary)' }}
               >
                 <QrCode size={22} weight={showQr ? 'fill' : 'regular'} />
               </button>
@@ -646,7 +677,8 @@ function DetailView({
             <button
               onClick={() => setSendAnnouncementOpen(true)}
               title="Envoyer une annonce"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-tertiary)' }}
+              aria-label="Envoyer une annonce"
+              style={{ ...ICON_ACTION_STYLE, color: 'var(--text-tertiary)' }}
             >
               <PaperPlaneTilt size={22} />
             </button>
@@ -658,7 +690,8 @@ function DetailView({
                     : '/employee/rooms'
                 }
                 title="Changer de place"
-                style={{ color: 'var(--text-tertiary)', display: 'flex' }}
+                aria-label="Changer de place"
+                style={{ ...ICON_ACTION_STYLE, color: 'var(--text-tertiary)' }}
               >
                 <Armchair size={22} />
               </Link>
@@ -672,7 +705,14 @@ function DetailView({
                 }}
                 disabled={checkoutPending}
                 title="Sortie"
-                style={{ background: 'none', border: 'none', cursor: checkoutPending ? 'not-allowed' : 'pointer', padding: 2, color: 'var(--destructive)', opacity: checkoutPending ? 0.5 : 1 }}
+                aria-label="Enregistrer la sortie"
+                style={{
+                  ...ICON_ACTION_STYLE,
+                  cursor: checkoutPending ? 'not-allowed' : 'pointer',
+                  color: 'var(--destructive)',
+                  background: 'color-mix(in oklab, var(--destructive) 10%, transparent)',
+                  opacity: checkoutPending ? 0.5 : 1,
+                }}
               >
                 <SignOut size={22} />
               </button>
@@ -681,7 +721,14 @@ function DetailView({
                 onClick={() => student.qr_token && doCheckin({ qrToken: student.qr_token })}
                 disabled={checkinPending || !student.qr_token}
                 title="Entrée"
-                style={{ background: 'none', border: 'none', cursor: (checkinPending || !student.qr_token) ? 'not-allowed' : 'pointer', padding: 2, color: 'var(--synapse-green-500, #22c55e)', opacity: (checkinPending || !student.qr_token) ? 0.5 : 1 }}
+                aria-label="Enregistrer l'entrée"
+                style={{
+                  ...ICON_ACTION_STYLE,
+                  cursor: (checkinPending || !student.qr_token) ? 'not-allowed' : 'pointer',
+                  color: 'var(--synapse-green-700, #276040)',
+                  background: 'var(--synapse-green-50, #EDFAF4)',
+                  opacity: (checkinPending || !student.qr_token) ? 0.5 : 1,
+                }}
               >
                 <SignIn size={22} />
               </button>

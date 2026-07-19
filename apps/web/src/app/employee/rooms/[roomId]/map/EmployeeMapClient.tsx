@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LiveSeatMap } from '@/components/seat-map/LiveSeatMap'
+import { LiveSeatMap } from '@/components/seat-map/LiveSeatMapDynamic'
 import { AssignStudentDialog } from '@/components/seat-map/AssignStudentDialog'
 import type { Seat, RoomTable } from '@/data/admin/seat-map'
 import type { Room } from '@/data/admin/rooms'

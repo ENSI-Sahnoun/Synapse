@@ -15,9 +15,9 @@ export default async function AdminProductsPage() {
   const categoryOrder = categories.map((c) => ({ id: c.id, name: c.name }))
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 px-4 md:px-0">
       <LiveRefresher tables={['products', 'product_categories']} />
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Produits (POS)</h1>
         <Button asChild>
           <Link href="/admin/products/new">Nouveau produit</Link>

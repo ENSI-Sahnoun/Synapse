@@ -85,18 +85,6 @@ export const EmailAndPassword = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          {view === 'sign-in' ? (
-            <div className="text-sm">
-              <Link
-                href="/forgot-password"
-                className="font-medium text-muted-foreground dark:hover:text-gray-600 hover:text-foreground"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-          ) : null}
-        </div>
         <div className="space-y-2">
           <Button disabled={isLoading} type="submit" className="w-full">
             {isLoading ? (
@@ -108,17 +96,8 @@ export const EmailAndPassword = ({
               <span>{view === 'sign-in' ? 'Login' : 'Sign up'}</span>
             )}
           </Button>
-          <div className="w-full text-center">
-            {view === 'sign-in' ? (
-              <div className="text-sm">
-                <Link
-                  href="/sign-up"
-                  className="font-medium text-muted-foreground hover:text-foreground"
-                >
-                  Don't have an account? Sign up
-                </Link>
-              </div>
-            ) : (
+          {view === 'sign-up' ? (
+            <div className="w-full text-center">
               <div className="text-sm">
                 <Link
                   href="/login"
@@ -127,8 +106,8 @@ export const EmailAndPassword = ({
                   Already have an account? Log in
                 </Link>
               </div>
-            )}
-          </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </form>

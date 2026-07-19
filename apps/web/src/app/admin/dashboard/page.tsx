@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 import { getLiveSnapshot, getOverviewKpis } from '@/data/admin/analytics/overview'
 import { getRevenueSplit, getCashFlow } from '@/data/admin/accounting'
 import { getTopStudentsByLoyalty, getTopStudentsBySpend } from '@/data/admin/analytics/students'
@@ -34,7 +35,10 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <LiveRefresher tables={['attendance', 'purchases', 'subscriptions', 'reservations', 'lockers', 'locker_payments']} />
+      {/* Single realtime driver for the whole dashboard. `seats` is included so
+          the live occupancy tile updates (LiveIndicators no longer runs its own
+          overlapping subscription + snapshot fetch). */}
+      <LiveRefresher tables={['attendance', 'seats', 'purchases', 'subscriptions', 'reservations', 'lockers', 'locker_payments']} />
       <h1 className="text-2xl font-bold">Tableau de bord</h1>
 
       <section>
@@ -42,12 +46,12 @@ export default async function AdminDashboardPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             En direct
           </h2>
-          <Link href="/admin/analytics/attendance" className="text-sm font-medium text-primary hover:underline">
-            Fréquentation →
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/analytics/attendance">Fréquentation →</Link>
+          </Button>
         </div>
         <Suspense fallback={<Skeleton className="h-28 w-full" />}>
-          <LiveIndicators initial={snapshot} />
+          <LiveIndicators initial={snapshot} newStudents={kpis.newStudents} newStudentsDelta={kpis.newStudentsDelta} />
         </Suspense>
       </section>
 
@@ -56,9 +60,9 @@ export default async function AdminDashboardPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Indicateurs clés — ce mois
           </h2>
-          <Link href="/admin/accounting" className="text-sm font-medium text-primary hover:underline">
-            Voir la comptabilité →
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/accounting">Voir la comptabilité →</Link>
+          </Button>
         </div>
         <KpiTiles kpis={kpis} />
       </section>
@@ -67,21 +71,18 @@ export default async function AdminDashboardPage() {
         <div>
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-medium text-muted-foreground">Revenus</h3>
-            <Link
-              href="/admin/analytics/subscriptions"
-              className="text-xs font-medium text-primary hover:underline"
-            >
-              Abonnements →
-            </Link>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/analytics/subscriptions">Abonnements →</Link>
+            </Button>
           </div>
           <RevenueSplitChart data={revenueSplit} />
         </div>
         <div>
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-medium text-muted-foreground">Trésorerie</h3>
-            <Link href="/admin/analytics/pos" className="text-xs font-medium text-primary hover:underline">
-              Boutique →
-            </Link>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/analytics/pos">Boutique →</Link>
+            </Button>
           </div>
           <CashFlowChart data={cashFlow} />
         </div>
@@ -92,12 +93,9 @@ export default async function AdminDashboardPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Étudiants &amp; personnel — ce mois
           </h2>
-          <Link
-            href="/admin/analytics/students-staff"
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            Détails →
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/analytics/students-staff">Détails →</Link>
+          </Button>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <TopStudentsTable byLoyalty={topByLoyalty} bySpend={topBySpend} />

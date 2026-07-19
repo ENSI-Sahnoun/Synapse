@@ -12,6 +12,7 @@ import { LockerStatsCards } from '@/components/admin/analytics/locker-stats-card
 import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
 import { Skeleton } from '@/components/ui/skeleton'
 import { defaultDateRange } from '@/lib/date-range'
+import { BackButton } from '@/components/admin/shared/back-button'
 import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,7 @@ export default async function SubscriptionsAnalyticsPage({ searchParams }: PageP
 
   return (
     <div className="space-y-6 p-6">
+      <BackButton />
       <h1 className="text-2xl font-bold">Analyse — Abonnements</h1>
       <DateRangeFilter from={from} to={to} />
 

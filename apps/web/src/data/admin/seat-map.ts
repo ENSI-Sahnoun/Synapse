@@ -9,7 +9,12 @@ export async function getSeatMap(roomId: string): Promise<{ tables: RoomTable[];
 
   const [{ data: tables, error: tablesError }, { data: seats, error: seatsError }] =
     await Promise.all([
-      supabase.from('tables').select('*').eq('room_id', roomId).order('created_at'),
+      supabase
+        .from('tables')
+        .select('*')
+        .eq('room_id', roomId)
+        .neq('table_type', 'door')
+        .order('created_at'),
       supabase.from('seats').select('*').eq('room_id', roomId).order('label'),
     ])
 

@@ -73,7 +73,9 @@
 
 .border-grid {
   border-style: dashed;
-  border-color: var(--color-border) / 0.5;
+  /* `var(--color-border) / 0.5` is not valid outside a color function and was
+     silently dropped — use color-mix for the intended 50% opacity. */
+  border-color: color-mix(in oklab, var(--color-border) 50%, transparent);
   &:is(.dark *) {
     border-color: var(--color-border);
   }
