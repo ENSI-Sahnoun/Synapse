@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DotsThree, X, CaretDown, ChartBar } from '@phosphor-icons/react'
 import { signOutAction } from '@/data/auth/sign-out'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
@@ -27,6 +27,16 @@ interface Props {
 function MoreDrawer({ open, onClose, items, navCounts }: { open: boolean; onClose: () => void; items: ResolvedNavItem[]; navCounts: Record<string, number> }) {
   const router = useRouter()
 
+  // Escape-to-close while open (matches the rest of the app's dialogs).
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   function navigate(href: string) {
     onClose()
     router.push(href)
@@ -43,6 +53,12 @@ function MoreDrawer({ open, onClose, items, navCounts }: { open: boolean; onClos
         />
       )}
       <div
+        // inert while closed so its (off-screen) nav buttons leave the tab order
+        // and a11y tree — the sheet stays mounted only for the slide animation.
+        inert={!open}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Plus de navigation"
         style={{
           position: 'fixed',
           bottom: 0,
@@ -101,8 +117,8 @@ function MoreDrawer({ open, onClose, items, navCounts }: { open: boolean; onClos
                         height: 16,
                         padding: '0 4px',
                         borderRadius: 8,
-                        background: '#dc2626',
-                        color: '#fff',
+                        background: 'var(--destructive)',
+                        color: 'var(--destructive-foreground)',
                         fontSize: 9,
                         fontWeight: 700,
                         display: 'flex',
@@ -146,6 +162,9 @@ export function EmployeeMobileShell({ fullName, role, navItems, initialNotificat
   const mobileNav = visibleItems.slice(0, 4)
   const moreItems = visibleItems.slice(4)
   const moreActive = moreItems.some((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
+  // Surface unread counts for items buried in the drawer — otherwise a
+  // notification on any nav item past index 3 was silently invisible on mobile.
+  const moreUnread = moreItems.reduce((n, item) => n + (navCounts[item.href] ?? 0), 0)
 
   return (
     <>
@@ -329,8 +348,8 @@ export function EmployeeMobileShell({ fullName, role, navItems, initialNotificat
                         height: 16,
                         padding: '0 4px',
                         borderRadius: 8,
-                        background: '#dc2626',
-                        color: '#fff',
+                        background: 'var(--destructive)',
+                        color: 'var(--destructive-foreground)',
                         fontSize: 9,
                         fontWeight: 700,
                         display: 'flex',
@@ -361,7 +380,31 @@ export function EmployeeMobileShell({ fullName, role, navItems, initialNotificat
                 cursor: 'pointer',
               }}
             >
-              <DotsThree size={20} weight={moreActive ? 'bold' : 'regular'} />
+              <div style={{ position: 'relative' }}>
+                <DotsThree size={20} weight={moreActive ? 'bold' : 'regular'} />
+                {moreUnread > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -8,
+                      minWidth: 16,
+                      height: 16,
+                      padding: '0 4px',
+                      borderRadius: 8,
+                      background: 'var(--destructive)',
+                      color: 'var(--destructive-foreground)',
+                      fontSize: 9,
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {moreUnread > 9 ? '9+' : moreUnread}
+                  </span>
+                )}
+              </div>
               <span>Plus</span>
             </button>
           )}

@@ -42,7 +42,7 @@ export function StudentHeaderMenu({ fullName, initials }: StudentHeaderMenuProps
         <DropdownMenuSeparator />
         <form action={signOutAction}>
           <DropdownMenuItem asChild>
-            <button type="submit" className="w-full flex items-center gap-2 cursor-pointer" style={{ color: '#dc2626' }}>
+            <button type="submit" className="w-full flex items-center gap-2 cursor-pointer" style={{ color: 'var(--destructive)' }}>
               <SignOut size={16} />
               Se déconnecter
             </button>

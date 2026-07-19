@@ -32,7 +32,17 @@ export default async function SeatMapEditorPage({ params }: Props) {
         </div>
       </div>
 
-      <EditorCanvas roomId={room.id} initialTables={tables} initialSeats={seats} />
+      {/* The fixed-width Konva canvas is a desktop power tool — gate it below lg
+          rather than ship a broken 1100px horizontal-scroll layout on phones. */}
+      <div className="hidden lg:block">
+        <EditorCanvas roomId={room.id} initialTables={tables} initialSeats={seats} />
+      </div>
+      <div className="lg:hidden rounded-xl border border-dashed p-6 text-center">
+        <p className="font-medium">Éditeur non disponible sur mobile</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          L&apos;agencement des places nécessite un écran plus large. Ouvrez cette page sur un ordinateur.
+        </p>
+      </div>
     </div>
   )
 }
