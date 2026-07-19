@@ -160,7 +160,7 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
           <Label>Nom *</Label>
           <Input {...form.register('name')} placeholder="ex: Café" />
           {form.formState.errors.name && (
-            <p className="text-sm text-destructive">{(form.formState.errors.name as any).message}</p>
+            <p className="text-sm text-destructive">{form.formState.errors.name?.message}</p>
           )}
         </div>
 
@@ -182,7 +182,7 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
             </Button>
           </div>
           {form.formState.errors.category && (
-            <p className="text-sm text-destructive">{(form.formState.errors.category as any).message}</p>
+            <p className="text-sm text-destructive">{form.formState.errors.category?.message}</p>
           )}
 
           {/* Add category inline */}
@@ -255,7 +255,7 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
           <Label>Prix (DT) *</Label>
           <Input type="number" step="0.001" min="0" {...form.register('price_dt')} />
           {form.formState.errors.price_dt && (
-            <p className="text-sm text-destructive">{(form.formState.errors.price_dt as any).message}</p>
+            <p className="text-sm text-destructive">{form.formState.errors.price_dt?.message}</p>
           )}
         </div>
 
@@ -264,7 +264,7 @@ export function ProductForm({ product, categories: initialCategories }: Props) {
           <Label>Coût d&apos;achat (DT)</Label>
           <Input type="number" step="0.001" min="0" {...form.register('cost_price')} placeholder="ex: 0.8" />
           {form.formState.errors.cost_price && (
-            <p className="text-sm text-destructive">{(form.formState.errors.cost_price as any).message}</p>
+            <p className="text-sm text-destructive">{form.formState.errors.cost_price?.message}</p>
           )}
           {Number(form.watch('price_dt')) > 0 && Number(form.watch('cost_price')) > 0 && (
             <p className="text-xs text-muted-foreground">

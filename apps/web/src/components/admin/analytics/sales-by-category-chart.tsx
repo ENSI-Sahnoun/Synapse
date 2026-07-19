@@ -1,28 +1,17 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { CategorySales } from '@/data/admin/analytics/pos'
 
-type Props = { data: CategorySales[] }
+// Code-splits recharts (~heavy) out of the admin dashboard's initial bundle.
+// The chart is client-only and below the fold, so ssr:false + a skeleton is
+// the right trade — first paint no longer waits on the charting engine.
+const Chart = dynamic(() => import('./sales-by-category-chart.impl').then((m) => m.SalesByCategoryChartImpl), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
+})
 
-export function SalesByCategoryChart({ data }: Props) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Ventes par catégorie</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-            <XAxis type="number" tick={{ fontSize: 11 }} unit=" DT" />
-            <YAxis type="category" dataKey="category" tick={{ fontSize: 11 }} width={100} />
-            <Tooltip formatter={(v: number) => `${v.toFixed(3)} DT`} />
-            <Bar dataKey="revenue" fill="#6366f1" radius={[0, 4, 4, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  )
+export function SalesByCategoryChart(props: { data: CategorySales[] }) {
+  return <Chart {...props} />
 }

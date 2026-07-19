@@ -1,40 +1,17 @@
 'use client'
 
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { PlanPopularity } from '@/data/admin/analytics/subscriptions'
 
-const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#a855f7']
+// Code-splits recharts (~heavy) out of the admin dashboard's initial bundle.
+// The chart is client-only and below the fold, so ssr:false + a skeleton is
+// the right trade — first paint no longer waits on the charting engine.
+const Chart = dynamic(() => import('./plan-pie-chart.impl').then((m) => m.PlanPieChartImpl), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
+})
 
-type Props = { data: PlanPopularity[] }
-
-export function PlanPieChart({ data }: Props) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Formules les plus populaires</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={260}>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={90}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-            >
-              {data.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(v: number) => [v, 'Ventes']} />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  )
+export function PlanPieChart(props: { data: PlanPopularity[] }) {
+  return <Chart {...props} />
 }
