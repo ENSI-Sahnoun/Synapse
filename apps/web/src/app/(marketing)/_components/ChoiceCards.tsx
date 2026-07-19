@@ -9,18 +9,26 @@ import {
   useReducedMotion,
   useSpring,
 } from 'motion/react';
-import { ArrowRight, GraduationCap, Briefcase, Rocket } from 'lucide-react';
+import { ArrowRight, Check, GraduationCap, Briefcase, Rocket } from 'lucide-react';
 import { SPRING_TILT } from '../_lib/motion';
 import { useReveal } from '../_lib/useReveal';
 import { Reveal } from './Reveal';
 import { Backdrop } from './Backdrop';
+import { FloatingShapes } from './FloatingShapes';
 
 const CURVE = 'cubic-bezier(0.23, 1, 0.32, 1)';
 
 export function ChoiceCards() {
   return (
     <section id="choix" className="relative overflow-hidden py-24 sm:py-32">
+      {/* Warms the hard cut coming off the dark hero instead of dropping straight to near-white cream. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-64 sm:h-80"
+        style={{ background: 'linear-gradient(to bottom, rgba(120,74,42,0.4), rgba(162,114,74,0.14) 55%, rgba(162,114,74,0))' }}
+      />
       <Backdrop variant="a" />
+      <FloatingShapes />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
       <Reveal className="mx-auto mb-14 max-w-2xl text-center">
         <h2
@@ -145,7 +153,7 @@ function TiltCard({
         href={href}
         onPointerMove={onMove}
         onPointerLeave={onLeave}
-        className="group relative block h-full overflow-hidden rounded-[2rem] p-8 outline-none transition-shadow duration-300 focus-visible:ring-2 focus-visible:ring-[var(--synapse-orange-400)] focus-visible:ring-offset-2 sm:p-10"
+        className="group relative block h-full overflow-hidden rounded-[2rem] p-6 outline-none transition-shadow duration-300 focus-visible:ring-2 focus-visible:ring-[var(--synapse-orange-400)] focus-visible:ring-offset-2 sm:p-8"
         style={{ willChange: 'transform' }}
       >
         {/* tilt layer wraps the whole surface */}
@@ -177,9 +185,9 @@ function TiltCard({
           className={`relative flex h-full flex-col ${isWarm ? 'text-[var(--synapse-stone-900)]' : 'text-white'}`}
           style={{ transform: reduce ? undefined : 'translateZ(40px)' }}
         >
-          <div className="mb-8 flex items-start justify-between">
+          <div className="mb-5 flex items-start justify-between">
             <span
-              className={`inline-flex size-12 items-center justify-center rounded-2xl ${
+              className={`inline-flex size-11 items-center justify-center rounded-2xl ${
                 isWarm
                   ? 'bg-[var(--synapse-brown-500)] text-white'
                   : 'bg-[var(--synapse-orange-500)] text-[#2A1B0E]'
@@ -187,7 +195,7 @@ function TiltCard({
             >
               {icon}
             </span>
-            <div className="h-16 w-28 shrink-0">{motif}</div>
+            <div className="h-12 w-20 shrink-0">{motif}</div>
           </div>
 
           <span
@@ -198,31 +206,28 @@ function TiltCard({
             {role}
           </span>
           <h3
-            className="mt-2 text-[1.75rem] font-normal leading-tight tracking-[-0.01em]"
+            className="mt-1.5 text-[1.6rem] font-normal leading-tight tracking-[-0.01em]"
             style={{ fontFamily: '"DM Serif Display", Georgia, serif' }}
           >
             {title}
           </h3>
-          <p className={`mt-3 max-w-sm text-pretty leading-relaxed ${isWarm ? 'text-[var(--synapse-stone-600)]' : 'text-white/65'}`}>
+          <p className={`mt-2.5 max-w-sm text-pretty text-[0.95rem] leading-relaxed ${isWarm ? 'text-[var(--synapse-stone-600)]' : 'text-white/65'}`}>
             {desc}
           </p>
 
-          <div className="mt-6 flex flex-wrap gap-2">
+          <ul className="mt-4 flex flex-col gap-2">
             {chips.map((c) => (
-              <span
-                key={c}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  isWarm
-                    ? 'bg-[var(--synapse-cream-200)] text-[var(--synapse-stone-700)]'
-                    : 'bg-white/8 text-white/75'
-                }`}
-              >
-                {c}
-              </span>
+              <li key={c} className="flex items-center gap-2.5 text-sm font-medium">
+                <Check
+                  className={`size-4 shrink-0 ${isWarm ? 'text-[var(--synapse-brown-500)]' : 'text-[var(--synapse-orange-400)]'}`}
+                  strokeWidth={2.5}
+                />
+                <span className={isWarm ? 'text-[var(--synapse-stone-700)]' : 'text-white/80'}>{c}</span>
+              </li>
             ))}
-          </div>
+          </ul>
 
-          <div className="mt-auto pt-9">
+          <div className="mt-auto pt-6">
             <span
               className={`inline-flex items-center gap-2 text-base font-semibold ${
                 isWarm ? 'text-[var(--synapse-brown-700)]' : 'text-white'

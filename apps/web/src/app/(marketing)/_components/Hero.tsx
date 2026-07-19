@@ -66,7 +66,7 @@ export function Hero({
         }
       `}</style>
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-24 pt-32 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pb-32 lg:pt-40">
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-36 pt-32 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pb-48 lg:pt-40">
         {/* Left: message */}
         <motion.div className="max-w-xl" style={{ y: contentY, opacity: contentOpacity }}>
           <motion.div

@@ -78,7 +78,10 @@ function RealSeatMap({ initial }: { initial: PublicSeatSnapshot }) {
 
   const { cols, rows } = gridDims(total);
   const cellCount = cols * rows;
-  const rank = rankOrder(cellCount);
+  // Rank only the real seats (0..total-1) — ranking the padded grid could hand
+  // an "occupied" slot to a padding cell that never renders, leaving every
+  // visible seat blank even though the count is right.
+  const rank = rankOrder(total);
   const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
 
   return (
