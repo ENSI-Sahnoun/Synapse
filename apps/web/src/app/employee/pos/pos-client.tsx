@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
@@ -67,6 +67,9 @@ export function PosClient({
   const [nameQuery, setNameQuery] = useState('')
   const [nameResults, setNameResults] = useState<StudentInfo[]>([])
   const [search, setSearch] = useState('')
+  // Mobile: the cart lives in a slide-up sheet (the desktop sidebar only
+  // engages at lg+, so on phones/tablets checkout was buried below the grid).
+  const [cartSheetOpen, setCartSheetOpen] = useState(false)
 
   const [discountOpen, setDiscountOpen] = useState(false)
   const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('percentage')
@@ -175,6 +178,7 @@ export function PosClient({
       toast.success(msg)
       setReceiptData({ totalDt, studentName: pendingStudent?.fullName ?? null, items: cart })
       setCart([])
+      setCartSheetOpen(false)
       setDiscountValue(0)
       setDiscountInput('')
       setAssignOpen(false)
@@ -328,6 +332,11 @@ export function PosClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Emptying the cart (removing the last item) collapses the mobile sheet.
+  useEffect(() => {
+    if (cart.length === 0) setCartSheetOpen(false)
+  }, [cart.length])
+
   function purchaseForSelf() {
     setPendingStudent({ studentId: currentUser.id, fullName: currentUser.fullName, phone: null, loyaltyBalance: 0 })
     confirmPurchase(currentUser.id)
@@ -469,14 +478,26 @@ export function PosClient({
     )
   }
 
-  const q = search.trim().toLowerCase()
-  const visibleProducts = q
-    ? products.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
-    : products
-  const catRank = new Map(categoryOrder.map((name, i) => [name, i]))
-  const categories = [...new Set(visibleProducts.map((p) => p.category))].sort(
-    (a, b) => (catRank.get(a) ?? 999) - (catRank.get(b) ?? 999)
-  )
+  // Group the (filtered) products by category ONCE per input change instead of
+  // re-filtering the whole list inside categories.map on every keystroke /
+  // cart change (was O(categories × products) per render on the hot sale path).
+  const { categories, productsByCategory, visibleCount } = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const visible = q
+      ? products.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+      : products
+    const catRank = new Map(categoryOrder.map((name, i) => [name, i]))
+    const byCategory = new Map<string, Product[]>()
+    for (const p of visible) {
+      const list = byCategory.get(p.category) ?? []
+      list.push(p)
+      byCategory.set(p.category, list)
+    }
+    const cats = [...byCategory.keys()].sort(
+      (a, b) => (catRank.get(a) ?? 999) - (catRank.get(b) ?? 999)
+    )
+    return { categories: cats, productsByCategory: byCategory, visibleCount: visible.length }
+  }, [products, categoryOrder, search])
 
   function renderCard(product: Product) {
     const outOfStock = product.stock_quantity === 0
@@ -548,8 +569,108 @@ export function PosClient({
     )
   }
 
+  function renderCartPanel() {
+    return (
+      <>
+        <div style={{
+          background: '#fff',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-xl)',
+          overflow: 'hidden',
+        }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: 15 }}>
+            Panier
+          </div>
+          <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {cart.map((item) => (
+              <div key={item.product.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                <span style={{ flex: 1, fontWeight: 500 }}>{item.product.name}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <button
+                    onClick={() => changeQty(item.product.id, -1)}
+                    aria-label={`Retirer un ${item.product.name}`}
+                    style={{ width: 40, height: 40, border: '1px solid var(--border-subtle)', borderRadius: 8, background: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 18 }}
+                  >–</button>
+                  <span style={{ width: 28, textAlign: 'center', fontWeight: 600 }}>{item.quantity}</span>
+                  <button
+                    onClick={() => changeQty(item.product.id, 1)}
+                    disabled={item.quantity >= item.product.stock_quantity}
+                    aria-label={`Ajouter un ${item.product.name}`}
+                    style={{ width: 40, height: 40, border: '1px solid var(--border-subtle)', borderRadius: 8, background: '#fff', cursor: item.quantity >= item.product.stock_quantity ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 18, opacity: item.quantity >= item.product.stock_quantity ? 0.4 : 1 }}
+                  >+</button>
+                </div>
+                <span style={{ color: 'var(--accent-brand)', fontWeight: 600, minWidth: 72, textAlign: 'right' }}>
+                  {formatDt(item.product.price_dt * item.quantity)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ padding: '0 16px 8px' }}>
+            <button
+              onClick={() => {
+                setDiscountInput(discountValue > 0 ? String(discountValue) : '')
+                setDiscountOpen(true)
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 0',
+                borderRadius: 'var(--radius-md)',
+                border: '1px dashed var(--border-default)',
+                background: 'transparent',
+                color: 'var(--muted-foreground)',
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              {appliedDiscountDt > 0 ? `Réduction: -${formatDt(appliedDiscountDt)} ✎` : '+ Ajouter Réduction'}
+            </button>
+          </div>
+
+          <div style={{ padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--muted-foreground)' }}>
+              <span>Sous-total</span>
+              <span>{formatDt(subtotalDt)}</span>
+            </div>
+            {appliedDiscountDt > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--destructive)' }}>
+                <span>Réduction</span>
+                <span>-{formatDt(appliedDiscountDt)}</span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, fontSize: 15 }}>
+            <span>Total</span>
+            <span style={{ color: 'var(--accent-brand)' }}>{formatDt(totalDt)}</span>
+          </div>
+        </div>
+
+        <button
+          onClick={openAssign}
+          style={{
+            width: '100%',
+            padding: '16px 0',
+            borderRadius: 'var(--radius-lg)',
+            background: 'var(--accent-brand)',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: 16,
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          {`Valider — ${formatDt(totalDt)}`}
+        </button>
+      </>
+    )
+  }
+
+  const cartItemCount = cart.reduce((n, i) => n + i.quantity, 0)
+
   return (
-    <div style={{ padding: '16px 16px 100px' }}>
+    <div style={{ padding: cart.length > 0 ? '16px 16px 150px' : '16px 16px 100px' }}>
       <div
         style={{
           position: 'sticky',
@@ -621,7 +742,7 @@ export function PosClient({
                 <span>{category}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(108px, 1fr))', gap: 10 }}>
-                {visibleProducts.filter((p) => p.category === category).map(renderCard)}
+                {(productsByCategory.get(category) ?? []).map(renderCard)}
               </div>
             </div>
           ))}
@@ -631,7 +752,7 @@ export function PosClient({
               Aucun produit actif. Ajoutez des produits depuis l&apos;administration.
             </p>
           )}
-          {products.length > 0 && visibleProducts.length === 0 && (
+          {products.length > 0 && visibleCount === 0 && (
             <p style={{ textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 14, padding: '32px 0' }}>
               Aucun résultat
             </p>
@@ -715,13 +836,15 @@ export function PosClient({
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <button
                             onClick={() => changeChargeQty(item.product.id, -1)}
-                            style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 16 }}
+                            aria-label="Retirer un"
+                            style={{ width: 36, height: 36, border: '1px solid var(--border-subtle)', borderRadius: 8, background: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 16 }}
                           >–</button>
                           <span style={{ width: 24, textAlign: 'center', fontWeight: 600 }}>{item.quantity}</span>
                           <button
                             onClick={() => changeChargeQty(item.product.id, 1)}
                             disabled={item.quantity >= item.product.stock_quantity}
-                            style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: item.quantity >= item.product.stock_quantity ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 16, opacity: item.quantity >= item.product.stock_quantity ? 0.4 : 1 }}
+                            aria-label="Ajouter un"
+                            style={{ width: 36, height: 36, border: '1px solid var(--border-subtle)', borderRadius: 8, background: '#fff', cursor: item.quantity >= item.product.stock_quantity ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 16, opacity: item.quantity >= item.product.stock_quantity ? 0.4 : 1 }}
                           >+</button>
                         </div>
                         <span style={{ color: '#b45309', fontWeight: 600, minWidth: 72, textAlign: 'right' }}>
@@ -761,99 +884,91 @@ export function PosClient({
           )}
         </div>
 
+        {/* Desktop (lg+): cart sits beside the grid. Below lg it lives in the
+            slide-up sheet opened by the fixed checkout bar (see below). */}
         {cart.length > 0 && (
-          <aside className="w-full lg:w-80 lg:sticky lg:top-4 flex flex-col gap-3">
-            <div style={{
-              background: '#fff',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-xl)',
-              overflow: 'hidden',
-            }}>
-              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: 15 }}>
-                Panier
-              </div>
-              <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {cart.map((item) => (
-                  <div key={item.product.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-                    <span style={{ flex: 1, fontWeight: 500 }}>{item.product.name}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <button
-                        onClick={() => changeQty(item.product.id, -1)}
-                        style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 16 }}
-                      >–</button>
-                      <span style={{ width: 24, textAlign: 'center', fontWeight: 600 }}>{item.quantity}</span>
-                      <button
-                        onClick={() => changeQty(item.product.id, 1)}
-                        disabled={item.quantity >= item.product.stock_quantity}
-                        style={{ width: 28, height: 28, border: '1px solid var(--border-subtle)', borderRadius: 6, background: '#fff', cursor: item.quantity >= item.product.stock_quantity ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 16, opacity: item.quantity >= item.product.stock_quantity ? 0.4 : 1 }}
-                      >+</button>
-                    </div>
-                    <span style={{ color: 'var(--accent-brand)', fontWeight: 600, minWidth: 72, textAlign: 'right' }}>
-                      {formatDt(item.product.price_dt * item.quantity)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ padding: '0 16px 8px' }}>
-                <button
-                  onClick={() => {
-                    setDiscountInput(discountValue > 0 ? String(discountValue) : '')
-                    setDiscountOpen(true)
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '8px 0',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px dashed var(--border-default)',
-                    background: 'transparent',
-                    color: 'var(--muted-foreground)',
-                    fontWeight: 600,
-                    fontSize: 13,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {appliedDiscountDt > 0 ? `Réduction: -${formatDt(appliedDiscountDt)} ✎` : '+ Ajouter Réduction'}
-                </button>
-              </div>
-
-              <div style={{ padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--muted-foreground)' }}>
-                  <span>Sous-total</span>
-                  <span>{formatDt(subtotalDt)}</span>
-                </div>
-                {appliedDiscountDt > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#dc2626' }}>
-                    <span>Réduction</span>
-                    <span>-{formatDt(appliedDiscountDt)}</span>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, fontSize: 15 }}>
-                <span>Total</span>
-                <span style={{ color: 'var(--accent-brand)' }}>{formatDt(totalDt)}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={openAssign}
-              style={{
-                width: '100%',
-                padding: '16px 0',
-                borderRadius: 'var(--radius-lg)',
-                background: 'var(--accent-brand)',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: 16,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              {`Valider — ${formatDt(totalDt)}`}
-            </button>
+          <aside className="hidden lg:flex w-full lg:w-80 lg:sticky lg:top-4 flex-col gap-3">
+            {renderCartPanel()}
           </aside>
         )}
+      </div>
+
+      {/* Mobile checkout bar — fixed above the bottom nav, opens the cart sheet. */}
+      {cart.length > 0 && (
+        <button
+          onClick={() => setCartSheetOpen(true)}
+          className="lg:hidden bottom-[calc(64px_+_env(safe-area-inset-bottom)_+_10px)] md:bottom-[calc(env(safe-area-inset-bottom)_+_10px)]"
+          style={{
+            position: 'fixed',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'min(calc(100vw - 24px), 456px)',
+            zIndex: 30,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-xl)',
+            background: 'var(--accent-brand)',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            boxShadow: '0 10px 30px -8px rgba(30,24,18,0.35)',
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ minWidth: 26, height: 26, padding: '0 7px', borderRadius: 13, background: 'rgba(255,255,255,0.22)', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              {cartItemCount}
+            </span>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>Voir le panier</span>
+          </span>
+          <span style={{ fontWeight: 700, fontSize: 16 }}>{formatDt(totalDt)}</span>
+        </button>
+      )}
+
+      {/* Mobile cart sheet */}
+      <div
+        className="lg:hidden"
+        onClick={() => setCartSheetOpen(false)}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.45)',
+          zIndex: 40,
+          opacity: cartSheetOpen ? 1 : 0,
+          pointerEvents: cartSheetOpen ? 'auto' : 'none',
+          transition: 'opacity 0.25s ease',
+        }}
+      />
+      <div
+        className="lg:hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Panier"
+        style={{
+          position: 'fixed',
+          left: '50%',
+          bottom: 0,
+          width: '100%',
+          maxWidth: 480,
+          zIndex: 41,
+          transform: `translateX(-50%) translateY(${cartSheetOpen ? '0' : '100%'})`,
+          transition: 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
+          background: 'var(--bg-base, #faf7f0)',
+          borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
+          maxHeight: '85dvh',
+          overflowY: 'auto',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+          boxShadow: '0 -8px 30px -10px rgba(30,24,18,0.3)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border-default)' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 12px 0' }}>
+          {cart.length > 0 && renderCartPanel()}
+        </div>
       </div>
 
       <div
@@ -1178,6 +1293,8 @@ export function PosClient({
         zIndex: 51,
         boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
         transition: 'transform 0.2s ease, opacity 0.2s ease',
+        maxHeight: '85dvh',
+        overflowY: 'auto',
         transform: `translate(-50%, -50%) scale(${discountOpen ? 1 : 0.95})`,
         opacity: discountOpen ? 1 : 0,
         pointerEvents: discountOpen ? 'auto' : 'none',
@@ -1303,6 +1420,8 @@ export function PosClient({
         zIndex: 51,
         boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
         transition: 'transform 0.2s ease, opacity 0.2s ease',
+        maxHeight: '85dvh',
+        overflowY: 'auto',
         transform: `translate(-50%, -50%) scale(${movementOpen ? 1 : 0.95})`,
         opacity: movementOpen ? 1 : 0,
         pointerEvents: movementOpen ? 'auto' : 'none',
@@ -1433,6 +1552,8 @@ export function PosClient({
         zIndex: 51,
         boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
         transition: 'transform 0.2s ease, opacity 0.2s ease',
+        maxHeight: '85dvh',
+        overflowY: 'auto',
         transform: `translate(-50%, -50%) scale(${closeOpen ? 1 : 0.95})`,
         opacity: closeOpen ? 1 : 0,
         pointerEvents: closeOpen ? 'auto' : 'none',
