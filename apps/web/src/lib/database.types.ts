@@ -758,6 +758,7 @@ export type Database = {
           id: string
           product_id: string | null
           quantity: number | null
+          subscription_id: string | null
         }
         Insert: {
           action: string
@@ -768,6 +769,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           quantity?: number | null
+          subscription_id?: string | null
         }
         Update: {
           action?: string
@@ -778,6 +780,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           quantity?: number | null
+          subscription_id?: string | null
         }
         Relationships: [
           {
@@ -792,6 +795,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_activity_log_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
             referencedColumns: ["id"]
           },
         ]
