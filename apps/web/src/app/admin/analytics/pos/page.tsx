@@ -5,10 +5,12 @@ import {
   getRestockHistory,
   getStockOverPeriod,
 } from '@/data/admin/analytics/pos'
+import { getTransactionLog } from '@/data/admin/analytics/transactions'
 import { BestSellersTable } from '@/components/admin/analytics/best-sellers-table'
 import { SalesByCategoryChart } from '@/components/admin/analytics/sales-by-category-chart'
 import { RestockHistoryTable } from '@/components/admin/analytics/restock-history-table'
 import { StockSnapshotTable } from '@/components/admin/analytics/stock-snapshot-table'
+import { TransactionLogTable } from '@/components/admin/analytics/transaction-log-table'
 import { DateRangeFilter } from '@/components/admin/shared/date-range-filter'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,12 +52,13 @@ export default async function PosAnalyticsPage({ searchParams }: PageProps) {
 }
 
 async function PosAnalyticsContent({ from, to }: { from: string; to: string }) {
-  const [margin, bestSellers, byCategory, restocks, stockSnapshot] = await Promise.all([
+  const [margin, bestSellers, byCategory, restocks, stockSnapshot, transactions] = await Promise.all([
     getProductMargin({ from, to }),
     getBestSellers({ from, to }),
     getSalesByCategory({ from, to }),
     getRestockHistory({ from, to }),
     getStockOverPeriod({ from, to }),
+    getTransactionLog({ from, to }),
   ])
 
   return (
@@ -116,6 +119,15 @@ async function PosAnalyticsContent({ from, to }: { from: string; to: string }) {
         <StockSnapshotTable rows={stockSnapshot} from={from} to={to} />
         <RestockHistoryTable data={restocks} />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Journal des transactions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TransactionLogTable transactions={transactions} />
+        </CardContent>
+      </Card>
     </>
   )
 }
