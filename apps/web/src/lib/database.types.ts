@@ -1648,6 +1648,14 @@ export type Database = {
           status: string
         }[]
       }
+      pos_edit_purchase_item: {
+        Args: { p_item_id: string; p_product_id: string; p_quantity: number }
+        Returns: Json
+      }
+      pos_edit_subscription: {
+        Args: { p_plan_id: string; p_subscription_id: string }
+        Returns: Json
+      }
       pos_restock: {
         Args: {
           p_cost_price: number
@@ -1655,6 +1663,18 @@ export type Database = {
           p_quantity: number
           p_tax_rate_pct?: number
         }
+        Returns: Json
+      }
+      pos_void_charge: {
+        Args: { p_activity_log_id: string }
+        Returns: Json
+      }
+      pos_void_purchase: {
+        Args: { p_purchase_id: string }
+        Returns: Json
+      }
+      pos_void_subscription: {
+        Args: { p_subscription_id: string }
         Returns: Json
       }
       shift_queue_positions_down: {
