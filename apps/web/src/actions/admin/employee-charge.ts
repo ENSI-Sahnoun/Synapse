@@ -12,6 +12,7 @@ export const createEmployeeChargeAction = adminActionClient
 
     const { data, error } = await supabase.rpc('pos_employee_charge', {
       p_items: parsedInput.items,
+      p_employee_id: parsedInput.employee_id,
     })
 
     if (error) throw new Error(error.message)

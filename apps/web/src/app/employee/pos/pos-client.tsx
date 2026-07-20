@@ -50,6 +50,7 @@ export function PosClient({
   currentUser,
   cashSession,
   isAdmin,
+  chargeablePeople,
 }: {
   products: Product[]
   categoryEmojis: Record<string, string>
@@ -57,6 +58,7 @@ export function PosClient({
   currentUser: { id: string; fullName: string }
   cashSession: OpenCashSession | null
   isAdmin: boolean
+  chargeablePeople: { id: string; fullName: string }[]
 }) {
   const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
@@ -83,6 +85,8 @@ export function PosClient({
 
   const [chargeCart, setChargeCart] = useState<CartItem[]>([])
   const [chargeSearch, setChargeSearch] = useState('')
+  const [chargeAssignOpen, setChargeAssignOpen] = useState(false)
+  const [pendingChargeTarget, setPendingChargeTarget] = useState<{ id: string; fullName: string } | null>(null)
 
   const [closeOpen, setCloseOpen] = useState(false)
   const [closingAmount, setClosingAmount] = useState('')
@@ -192,9 +196,12 @@ export function PosClient({
 
   const { execute: executeCharge, status: chargeStatus } = useAction(createEmployeeChargeAction, {
     onSuccess: ({ data }) => {
-      toast.success(`Charge employés enregistrée — ${formatDt(data?.totalDt ?? 0)} en dépenses`)
+      const name = pendingChargeTarget?.fullName ?? 'Invité'
+      toast.success(`Charge employés enregistrée — ${name} — ${formatDt(data?.totalDt ?? 0)} en dépenses`)
       setChargeCart([])
       setChargeSearch('')
+      setChargeAssignOpen(false)
+      setPendingChargeTarget(null)
       router.refresh()
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur'),
@@ -229,10 +236,12 @@ export function PosClient({
     )
   }
 
-  function submitCharge() {
+  function submitCharge(target: { id: string; fullName: string } | null) {
     if (chargeCart.length === 0) return
+    setPendingChargeTarget(target)
     executeCharge({
       items: chargeCart.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+      employee_id: target?.id ?? null,
     })
   }
 
@@ -862,8 +871,7 @@ export function PosClient({
 
               {chargeCart.length > 0 && (
                 <button
-                  disabled={chargeStatus === 'executing'}
-                  onClick={submitCharge}
+                  onClick={() => setChargeAssignOpen(true)}
                   style={{
                     width: '100%',
                     padding: '13px 0',
@@ -873,11 +881,10 @@ export function PosClient({
                     fontWeight: 700,
                     fontSize: 15,
                     border: 'none',
-                    cursor: chargeStatus === 'executing' ? 'not-allowed' : 'pointer',
-                    opacity: chargeStatus === 'executing' ? 0.7 : 1,
+                    cursor: 'pointer',
                   }}
                 >
-                  {chargeStatus === 'executing' ? 'Enregistrement...' : 'Enregistrer la charge'}
+                  Enregistrer la charge
                 </button>
               )}
             </div>
@@ -1396,6 +1403,105 @@ export function PosClient({
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Charge employé/invité dialog */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.4)',
+          zIndex: 50,
+          display: chargeAssignOpen ? 'block' : 'none',
+        }}
+        onClick={() => setChargeAssignOpen(false)}
+      />
+      <div style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        width: '100%',
+        maxWidth: 440,
+        maxHeight: '85vh',
+        overflowY: 'auto',
+        background: '#fff',
+        borderRadius: 'var(--radius-xl)',
+        zIndex: 51,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+        transition: 'transform 0.2s ease, opacity 0.2s ease',
+        transform: `translate(-50%, -50%) scale(${chargeAssignOpen ? 1 : 0.95})`,
+        opacity: chargeAssignOpen ? 1 : 0,
+        pointerEvents: chargeAssignOpen ? 'auto' : 'none',
+      }}>
+        <div style={{ padding: '20px 20px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <span style={{ fontWeight: 700, fontSize: 17 }}>Sélectionner un employé</span>
+            <span style={{ color: '#b45309', fontWeight: 700, fontSize: 16 }}>{formatDt(chargeTotalDt)}</span>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 16 }}>
+            Pour qui est cette charge ?
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 280, overflowY: 'auto' }}>
+            {chargeablePeople.length === 0 && (
+              <p style={{ fontSize: 13, color: 'var(--muted-foreground)', textAlign: 'center', padding: '8px 0' }}>
+                Aucun employé disponible
+              </p>
+            )}
+            {chargeablePeople.map((person) => (
+              <button
+                key={person.id}
+                disabled={chargeStatus === 'executing'}
+                onClick={() => submitCharge(person)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '12px 14px',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-lg)',
+                  background: '#fff',
+                  cursor: chargeStatus === 'executing' ? 'not-allowed' : 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: '#b45309',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  flexShrink: 0,
+                }}>
+                  {initials(person.fullName)}
+                </div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{person.fullName}</div>
+              </button>
+            ))}
+          </div>
+          <button
+            disabled={chargeStatus === 'executing'}
+            onClick={() => submitCharge(null)}
+            style={{
+              width: '100%',
+              marginTop: 16,
+              padding: '12px 0',
+              border: '1.5px solid #b45309',
+              borderRadius: 'var(--radius-lg)',
+              background: 'transparent',
+              color: '#b45309',
+              cursor: chargeStatus === 'executing' ? 'not-allowed' : 'pointer',
+              fontWeight: 700,
+              fontSize: 14,
+            }}
+          >
+            {chargeStatus === 'executing' ? 'Enregistrement...' : 'Invité'}
+          </button>
+        </div>
       </div>
 
       {/* Mouvement de caisse dialog */}

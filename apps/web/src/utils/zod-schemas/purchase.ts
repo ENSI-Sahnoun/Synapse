@@ -27,6 +27,7 @@ export const createEmployeeChargeSchema = z.object({
       })
     )
     .min(1, 'Le panier est vide'),
+  employee_id: z.string().uuid('ID employé invalide').nullable(),
 })
 
 export type CreateEmployeeChargeInput = z.infer<typeof createEmployeeChargeSchema>

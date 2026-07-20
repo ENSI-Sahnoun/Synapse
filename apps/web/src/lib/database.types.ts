@@ -416,6 +416,7 @@ export type Database = {
           created_by: string
           date: string
           description: string
+          employee_id: string | null
           id: string
         }
         Insert: {
@@ -425,6 +426,7 @@ export type Database = {
           created_by: string
           date?: string
           description?: string
+          employee_id?: string | null
           id?: string
         }
         Update: {
@@ -434,6 +436,7 @@ export type Database = {
           created_by?: string
           date?: string
           description?: string
+          employee_id?: string | null
           id?: string
         }
         Relationships: [
@@ -447,6 +450,13 @@ export type Database = {
           {
             foreignKeyName: "expenses_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_employee_id_fkey"
+            columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1640,7 +1650,7 @@ export type Database = {
         Returns: Json
       }
       pos_employee_charge: {
-        Args: { p_items: Json }
+        Args: { p_items: Json; p_employee_id: string | null }
         Returns: Json
       }
       pos_close_session: {

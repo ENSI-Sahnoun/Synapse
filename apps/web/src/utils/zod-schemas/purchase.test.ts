@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createPurchaseSchema } from './purchase'
+import { createPurchaseSchema, createEmployeeChargeSchema } from './purchase'
 
 describe('createPurchaseSchema', () => {
   it('passes valid anonymous purchase', () => {
@@ -43,5 +43,32 @@ describe('createPurchaseSchema', () => {
     if (result.success) {
       expect(result.data.items[0].quantity).toBe(3)
     }
+  })
+})
+
+describe('createEmployeeChargeSchema', () => {
+  const items = [{ product_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 }]
+
+  it('accepts a valid employee_id', () => {
+    const result = createEmployeeChargeSchema.safeParse({
+      items,
+      employee_id: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts employee_id: null for a guest', () => {
+    const result = createEmployeeChargeSchema.safeParse({ items, employee_id: null })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a missing employee_id', () => {
+    const result = createEmployeeChargeSchema.safeParse({ items })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects a malformed employee_id', () => {
+    const result = createEmployeeChargeSchema.safeParse({ items, employee_id: 'not-a-uuid' })
+    expect(result.success).toBe(false)
   })
 })
