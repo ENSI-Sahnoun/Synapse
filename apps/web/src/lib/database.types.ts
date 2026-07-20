@@ -16,30 +16,244 @@ export type Database = {
     Tables: {
       account_categories: {
         Row: {
+          cost_behavior: Database['public']['Enums']['cost_behavior']
           created_at: string
           description: string | null
           id: string
           is_active: boolean
           name: string
+          tax_rate_pct: number
           type: string
         }
         Insert: {
+          cost_behavior?: Database['public']['Enums']['cost_behavior']
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
           name: string
+          tax_rate_pct?: number
           type: string
         }
         Update: {
+          cost_behavior?: Database['public']['Enums']['cost_behavior']
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          tax_rate_pct?: number
           type?: string
         }
         Relationships: []
+      }
+      budgets: {
+        Row: {
+          account_category_id: string
+          amount_dt: number
+          created_at: string
+          created_by: string
+          id: string
+          month: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_category_id: string
+          amount_dt: number
+          created_at?: string
+          created_by: string
+          id?: string
+          month: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_category_id?: string
+          amount_dt?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          month?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_account_category_id_fkey"
+            columns: ["account_category_id"]
+            isOneToOne: false
+            referencedRelation: "account_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_audit_log: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          id: string
+          operation: string
+          record_id: string
+          table_name: string
+        }
+        // Append-only in practice: no INSERT/UPDATE/DELETE policy exists for
+        // any role, so only the SECURITY DEFINER audit trigger can write here.
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          operation: string
+          record_id: string
+          table_name: string
+        }
+        Update: never
+        Relationships: [
+          {
+            foreignKeyName: "financial_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_period_locks: {
+        Row: {
+          locked_at: string
+          locked_by: string
+          month: string
+          note: string | null
+        }
+        Insert: {
+          locked_at?: string
+          locked_by: string
+          month: string
+          note?: string | null
+        }
+        Update: {
+          locked_at?: string
+          locked_by?: string
+          month?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
+      recurring_expenses: {
+        Row: {
+          account_category_id: string
+          amount_dt: number
+          created_at: string
+          created_by: string
+          day_of_month: number
+          description: string
+          ends_on: string | null
+          frequency: string
+          id: string
+          is_active: boolean
+          starts_on: string
+        }
+        Insert: {
+          account_category_id: string
+          amount_dt: number
+          created_at?: string
+          created_by: string
+          day_of_month?: number
+          description: string
+          ends_on?: string | null
+          frequency: string
+          id?: string
+          is_active?: boolean
+          starts_on: string
+        }
+        Update: {
+          account_category_id?: string
+          amount_dt?: number
+          created_at?: string
+          created_by?: string
+          day_of_month?: number
+          description?: string
+          ends_on?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          starts_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_expenses_account_category_id_fkey"
+            columns: ["account_category_id"]
+            isOneToOne: false
+            referencedRelation: "account_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refunds: {
+        Row: {
+          amount_dt: number
+          created_at: string
+          created_by: string
+          id: string
+          locker_payment_id: string | null
+          purchase_id: string | null
+          reason: string
+          restocked: boolean
+          source: Database['public']['Enums']['refund_source']
+          subscription_id: string | null
+        }
+        // Created only through refund_purchase / refund_subscription /
+        // refund_locker_payment, which enforce the over-refund ceiling and
+        // handle restocking atomically. There are no write policies.
+        Insert: {
+          amount_dt: number
+          created_at?: string
+          created_by: string
+          id?: string
+          locker_payment_id?: string | null
+          purchase_id?: string | null
+          reason: string
+          restocked?: boolean
+          source: Database['public']['Enums']['refund_source']
+          subscription_id?: string | null
+        }
+        Update: never
+        Relationships: [
+          {
+            foreignKeyName: "refunds_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_locker_payment_id_fkey"
+            columns: ["locker_payment_id"]
+            isOneToOne: false
+            referencedRelation: "locker_payments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       announcements: {
         Row: {
@@ -417,6 +631,7 @@ export type Database = {
           date: string
           description: string
           id: string
+          recurring_expense_id?: string | null
         }
         Insert: {
           account_category_id: string
@@ -426,6 +641,7 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          recurring_expense_id?: string | null
         }
         Update: {
           account_category_id?: string
@@ -435,6 +651,7 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          recurring_expense_id?: string | null
         }
         Relationships: [
           {
@@ -913,6 +1130,7 @@ export type Database = {
           price_dt: number
           sort_order: number
           stock_quantity: number
+          tax_rate_pct: number
           supplier: string | null
         }
         Insert: {
@@ -928,6 +1146,7 @@ export type Database = {
           price_dt: number
           sort_order?: number
           stock_quantity?: number
+          tax_rate_pct?: number
           supplier?: string | null
         }
         Update: {
@@ -943,6 +1162,7 @@ export type Database = {
           price_dt?: number
           sort_order?: number
           stock_quantity?: number
+          tax_rate_pct?: number
           supplier?: string | null
         }
         Relationships: [
@@ -961,8 +1181,10 @@ export type Database = {
           credentials_set: boolean
           full_name: string
           id: string
+          hourly_rate_dt?: number | null
           is_archived: boolean
           leaderboard_opt_out: boolean
+          monthly_salary_dt?: number | null
           phone: string | null
           qr_token: string | null
           role: string
@@ -977,8 +1199,10 @@ export type Database = {
           credentials_set?: boolean
           full_name?: string
           id: string
+          hourly_rate_dt?: number | null
           is_archived?: boolean
           leaderboard_opt_out?: boolean
+          monthly_salary_dt?: number | null
           phone?: string | null
           qr_token?: string | null
           role?: string
@@ -993,8 +1217,10 @@ export type Database = {
           credentials_set?: boolean
           full_name?: string
           id?: string
+          hourly_rate_dt?: number | null
           is_archived?: boolean
           leaderboard_opt_out?: boolean
+          monthly_salary_dt?: number | null
           phone?: string | null
           qr_token?: string | null
           role?: string
@@ -1056,6 +1282,8 @@ export type Database = {
           sold_by: string
           student_id: string | null
           total_dt: number
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           created_at?: string
@@ -1064,6 +1292,8 @@ export type Database = {
           sold_by: string
           student_id?: string | null
           total_dt: number
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           created_at?: string
@@ -1072,6 +1302,8 @@ export type Database = {
           sold_by?: string
           student_id?: string | null
           total_dt?: number
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1084,6 +1316,13 @@ export type Database = {
           {
             foreignKeyName: "purchases_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_voided_by_fkey"
+            columns: ["voided_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1526,6 +1765,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      analytics_basket: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          transactions: number
+          avg_basket_dt: number
+          avg_items_per_basket: number
+          discount_total_dt: number
+          discount_rate_pct: number
+          discounted_baskets: number
+          attach_rate_pct: number | null
+        }[]
+      }
+      analytics_breakeven: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          revenue_dt: number
+          variable_cost_dt: number
+          fixed_cost_dt: number
+          contribution_margin_dt: number
+          contribution_margin_pct: number | null
+          breakeven_revenue_dt: number | null
+          margin_of_safety_pct: number | null
+        }[]
+      }
+      analytics_budget_variance: {
+        Args: { p_month: string }
+        Returns: {
+          category_id: string
+          category_name: string
+          budget_dt: number
+          actual_dt: number
+          variance_dt: number
+          consumed_pct: number | null
+        }[]
+      }
       analytics_capital_totals: {
         Args: never
         Returns: {
@@ -1533,7 +1807,122 @@ export type Database = {
           pos: number
           lockers: number
           expenses: number
+          refunds: number
         }[]
+      }
+      analytics_churn: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          cohort: number
+          renewed: number
+          churned: number
+          renewal_rate_pct: number | null
+          churn_rate_pct: number | null
+          avg_lifetime_days: number
+          ltv: number
+        }[]
+      }
+      analytics_dead_stock: {
+        Args: { p_days?: number }
+        Returns: {
+          product_id: string
+          product_name: string
+          stock_quantity: number
+          tied_up_dt: number
+          last_sold_at: string | null
+        }[]
+      }
+      analytics_inventory_valuation: {
+        Args: never
+        Returns: {
+          inventory_value_dt: number
+          retail_value_dt: number
+          sku_count: number
+          units_on_hand: number
+          missing_cost_count: number
+        }[]
+      }
+      analytics_labor: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          hours_worked: number
+          hourly_cost_dt: number
+          salaried_cost_dt: number
+          total_cost_dt: number
+          staff_counted: number
+          staff_unrated: number
+        }[]
+      }
+      analytics_recognized_revenue: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          recognized: number
+          cash_collected: number
+        }[]
+      }
+      analytics_recurring_revenue: {
+        Args: { p_as_of: string }
+        Returns: {
+          mrr: number
+          arr: number
+          active_members: number
+          arpu: number
+          deferred_revenue: number
+          revenue_at_risk_30: number
+        }[]
+      }
+      analytics_refunds: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          subs: number
+          pos: number
+          lockers: number
+          total: number
+          refund_count: number
+        }[]
+      }
+      analytics_runway: {
+        Args: { p_months?: number }
+        Returns: {
+          avg_monthly_inflow: number
+          avg_monthly_outflow: number
+          net_burn_dt: number
+          runway_months: number | null
+        }[]
+      }
+      analytics_tva: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          revenue_ttc: number
+          revenue_ht: number
+          tva_collected: number
+          tva_deductible: number
+          tva_net_payable: number
+        }[]
+      }
+      is_period_locked: {
+        Args: { p_date: string }
+        Returns: boolean
+      }
+      materialise_recurring_expenses: {
+        Args: { p_through?: string }
+        Returns: number
+      }
+      refund_locker_payment: {
+        Args: { p_locker_payment_id: string; p_amount: number; p_reason: string }
+        Returns: Database['public']['Tables']['refunds']['Row']
+      }
+      refund_purchase: {
+        Args: { p_purchase_id: string; p_amount: number; p_reason: string; p_restock?: boolean }
+        Returns: Database['public']['Tables']['refunds']['Row']
+      }
+      refund_subscription: {
+        Args: { p_subscription_id: string; p_amount: number; p_reason: string; p_end_now?: boolean }
+        Returns: Database['public']['Tables']['refunds']['Row']
+      }
+      refunded_total: {
+        Args: { p_source: Database['public']['Enums']['refund_source']; p_id: string }
+        Returns: number
       }
       analytics_cogs: {
         Args: { p_from: string; p_to: string }
@@ -1690,7 +2079,9 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      capital_account: "cash" | "bank"
+      cost_behavior: "fixed" | "variable"
+      refund_source: "purchase" | "subscription" | "locker_payment"
     }
     CompositeTypes: {
       [_ in never]: never

@@ -61,7 +61,14 @@ export const updateSubscriptionAction = employeeActionClient
     return { success: true }
   })
 
-export const deleteSubscriptionAction = employeeActionClient
+// Admin-only. This previously ran under `employeeActionClient` against the
+// service-role client, which bypasses RLS — so any cashier could permanently
+// erase a revenue record with nothing left behind to show it had existed.
+// Staff who need to undo a sale now use `refundSubscriptionAction`, which
+// reverses the money while preserving the original transaction. Deletion
+// survives only for genuine data-entry errors, and the audit trigger added in
+// 20260720000100 journals it.
+export const deleteSubscriptionAction = adminActionClient
   .schema(deleteSubscriptionSchema)
   .action(async ({ parsedInput }) => {
     const { subscription_id } = parsedInput
