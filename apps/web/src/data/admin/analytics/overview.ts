@@ -56,8 +56,18 @@ export async function getLiveSnapshot(): Promise<LiveSnapshot> {
     supabase.from('seats').select('*', { count: 'exact', head: true }).neq('status', 'out_of_service'),
     supabase.from('seats').select('*', { count: 'exact', head: true }).eq('status', 'occupied'),
     getLockersWithStatus(),
-    supabase.from('subscriptions').select('paid_amount').gte('created_at', dayStart).lt('created_at', dayEnd),
-    supabase.from('purchases').select('total_dt').gte('created_at', dayStart).lt('created_at', dayEnd),
+    supabase
+      .from('subscriptions')
+      .select('paid_amount')
+      .gte('created_at', dayStart)
+      .lt('created_at', dayEnd)
+      .is('voided_at', null),
+    supabase
+      .from('purchases')
+      .select('total_dt')
+      .gte('created_at', dayStart)
+      .lt('created_at', dayEnd)
+      .is('voided_at', null),
     supabase.from('locker_payments').select('amount_dt').gte('created_at', dayStart).lt('created_at', dayEnd),
     // Selects `paid_amount` rather than a head-only count so the same query
     // yields both the count and the dinars at risk. An expiring-member count
@@ -113,8 +123,18 @@ export async function getDailySummary(): Promise<DailySummary> {
       .eq('role', 'student')
       .gte('created_at', start)
       .lt('created_at', end),
-    supabase.from('subscriptions').select('paid_amount').gte('created_at', start).lt('created_at', end),
-    supabase.from('purchases').select('total_dt').gte('created_at', start).lt('created_at', end),
+    supabase
+      .from('subscriptions')
+      .select('paid_amount')
+      .gte('created_at', start)
+      .lt('created_at', end)
+      .is('voided_at', null),
+    supabase
+      .from('purchases')
+      .select('total_dt')
+      .gte('created_at', start)
+      .lt('created_at', end)
+      .is('voided_at', null),
     supabase
       .from('attendance')
       .select('*', { count: 'exact', head: true })
@@ -152,8 +172,18 @@ export async function getRevenueOverTime(days = 30): Promise<RevenuePoint[]> {
   const { start, endExclusive } = tunisRange(firstDay, today)
 
   const [{ data: subs }, { data: purchases }] = await Promise.all([
-    supabase.from('subscriptions').select('paid_amount, created_at').gte('created_at', start).lt('created_at', endExclusive),
-    supabase.from('purchases').select('total_dt, created_at').gte('created_at', start).lt('created_at', endExclusive),
+    supabase
+      .from('subscriptions')
+      .select('paid_amount, created_at')
+      .gte('created_at', start)
+      .lt('created_at', endExclusive)
+      .is('voided_at', null),
+    supabase
+      .from('purchases')
+      .select('total_dt, created_at')
+      .gte('created_at', start)
+      .lt('created_at', endExclusive)
+      .is('voided_at', null),
   ])
 
   const map = new Map<string, number>()
@@ -223,6 +253,7 @@ async function countActiveSubscriptions(
     .select('*', { count: 'exact', head: true })
     .lte('start_date', asOf)
     .gte('end_date', asOf)
+    .is('voided_at', null)
   return count ?? 0
 }
 

@@ -109,13 +109,15 @@ export async function getTopStudentsBySpend(
       .from('subscriptions')
       .select('student_id, paid_amount, created_at, profiles!subscriptions_student_id_fkey(full_name)')
       .gte('created_at', range.from + 'T00:00:00')
-      .lte('created_at', range.to + 'T23:59:59'),
+      .lte('created_at', range.to + 'T23:59:59')
+      .is('voided_at', null),
     supabase
       .from('purchases')
       .select('student_id, total_dt, created_at, profiles!purchases_student_id_fkey(full_name)')
       .gte('created_at', range.from + 'T00:00:00')
       .lte('created_at', range.to + 'T23:59:59')
-      .not('student_id', 'is', null),
+      .not('student_id', 'is', null)
+      .is('voided_at', null),
   ])
 
   const map = new Map<string, { fullName: string; totalSpend: number }>()

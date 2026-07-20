@@ -847,6 +847,7 @@ export type Database = {
           id: string
           product_id: string | null
           quantity: number | null
+          subscription_id: string | null
         }
         Insert: {
           action: string
@@ -857,6 +858,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           quantity?: number | null
+          subscription_id?: string | null
         }
         Update: {
           action?: string
@@ -867,6 +869,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           quantity?: number | null
+          subscription_id?: string | null
         }
         Relationships: [
           {
@@ -881,6 +884,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_activity_log_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
             referencedColumns: ["id"]
           },
         ]
@@ -1066,6 +1076,8 @@ export type Database = {
           sold_by: string
           student_id: string | null
           total_dt: number
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           created_at?: string
@@ -1074,6 +1086,8 @@ export type Database = {
           sold_by: string
           student_id?: string | null
           total_dt: number
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           created_at?: string
@@ -1082,6 +1096,8 @@ export type Database = {
           sold_by?: string
           student_id?: string | null
           total_dt?: number
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1094,6 +1110,13 @@ export type Database = {
           {
             foreignKeyName: "purchases_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_voided_by_fkey"
+            columns: ["voided_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1393,6 +1416,48 @@ export type Database = {
           },
         ]
       }
+      subscription_plan_activity_log: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          plan_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          plan_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_plan_activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_plan_activity_log_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           created_at: string
@@ -1436,6 +1501,8 @@ export type Database = {
           sold_by: string
           start_date: string
           student_id: string
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           created_at?: string
@@ -1446,6 +1513,8 @@ export type Database = {
           sold_by: string
           start_date?: string
           student_id: string
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           created_at?: string
@@ -1456,6 +1525,8 @@ export type Database = {
           sold_by?: string
           start_date?: string
           student_id?: string
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1475,6 +1546,13 @@ export type Database = {
           {
             foreignKeyName: "subscriptions_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_voided_by_fkey"
+            columns: ["voided_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1685,6 +1763,14 @@ export type Database = {
           status: string
         }[]
       }
+      pos_edit_purchase_item: {
+        Args: { p_item_id: string; p_product_id: string; p_quantity: number }
+        Returns: Json
+      }
+      pos_edit_subscription: {
+        Args: { p_plan_id: string; p_subscription_id: string }
+        Returns: Json
+      }
       pos_restock: {
         Args: {
           p_cost_price: number
@@ -1692,6 +1778,18 @@ export type Database = {
           p_quantity: number
           p_tax_rate_pct?: number
         }
+        Returns: Json
+      }
+      pos_void_charge: {
+        Args: { p_activity_log_id: string }
+        Returns: Json
+      }
+      pos_void_purchase: {
+        Args: { p_purchase_id: string }
+        Returns: Json
+      }
+      pos_void_subscription: {
+        Args: { p_subscription_id: string }
         Returns: Json
       }
       shift_queue_positions_down: {

@@ -1,4 +1,5 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { extractPriceChange } from '@/data/admin/price-history-helpers'
 
 export type PlanPopularity = { name: string; value: number }
 
@@ -7,6 +8,7 @@ export async function getPlanPopularity(): Promise<PlanPopularity[]> {
   const { data } = await supabase
     .from('subscriptions')
     .select('plan_id, subscription_plans!inner(name)')
+    .is('voided_at', null)
 
   const map = new Map<string, number>()
   data?.forEach((r) => {
@@ -32,9 +34,26 @@ export function classifySubscriptionStatus(
   return endDate <= cutoffStr ? 'expiring_soon' : 'active'
 }
 
+export function plansChangedSince(
+  logRows: { plan_id: string | null; created_at: string; details: unknown }[],
+): (planId: string, since: string) => boolean {
+  const latestChangeByPlan = new Map<string, string>()
+  for (const r of logRows) {
+    if (!r.plan_id) continue
+    const priceChange = extractPriceChange(r.details)
+    if (!priceChange || priceChange.oldPrice === priceChange.newPrice) continue
+    const current = latestChangeByPlan.get(r.plan_id)
+    if (!current || r.created_at > current) latestChangeByPlan.set(r.plan_id, r.created_at)
+  }
+  return (planId: string, since: string) => {
+    const latest = latestChangeByPlan.get(planId)
+    return latest !== undefined && latest > since
+  }
+}
+
 export async function getSubscriptionStatusCounts(asOf: string): Promise<SubscriptionStatusCounts> {
   const supabase = await createSupabaseClient()
-  const { data } = await supabase.from('subscriptions').select('end_date')
+  const { data } = await supabase.from('subscriptions').select('end_date').is('voided_at', null)
 
   const counts: SubscriptionStatusCounts = { active: 0, expiringSoon: 0, expired: 0 }
   data?.forEach((r) => {
@@ -53,6 +72,7 @@ export async function getRevenuePerPlan(range: { from: string; to: string }): Pr
     .select('paid_amount, created_at, subscription_plans!inner(name)')
     .gte('created_at', range.from + 'T00:00:00')
     .lte('created_at', range.to + 'T23:59:59')
+    .is('voided_at', null)
 
   const map = new Map<string, { revenue: number; count: number }>()
   data?.forEach((r) => {
@@ -70,24 +90,37 @@ export async function getRevenuePerPlan(range: { from: string; to: string }): Pr
 
 export async function getAvgDiscount(range: { from: string; to: string }): Promise<AvgDiscount> {
   const supabase = await createSupabaseClient()
-  const { data } = await supabase
-    .from('subscriptions')
-    .select('paid_amount, created_at, subscription_plans!inner(price_dt)')
-    .gte('created_at', range.from + 'T00:00:00')
-    .lte('created_at', range.to + 'T23:59:59')
+  const [{ data }, { data: logRows }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('plan_id, paid_amount, created_at, subscription_plans!inner(price_dt)')
+      .gte('created_at', range.from + 'T00:00:00')
+      .lte('created_at', range.to + 'T23:59:59')
+      .is('voided_at', null),
+    supabase
+      .from('subscription_plan_activity_log')
+      .select('plan_id, created_at, details')
+      .eq('action', 'plan_update'),
+  ])
 
   if (!data || data.length === 0) return { avgDiscount: 0, avgDiscountPct: 0 }
 
+  const changedSince = plansChangedSince(logRows ?? [])
+
   let totalDiscount = 0
   let totalPrice = 0
+  let count = 0
   data.forEach((r) => {
+    if (changedSince(r.plan_id, r.created_at)) return
     const price = Number((r.subscription_plans as { price_dt: number }).price_dt)
     const paid = Number(r.paid_amount)
     totalDiscount += price - paid
     totalPrice += price
+    count += 1
   })
 
-  const avgDiscount = totalDiscount / data.length
+  if (count === 0) return { avgDiscount: 0, avgDiscountPct: 0 }
+  const avgDiscount = totalDiscount / count
   const avgDiscountPct = totalPrice > 0 ? (totalDiscount / totalPrice) * 100 : 0
   return { avgDiscount, avgDiscountPct }
 }

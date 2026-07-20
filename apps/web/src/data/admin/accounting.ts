@@ -121,7 +121,12 @@ export async function getPnl(filters: { from: string; to: string }): Promise<Pnl
 
   const [{ data: subs }, { data: lockerPayments }, { data: purchaseItems }, { data: expenses }] =
     await Promise.all([
-      supabase.from('subscriptions').select('paid_amount').gte('created_at', start).lt('created_at', endExclusive),
+      supabase
+        .from('subscriptions')
+        .select('paid_amount')
+        .gte('created_at', start)
+        .lt('created_at', endExclusive)
+        .is('voided_at', null),
       supabase.from('locker_payments').select('amount_dt').gte('created_at', start).lt('created_at', endExclusive),
       // Filtered on the PURCHASE's timestamp, not the line's. They are written in
       // the same transaction so they agree today, but the purchase header is the
@@ -130,12 +135,13 @@ export async function getPnl(filters: { from: string; to: string }): Promise<Pnl
         .from('purchase_items')
         .select(
           `quantity, unit_price_dt,
-           purchases!inner(id, created_at, discount_dt),
+           purchases!inner(id, created_at, discount_dt, voided_at),
            products!inner(account_category_id, cost_price,
              account_categories!inner(id, name))`,
         )
         .gte('purchases.created_at', start)
-        .lt('purchases.created_at', endExclusive),
+        .lt('purchases.created_at', endExclusive)
+        .is('purchases.voided_at', null),
       supabase
         .from('expenses')
         .select('amount_dt, account_category_id, account_categories!inner(id, name)')
@@ -233,12 +239,14 @@ export async function getTransactions(filters: { from: string; to: string }): Pr
       .from('subscriptions')
       .select('paid_amount, created_at, subscription_plans(name)')
       .gte('created_at', start)
-      .lt('created_at', endExclusive),
+      .lt('created_at', endExclusive)
+      .is('voided_at', null),
     supabase
       .from('purchases')
       .select('total_dt, discount_dt, created_at')
       .gte('created_at', start)
-      .lt('created_at', endExclusive),
+      .lt('created_at', endExclusive)
+      .is('voided_at', null),
     supabase
       .from('expenses')
       .select('amount_dt, date, description, account_categories!inner(name)')
@@ -391,7 +399,12 @@ async function computeNetProfit(
 
   const [{ data: cogsRows }, { data: subs }, { data: expenses }, { data: lockerPayments }] = await Promise.all([
     supabase.rpc('analytics_cogs', { p_from: from, p_to: to }),
-    supabase.from('subscriptions').select('paid_amount').gte('created_at', start).lt('created_at', endExclusive),
+    supabase
+      .from('subscriptions')
+      .select('paid_amount')
+      .gte('created_at', start)
+      .lt('created_at', endExclusive)
+      .is('voided_at', null),
     supabase.from('expenses').select('amount_dt').gte('date', from).lte('date', to),
     supabase.from('locker_payments').select('amount_dt').gte('created_at', start).lt('created_at', endExclusive),
   ])
@@ -467,8 +480,14 @@ export async function getRevenueSplit(filters: { from: string; to: string }): Pr
       .from('subscriptions')
       .select('paid_amount, created_at')
       .gte('created_at', start)
-      .lt('created_at', endExclusive),
-    supabase.from('purchases').select('total_dt, created_at').gte('created_at', start).lt('created_at', endExclusive),
+      .lt('created_at', endExclusive)
+      .is('voided_at', null),
+    supabase
+      .from('purchases')
+      .select('total_dt, created_at')
+      .gte('created_at', start)
+      .lt('created_at', endExclusive)
+      .is('voided_at', null),
     supabase
       .from('locker_payments')
       .select('amount_dt, created_at')
@@ -540,8 +559,14 @@ export async function getCashFlow(filters: { from: string; to: string }): Promis
       .from('subscriptions')
       .select('paid_amount, created_at')
       .gte('created_at', start)
-      .lt('created_at', endExclusive),
-    supabase.from('purchases').select('total_dt, created_at').gte('created_at', start).lt('created_at', endExclusive),
+      .lt('created_at', endExclusive)
+      .is('voided_at', null),
+    supabase
+      .from('purchases')
+      .select('total_dt, created_at')
+      .gte('created_at', start)
+      .lt('created_at', endExclusive)
+      .is('voided_at', null),
     supabase.from('expenses').select('amount_dt, date').gte('date', filters.from).lte('date', filters.to),
     supabase
       .from('locker_payments')

@@ -66,9 +66,10 @@ export async function getBestSellers(
   // overstating by every comp the cashier gave away.
   const { data } = await supabase
     .from('purchase_items')
-    .select('quantity, unit_price_dt, purchases!inner(id, created_at, discount_dt), products!inner(id, name)')
+    .select('quantity, unit_price_dt, purchases!inner(id, created_at, discount_dt, voided_at), products!inner(id, name)')
     .gte('purchases.created_at', start)
     .lt('purchases.created_at', endExclusive)
+    .is('purchases.voided_at', null)
 
   const rows = (data ?? []).map((r) => ({
     quantity: Number(r.quantity),
@@ -109,9 +110,10 @@ export async function getSalesByCategory(range: { from: string; to: string }): P
 
   const { data } = await supabase
     .from('purchase_items')
-    .select('quantity, unit_price_dt, purchases!inner(id, created_at, discount_dt), products!inner(category)')
+    .select('quantity, unit_price_dt, purchases!inner(id, created_at, discount_dt, voided_at), products!inner(category)')
     .gte('purchases.created_at', start)
     .lt('purchases.created_at', endExclusive)
+    .is('purchases.voided_at', null)
 
   const rows = (data ?? []).map((r) => ({
     quantity: Number(r.quantity),
@@ -191,7 +193,11 @@ export async function getStockOverPeriod(range: { from: string; to: string }): P
   // after `periodEnd` are the subset used for the end-of-period figure.
   const [{ data: products }, { data: sales }, { data: restocks }, { data: charges }] = await Promise.all([
     supabase.from('products').select('id, name, category, stock_quantity, cost_price').eq('is_active', true),
-    supabase.from('purchase_items').select('product_id, quantity, created_at').gte('created_at', periodStart),
+    supabase
+      .from('purchase_items')
+      .select('product_id, quantity, created_at, purchases!inner(voided_at)')
+      .gte('created_at', periodStart)
+      .is('purchases.voided_at', null),
     supabase
       .from('pos_activity_log')
       .select('product_id, quantity, created_at')

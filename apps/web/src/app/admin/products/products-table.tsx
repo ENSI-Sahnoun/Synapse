@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArchiveProductButton, RestoreProductButton, DeleteProductButton } from './product-actions'
 import { RestockDialog } from '@/components/admin/products/RestockDialog'
+import { PriceHistoryDialog } from '@/components/admin/products/PriceHistoryDialog'
 import { reorderProductsAction } from '@/actions/admin/products'
 import { reorderCategoriesAction } from '@/actions/admin/product-categories'
 import type { AdminProduct } from '@/data/admin/products'
@@ -113,6 +114,7 @@ export function ProductsTable({ products, categoryEmojis, categoryOrder }: Props
 
   const renderActions = (p: AdminProduct) => (
     <div className="flex flex-wrap gap-2 justify-end">
+      <PriceHistoryDialog productId={p.id} productName={p.name} />
       <Button asChild variant="outline" size="sm">
         <Link href={`/admin/products/${p.id}/edit`}>Modifier</Link>
       </Button>
