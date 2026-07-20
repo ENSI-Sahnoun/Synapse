@@ -193,6 +193,10 @@ export async function getStockOverPeriod(range: { from: string; to: string }): P
   // after `periodEnd` are the subset used for the end-of-period figure.
   const [{ data: products }, { data: sales }, { data: restocks }, { data: charges }] = await Promise.all([
     supabase.from('products').select('id, name, category, stock_quantity, cost_price').eq('is_active', true),
+    // Voided purchases restore stock immediately (pos_void_purchase) and that
+    // restoration is already baked into the current stock_quantity read above,
+    // but the purchase_items rows survive the soft delete. Without this filter
+    // a voided sale's units get added back to the rewind a second time.
     supabase
       .from('purchase_items')
       .select('product_id, quantity, created_at, purchases!inner(voided_at)')
