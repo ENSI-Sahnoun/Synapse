@@ -1,6 +1,7 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { roundDt, tunisRange } from '@/lib/tz'
 
-export type CogsSummary = { cogs: number; revenue: number; missingCostProducts: number }
+export type CogsSummary = { cogs: number; revenue: number; discounts: number; missingCostProducts: number }
 export type ProductMargin = {
   productId: string
   productName: string
@@ -21,6 +22,7 @@ export async function getCogs(range: { from: string; to: string }): Promise<Cogs
   return {
     cogs: Number(data.cogs),
     revenue: Number(data.revenue),
+    discounts: Number(data.discounts ?? 0),
     missingCostProducts: data.missing_cost_products,
   }
 }
@@ -57,57 +59,96 @@ export async function getBestSellers(
   limit = 10,
 ): Promise<BestSeller[]> {
   const supabase = await createSupabaseClient()
+  const { start, endExclusive } = tunisRange(range.from, range.to)
+
+  // Scoped by the PURCHASE timestamp, and revenue reported net of the header
+  // discount so a best-seller's revenue reconciles with the P&L instead of
+  // overstating by every comp the cashier gave away.
   const { data } = await supabase
     .from('purchase_items')
-    .select('quantity, unit_price_dt, created_at, products!inner(id, name)')
-    .gte('created_at', range.from + 'T00:00:00')
-    .lte('created_at', range.to + 'T23:59:59')
+    .select('quantity, unit_price_dt, purchases!inner(id, created_at, discount_dt), products!inner(id, name)')
+    .gte('purchases.created_at', start)
+    .lt('purchases.created_at', endExclusive)
+
+  const rows = (data ?? []).map((r) => ({
+    quantity: Number(r.quantity),
+    unit_price_dt: Number(r.unit_price_dt),
+    purchase: r.purchases as unknown as { id: string; discount_dt: number },
+    product: r.products as unknown as { id: string; name: string },
+  }))
+
+  const grossByPurchase = new Map<string, number>()
+  for (const r of rows) {
+    grossByPurchase.set(
+      r.purchase.id,
+      (grossByPurchase.get(r.purchase.id) ?? 0) + r.quantity * r.unit_price_dt,
+    )
+  }
 
   const map = new Map<string, BestSeller>()
-  data?.forEach((r) => {
-    const product = r.products as unknown as { id: string; name: string }
-    const existing = map.get(product.id) ?? {
-      productId: product.id,
-      productName: product.name,
+  for (const r of rows) {
+    const existing = map.get(r.product.id) ?? {
+      productId: r.product.id,
+      productName: r.product.name,
       quantitySold: 0,
       revenue: 0,
     }
-    existing.quantitySold += Number(r.quantity)
-    existing.revenue += Number(r.quantity) * Number(r.unit_price_dt)
-    map.set(product.id, existing)
-  })
+    const gross = grossByPurchase.get(r.purchase.id) ?? 0
+    const factor = gross > 0 ? 1 - Number(r.purchase.discount_dt) / gross : 1
+    existing.quantitySold += r.quantity
+    existing.revenue = roundDt(existing.revenue + r.quantity * r.unit_price_dt * factor)
+    map.set(r.product.id, existing)
+  }
 
   return rankBestSellers(Array.from(map.values()), limit)
 }
 
 export async function getSalesByCategory(range: { from: string; to: string }): Promise<CategorySales[]> {
   const supabase = await createSupabaseClient()
+  const { start, endExclusive } = tunisRange(range.from, range.to)
+
   const { data } = await supabase
     .from('purchase_items')
-    .select('quantity, unit_price_dt, created_at, products!inner(category)')
-    .gte('created_at', range.from + 'T00:00:00')
-    .lte('created_at', range.to + 'T23:59:59')
+    .select('quantity, unit_price_dt, purchases!inner(id, created_at, discount_dt), products!inner(category)')
+    .gte('purchases.created_at', start)
+    .lt('purchases.created_at', endExclusive)
+
+  const rows = (data ?? []).map((r) => ({
+    quantity: Number(r.quantity),
+    unit_price_dt: Number(r.unit_price_dt),
+    purchase: r.purchases as unknown as { id: string; discount_dt: number },
+    category: (r.products as unknown as { category: string }).category,
+  }))
+
+  const grossByPurchase = new Map<string, number>()
+  for (const r of rows) {
+    grossByPurchase.set(
+      r.purchase.id,
+      (grossByPurchase.get(r.purchase.id) ?? 0) + r.quantity * r.unit_price_dt,
+    )
+  }
 
   const map = new Map<string, number>()
-  data?.forEach((r) => {
-    const category = (r.products as unknown as { category: string }).category
-    const amount = Number(r.quantity) * Number(r.unit_price_dt)
-    map.set(category, (map.get(category) ?? 0) + amount)
-  })
+  for (const r of rows) {
+    const gross = grossByPurchase.get(r.purchase.id) ?? 0
+    const factor = gross > 0 ? 1 - Number(r.purchase.discount_dt) / gross : 1
+    map.set(r.category, (map.get(r.category) ?? 0) + r.quantity * r.unit_price_dt * factor)
+  }
 
   return Array.from(map.entries())
-    .map(([category, revenue]) => ({ category, revenue }))
+    .map(([category, revenue]) => ({ category, revenue: roundDt(revenue) }))
     .sort((a, b) => b.revenue - a.revenue)
 }
 
 export async function getRestockHistory(range: { from: string; to: string }): Promise<RestockEvent[]> {
   const supabase = await createSupabaseClient()
+  const { start, endExclusive } = tunisRange(range.from, range.to)
   const { data } = await supabase
     .from('pos_activity_log')
     .select('id, quantity, actor_id, created_at, products(name)')
     .eq('action', 'restock')
-    .gte('created_at', range.from + 'T00:00:00')
-    .lte('created_at', range.to + 'T23:59:59')
+    .gte('created_at', start)
+    .lt('created_at', endExclusive)
     .order('created_at', { ascending: false })
 
   return (data ?? []).map((r) => ({
@@ -130,50 +171,69 @@ export type StockSnapshotRow = {
 
 // Reconstructs each product's stock at the start and end of the period by
 // rewinding movements from the current stock:
-//   stock_at(T) = current − restocks_after(T) + sales_after(T)
+//   stock_at(T) = current − restocks_after(T) + sales_after(T) + charges_after(T)
 // startStock = stock just before the period (rewind everything from `from` onward)
 // endStock   = stock at the end of `to`
-// Note: manual stock edits via product update aren't tracked as movements, so
-// the result is exact only for stock changed through sales and restocks.
+//
+// Three movement types decrement or increment stock: POS sales, restocks, and
+// employee charges (20260712000000_pos_employee_charge.sql, which does
+// `stock_quantity = stock_quantity - v_quantity` and logs action
+// 'employee_charge'). Charges were previously omitted from the rewind, so
+// opening stock was understated by everything staff had consumed — cumulative
+// over the period, and worst on exactly the products an owner audits for
+// shrinkage. Manual stock edits through the product form remain untracked;
+// they are the only remaining source of drift.
 export async function getStockOverPeriod(range: { from: string; to: string }): Promise<StockSnapshotRow[]> {
   const supabase = await createSupabaseClient()
-  const periodStart = range.from + 'T00:00:00'
-  const periodEnd = range.to + 'T23:59:59'
+  const { start: periodStart, endExclusive: periodEnd } = tunisRange(range.from, range.to)
 
-  // Fetch every movement from the start of the period onward; movements strictly
-  // after `to` are the subset used for the end-of-period figure.
-  const [{ data: products }, { data: sales }, { data: restocks }] = await Promise.all([
-    supabase.from('products').select('id, name, category, stock_quantity').eq('is_active', true),
+  // Fetch every movement from the start of the period onward; movements at or
+  // after `periodEnd` are the subset used for the end-of-period figure.
+  const [{ data: products }, { data: sales }, { data: restocks }, { data: charges }] = await Promise.all([
+    supabase.from('products').select('id, name, category, stock_quantity, cost_price').eq('is_active', true),
     supabase.from('purchase_items').select('product_id, quantity, created_at').gte('created_at', periodStart),
     supabase
       .from('pos_activity_log')
       .select('product_id, quantity, created_at')
       .eq('action', 'restock')
       .gte('created_at', periodStart),
+    supabase
+      .from('pos_activity_log')
+      .select('product_id, quantity, created_at')
+      .eq('action', 'employee_charge')
+      .gte('created_at', periodStart),
   ])
 
   // Accumulate per product: movements within the whole window (>= from) and the
-  // tail after `to`.
-  const salesFrom = new Map<string, number>()
-  const salesAfterTo = new Map<string, number>()
-  for (const r of sales ?? []) {
-    const q = Number(r.quantity)
-    salesFrom.set(r.product_id, (salesFrom.get(r.product_id) ?? 0) + q)
-    if (r.created_at > periodEnd) salesAfterTo.set(r.product_id, (salesAfterTo.get(r.product_id) ?? 0) + q)
+  // tail at/after `periodEnd`.
+  const tally = (rows: Array<{ product_id: string | null; quantity: number | null; created_at: string }> | null) => {
+    const fromStart = new Map<string, number>()
+    const afterTo = new Map<string, number>()
+    for (const r of rows ?? []) {
+      if (!r.product_id) continue
+      const q = Number(r.quantity ?? 0)
+      fromStart.set(r.product_id, (fromStart.get(r.product_id) ?? 0) + q)
+      if (r.created_at >= periodEnd) afterTo.set(r.product_id, (afterTo.get(r.product_id) ?? 0) + q)
+    }
+    return { fromStart, afterTo }
   }
-  const restocksFrom = new Map<string, number>()
-  const restocksAfterTo = new Map<string, number>()
-  for (const r of restocks ?? []) {
-    if (!r.product_id) continue
-    const q = Number(r.quantity ?? 0)
-    restocksFrom.set(r.product_id, (restocksFrom.get(r.product_id) ?? 0) + q)
-    if (r.created_at > periodEnd) restocksAfterTo.set(r.product_id, (restocksAfterTo.get(r.product_id) ?? 0) + q)
-  }
+
+  const salesT = tally(sales as never)
+  const restocksT = tally(restocks as never)
+  const chargesT = tally(charges as never)
 
   return (products ?? [])
     .map((p) => {
-      const startStock = p.stock_quantity - (restocksFrom.get(p.id) ?? 0) + (salesFrom.get(p.id) ?? 0)
-      const endStock = p.stock_quantity - (restocksAfterTo.get(p.id) ?? 0) + (salesAfterTo.get(p.id) ?? 0)
+      const startStock =
+        p.stock_quantity -
+        (restocksT.fromStart.get(p.id) ?? 0) +
+        (salesT.fromStart.get(p.id) ?? 0) +
+        (chargesT.fromStart.get(p.id) ?? 0)
+      const endStock =
+        p.stock_quantity -
+        (restocksT.afterTo.get(p.id) ?? 0) +
+        (salesT.afterTo.get(p.id) ?? 0) +
+        (chargesT.afterTo.get(p.id) ?? 0)
       return {
         id: p.id,
         name: p.name,

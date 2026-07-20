@@ -6,6 +6,7 @@ import { EASE_OUT } from '../_lib/motion';
 import { Reveal } from './Reveal';
 import { QrGlyph } from './QrGlyph';
 import { Backdrop } from './Backdrop';
+import { Floating3DShapes } from './Floating3DShapes';
 
 export function Features() {
   const items = [
@@ -38,6 +39,7 @@ export function Features() {
   return (
     <section id="experience" className="relative scroll-mt-24 overflow-hidden bg-[var(--synapse-cream-100)] py-24 sm:py-32">
       <Backdrop variant="b" />
+      <Floating3DShapes section="experience" />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="mb-16 max-w-2xl">
           <h2
@@ -89,7 +91,7 @@ function FeatureRow({
       </Reveal>
 
       <Reveal delay={0.08} className={flip ? 'md:order-1' : ''}>
-        <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[1.75rem] border border-[var(--synapse-cream-300)] bg-[linear-gradient(150deg,#FFFFFF,var(--synapse-cream-100))] shadow-[0_24px_60px_-36px_rgba(80,47,28,0.4)]">
+        <div className="mx-auto flex aspect-[6/5] w-full max-w-sm items-center justify-center overflow-hidden rounded-[1.75rem] border border-[var(--synapse-cream-300)] bg-[linear-gradient(150deg,#FFFFFF,var(--synapse-cream-100))] p-8 shadow-[0_24px_60px_-36px_rgba(80,47,28,0.4)]">
           {motif}
         </div>
       </Reveal>
@@ -112,7 +114,7 @@ function SeatPickMotif() {
         return (
           <motion.span
             key={i}
-            className="relative size-7 rounded-lg sm:size-8"
+            className="relative size-8 rounded-lg sm:size-9"
             style={{
               background: isChosen
                 ? 'var(--synapse-orange-500)'
@@ -135,8 +137,8 @@ function SeatPickMotif() {
 function QrScanMotif() {
   const reduce = useReducedMotion();
   return (
-    <div className="relative size-32 overflow-hidden rounded-2xl bg-white p-3 shadow-inner ring-1 ring-[var(--synapse-cream-300)]">
-      <QrGlyph value="https://synapse.tn/checkin" size={104} className="size-full" />
+    <div className="relative size-44 overflow-hidden rounded-2xl bg-white p-4 shadow-inner ring-1 ring-[var(--synapse-cream-300)]">
+      <QrGlyph value="https://synapse.tn/checkin" size={152} className="size-full" />
       {!reduce && (
         <motion.span
           aria-hidden
@@ -153,27 +155,44 @@ function QrScanMotif() {
 function LoyaltyMotif() {
   const reduce = useReducedMotion();
   return (
-    <div className="flex items-center gap-3">
-      {Array.from({ length: 5 }, (_, i) => (
+    <div className="flex w-full flex-col gap-6">
+      <div className="flex items-center gap-3">
+        {Array.from({ length: 5 }, (_, i) => (
+          <motion.span
+            key={i}
+            className="flex size-10 items-center justify-center rounded-full text-white"
+            style={{ background: i < 3 ? 'var(--synapse-brown-500)' : 'var(--synapse-cream-200)' }}
+            initial={reduce ? false : { scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, ease: EASE_OUT, delay: i * 0.12 }}
+          >
+            {i < 3 && <Sparkles className="size-4" />}
+          </motion.span>
+        ))}
         <motion.span
-          key={i}
-          className="flex size-9 items-center justify-center rounded-full text-white"
-          style={{ background: i < 3 ? 'var(--synapse-brown-500)' : 'var(--synapse-cream-200)' }}
+          className="ml-1 rounded-full bg-[var(--synapse-green-500)] px-3 py-1 text-sm font-semibold text-white"
           initial={reduce ? false : { scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, ease: EASE_OUT, delay: i * 0.12 }}
+          transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.7 }}
         >
-          {i < 3 && <Sparkles className="size-4" />}
+          +10
         </motion.span>
-      ))}
-      <motion.span
-        className="ml-1 rounded-full bg-[var(--synapse-green-500)] px-3 py-1 text-sm font-semibold text-white"
-        initial={reduce ? false : { scale: 0.6, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.7 }}
-      >
-        +10
-      </motion.span>
+      </div>
+
+      <div>
+        <div className="mb-2 flex items-center justify-between text-xs font-medium text-[var(--synapse-stone-500)]">
+          <span>Palier fidélité</span>
+          <span>3/5 visites</span>
+        </div>
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--synapse-cream-200)]">
+          <motion.div
+            className="h-full rounded-full bg-[var(--synapse-brown-500)]"
+            initial={reduce ? false : { width: '4%' }}
+            animate={{ width: '60%' }}
+            transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.4 }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -183,11 +202,11 @@ function PresenceMotif() {
   const heights = [40, 65, 30, 80, 55, 95, 70];
   const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
   return (
-    <div className="flex h-32 items-end gap-2.5">
+    <div className="flex h-36 items-end gap-3">
       {heights.map((h, i) => (
         <div key={i} className="flex flex-col items-center gap-2">
           <motion.span
-            className="w-5 rounded-t-md"
+            className="w-6 rounded-t-md"
             style={{ background: i === 5 ? 'var(--synapse-orange-500)' : 'var(--synapse-brown-300)', height: reduce ? h : undefined }}
             initial={reduce ? false : { height: 6 }}
             animate={{ height: h }}

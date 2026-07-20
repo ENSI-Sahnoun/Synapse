@@ -123,7 +123,7 @@ export function Hero({
         </motion.div>
       </div>
 
-      <SectionDivider fill="var(--synapse-cream-100)" />
+      <SectionDivider fill="var(--synapse-cream-200)" />
     </section>
   );
 }

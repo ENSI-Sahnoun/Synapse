@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useInView, useReducedMotion } from 'motion/react';
 import { Reveal } from './Reveal';
+import { Floating3DShapes } from './Floating3DShapes';
 
 // TODO(placeholder): swap these for the real venue numbers before launch.
 const STATS = [
@@ -20,6 +21,7 @@ export function Stats() {
         className="pointer-events-none absolute inset-0 opacity-60"
         style={{ background: 'radial-gradient(40% 60% at 50% 0%, rgba(233,121,32,0.18), transparent 70%)' }}
       />
+      <Floating3DShapes section="stats" />
       <div className="relative mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-12 px-5 sm:px-8 lg:grid-cols-4">
         {STATS.map((s, i) => (
           <Reveal key={s.label} delay={i * 0.08} className="text-center">

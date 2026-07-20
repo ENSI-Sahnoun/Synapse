@@ -1526,12 +1526,38 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      analytics_capital_totals: {
+        Args: never
+        Returns: {
+          subs: number
+          pos: number
+          lockers: number
+          expenses: number
+        }[]
+      }
       analytics_cogs: {
         Args: { p_from: string; p_to: string }
         Returns: {
           cogs: number
+          discounts: number
           missing_cost_products: number
           revenue: number
+        }[]
+      }
+      analytics_plan_popularity: {
+        Args: never
+        Returns: {
+          plan_name: string
+          sold: number
+          revenue: number
+        }[]
+      }
+      analytics_subscription_status: {
+        Args: { p_as_of: string; p_soon_days?: number }
+        Returns: {
+          active: number
+          expiring_soon: number
+          expired: number
         }[]
       }
       analytics_peak_hours: {

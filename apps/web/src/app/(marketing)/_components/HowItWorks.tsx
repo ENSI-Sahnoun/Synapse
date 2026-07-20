@@ -1,5 +1,6 @@
 import { Reveal } from './Reveal';
 import { Backdrop } from './Backdrop';
+import { Floating3DShapes } from './Floating3DShapes';
 
 const STEPS = [
   {
@@ -23,6 +24,7 @@ export function HowItWorks() {
   return (
     <section id="etapes" className="relative scroll-mt-24 overflow-hidden bg-[var(--synapse-cream-100)] py-24 sm:py-32">
       <Backdrop variant="a" />
+      <Floating3DShapes section="etapes" />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="mb-16 max-w-2xl">
           <h2

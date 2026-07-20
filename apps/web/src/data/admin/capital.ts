@@ -1,4 +1,5 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
+import { roundDt } from '@/lib/tz'
 
 export type CapitalAccount = 'cash' | 'bank'
 
@@ -26,28 +27,28 @@ export function computeCapitalBalances(input: {
     else bank += t.amount_dt
   }
 
-  return { cash, bank, total: cash + bank }
+  return { cash: roundDt(cash), bank: roundDt(bank), total: roundDt(cash + bank) }
 }
 
 export async function getCapitalBalances(): Promise<CapitalBalances> {
   const supabase = await createSupabaseClient()
 
-  const [{ data: movements }, { data: transfers }, { data: subs }, { data: purchases }, { data: lockerPayments }, { data: expenses }] =
-    await Promise.all([
-      supabase.from('capital_movements').select('account, amount_dt'),
-      supabase.from('capital_transfers').select('from_account, to_account, amount_dt'),
-      supabase.from('subscriptions').select('paid_amount'),
-      supabase.from('purchases').select('total_dt'),
-      supabase.from('locker_payments').select('amount_dt'),
-      supabase.from('expenses').select('amount_dt'),
-    ])
+  // The four revenue/expense totals are all-time and MUST be aggregated in SQL.
+  // Fetching the rows and summing them in JS silently truncated at the 1000-row
+  // cap configured in apps/database/supabase/config.toml, and `purchases` is
+  // the table that crosses 1000 first in a POS-driven gym — so revenue froze
+  // while expenses kept accruing and the Caisse figure drifted downward without
+  // bound, with no error and no warning. `capital_movements` / `capital_transfers`
+  // stay as row fetches: they are hand-entered and orders of magnitude smaller.
+  const [{ data: movements }, { data: transfers }, { data: totals, error: totalsError }] = await Promise.all([
+    supabase.from('capital_movements').select('account, amount_dt'),
+    supabase.from('capital_transfers').select('from_account, to_account, amount_dt'),
+    supabase.rpc('analytics_capital_totals').single(),
+  ])
+  if (totalsError) throw new Error(totalsError.message)
 
-  const totalRevenue =
-    (subs?.reduce((s, r) => s + Number(r.paid_amount), 0) ?? 0) +
-    (purchases?.reduce((s, r) => s + Number(r.total_dt), 0) ?? 0) +
-    (lockerPayments?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0)
-
-  const totalExpenses = expenses?.reduce((s, r) => s + Number(r.amount_dt), 0) ?? 0
+  const totalRevenue = Number(totals.subs) + Number(totals.pos) + Number(totals.lockers)
+  const totalExpenses = Number(totals.expenses)
 
   return computeCapitalBalances({
     movements: (movements ?? []).map((m) => ({ account: m.account as CapitalAccount, amount_dt: Number(m.amount_dt) })),

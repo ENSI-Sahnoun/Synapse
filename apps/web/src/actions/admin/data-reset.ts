@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { adminActionClient } from '@/lib/safe-action'
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { verifyExportToken } from '@/lib/exports/export-token'
+import { tunisRange } from '@/lib/tz'
 import { revalidatePath } from 'next/cache'
 
 const periodSchema = z.object({
@@ -18,7 +19,15 @@ function assertConfirm(confirm: string, from: string, to: string) {
   }
 }
 
-// Deletes expenses, purchases (cascades purchase_items), and subscriptions in range.
+// Deletes expenses, purchases (cascades purchase_items), subscriptions and
+// locker payments in range.
+//
+// `locker_payments` was previously omitted. Because the treasury balance is
+// derived as (all revenue − all expenses), deleting three of the four revenue
+// streams left the locker income permanently stranded in the Caisse figure with
+// no transaction behind it — an unreconcilable balance that no later correction
+// could explain. Every stream that feeds `analytics_capital_totals` must be
+// cleared together or none of them.
 export const resetFinancialsPeriod = adminActionClient
   .schema(periodSchema.extend({ exportToken: z.string() }))
   .action(async ({ parsedInput: { from, to, confirm, exportToken }, ctx }) => {
@@ -28,6 +37,7 @@ export const resetFinancialsPeriod = adminActionClient
     }
 
     const supabase = await createSupabaseClient()
+    const { start, endExclusive } = tunisRange(from, to)
 
     const { error: expensesError } = await supabase
       .from('expenses')
@@ -36,21 +46,32 @@ export const resetFinancialsPeriod = adminActionClient
       .lte('date', to)
     if (expensesError) throw new Error(expensesError.message)
 
+    // Before purchases: locker payments reference subscriptions, and clearing
+    // the dependent rows first keeps the FK graph valid regardless of the
+    // cascade rules configured on each table.
+    const { error: lockerPaymentsError } = await supabase
+      .from('locker_payments')
+      .delete()
+      .gte('created_at', start)
+      .lt('created_at', endExclusive)
+    if (lockerPaymentsError) throw new Error(lockerPaymentsError.message)
+
     const { error: purchasesError } = await supabase
       .from('purchases')
       .delete()
-      .gte('created_at', from + 'T00:00:00')
-      .lte('created_at', to + 'T23:59:59')
+      .gte('created_at', start)
+      .lt('created_at', endExclusive)
     if (purchasesError) throw new Error(purchasesError.message)
 
     const { error: subsError } = await supabase
       .from('subscriptions')
       .delete()
-      .gte('created_at', from + 'T00:00:00')
-      .lte('created_at', to + 'T23:59:59')
+      .gte('created_at', start)
+      .lt('created_at', endExclusive)
     if (subsError) throw new Error(subsError.message)
 
     revalidatePath('/admin/settings')
+    revalidatePath('/admin/accounting')
     return { success: true }
   })
 
