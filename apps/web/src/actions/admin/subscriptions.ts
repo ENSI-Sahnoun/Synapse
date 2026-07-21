@@ -6,6 +6,42 @@ import { createSupabaseAdminClient } from '@/supabase-clients/admin'
 import { subDays, addDays, parseISO, format } from 'date-fns'
 import { revalidatePath } from 'next/cache'
 
+// Cancelling/deleting a subscription must claw back the points it earned —
+// otherwise a student can buy, collect points, then have the sub cancelled
+// or refunded and keep them permanently. Guards against double-reversal by
+// checking for a prior offsetting adjustment tied to the same subscription.
+async function reverseSubscriptionLoyaltyPoints(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  subscriptionId: string,
+  studentId: string,
+) {
+  const { data: awarded } = await supabase
+    .from('loyalty_ledger')
+    .select('points_delta')
+    .eq('ref_id', subscriptionId)
+    .eq('reason', 'subscription')
+
+  const totalAwarded = (awarded ?? []).reduce((sum, row) => sum + row.points_delta, 0)
+  if (totalAwarded <= 0) return
+
+  const { data: alreadyReversed } = await supabase
+    .from('loyalty_ledger')
+    .select('id')
+    .eq('ref_id', subscriptionId)
+    .eq('reason', 'adjustment')
+    .lt('points_delta', 0)
+    .limit(1)
+    .maybeSingle()
+  if (alreadyReversed) return
+
+  await supabase.from('loyalty_ledger').insert({
+    student_id: studentId,
+    points_delta: -totalAwarded,
+    reason: 'adjustment',
+    ref_id: subscriptionId,
+  })
+}
+
 export const updateSubscriptionAction = employeeActionClient
   .schema(updateSubscriptionSchema)
   .action(async ({ parsedInput }) => {
@@ -14,7 +50,7 @@ export const updateSubscriptionAction = employeeActionClient
 
     const { data: current, error: fetchError } = await supabase
       .from('subscriptions')
-      .select('student_id, start_date, end_date, plan_id')
+      .select('student_id, start_date, end_date, plan_id, paid_amount')
       .eq('id', subscription_id)
       .single()
     if (fetchError || !current) throw new Error('Abonnement introuvable')
@@ -23,6 +59,7 @@ export const updateSubscriptionAction = employeeActionClient
       start_date?: string
       end_date?: string
       plan_id?: string
+      paid_amount?: number
     }
     const updates: UpdatesType = {}
 
@@ -31,6 +68,23 @@ export const updateSubscriptionAction = employeeActionClient
     } else {
       if (start_date) updates.start_date = start_date
       if (plan_id) updates.plan_id = plan_id
+
+      if (plan_id && plan_id !== current.plan_id) {
+        // Formule changed: the price is tied to the plan, so it must be
+        // recomputed here too — the create-subscription path already does
+        // this, but the edit path previously left the old plan's paid_amount
+        // in place after a formule change.
+        const { data: newPlan, error: newPlanError } = await supabase
+          .from('subscription_plans')
+          .select('price_dt, tax_rate_pct')
+          .eq('id', plan_id)
+          .single()
+        if (newPlanError || !newPlan) throw new Error('Formule introuvable')
+        updates.paid_amount = Number(
+          (newPlan.price_dt * (1 + (newPlan.tax_rate_pct ?? 0) / 100)).toFixed(3),
+        )
+      }
+
       if (end_date) {
         updates.end_date = end_date
       } else if (start_date || plan_id) {
@@ -56,6 +110,10 @@ export const updateSubscriptionAction = employeeActionClient
       .update(updates)
       .eq('id', subscription_id)
     if (error) throw new Error(error.message)
+
+    if (cancel) {
+      await reverseSubscriptionLoyaltyPoints(supabase, subscription_id, current.student_id)
+    }
 
     revalidatePath(`/employee/students/${current.student_id}`)
     return { success: true }
@@ -86,6 +144,8 @@ export const deleteSubscriptionAction = adminActionClient
       .delete()
       .eq('id', subscription_id)
     if (error) throw new Error(error.message)
+
+    await reverseSubscriptionLoyaltyPoints(supabase, subscription_id, sub.student_id)
 
     revalidatePath(`/employee/students/${sub.student_id}`)
     return { success: true }

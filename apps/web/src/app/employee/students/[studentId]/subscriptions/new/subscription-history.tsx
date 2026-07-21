@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { PencilSimple, Trash, X, Check } from '@phosphor-icons/react'
+import { PencilSimple, Trash, X, Check, Prohibit } from '@phosphor-icons/react'
 import { updateSubscriptionAction, deleteSubscriptionAction } from '@/actions/admin/subscriptions'
 
 interface Plan {
@@ -118,10 +118,22 @@ function SubscriptionRow({ row, plans }: { row: HistoryRow; plans: Plan[] }) {
         </button>
         <button
           onClick={() => {
-            if (window.confirm('Supprimer définitivement cet abonnement ?')) doDelete({ subscription_id: row.id })
+            if (window.confirm('Annuler cet abonnement ? Les points de fidélité gagnés seront repris.')) {
+              doUpdate({ subscription_id: row.id, cancel: true })
+            }
           }}
           disabled={busy}
-          title="Supprimer"
+          title="Annuler l'abonnement"
+          className="text-muted-foreground"
+        >
+          <Prohibit size={16} />
+        </button>
+        <button
+          onClick={() => {
+            if (window.confirm('Supprimer définitivement cet abonnement ? (réservé aux administrateurs)')) doDelete({ subscription_id: row.id })
+          }}
+          disabled={busy}
+          title="Supprimer (admin)"
           className="text-destructive"
         >
           <Trash size={16} />
