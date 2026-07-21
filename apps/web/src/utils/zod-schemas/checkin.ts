@@ -10,12 +10,12 @@ export type CheckinResult =
   // `deferred: true` means check-in was validated but NO attendance row was
   // created yet — the student is not marked present until they pick a seat or
   // explicitly defer at the kiosk. `studentId` lets the picker create it then.
-  | { status: 'AUTHORIZED'; studentName: string; planName: string; endDate: string; daysRemaining: number; reservationFulfilled?: boolean; attendanceId: string; studentId: string; deferred?: boolean; seatId?: string | null; seatLabel?: string | null; roomId?: string | null; roomName?: string | null }
-  | { status: 'DENIED_EXPIRED'; studentName: string; endDate: string }
-  | { status: 'DENIED_NO_SUB'; studentName: string }
+  | { status: 'AUTHORIZED'; studentName: string; avatarUrl?: string | null; planName: string; endDate: string; daysRemaining: number; reservationFulfilled?: boolean; attendanceId: string; studentId: string; deferred?: boolean; seatId?: string | null; seatLabel?: string | null; roomId?: string | null; roomName?: string | null }
+  | { status: 'DENIED_EXPIRED'; studentName: string; avatarUrl?: string | null; endDate: string }
+  | { status: 'DENIED_NO_SUB'; studentName: string; avatarUrl?: string | null }
   | { status: 'DENIED_UNKNOWN' }
-  | { status: 'ALREADY_IN'; studentName: string; checkedInAt: string; attendanceId: string }
-  | { status: 'DENIED_NO_RESERVATION'; studentName: string }
+  | { status: 'ALREADY_IN'; studentName: string; avatarUrl?: string | null; checkedInAt: string; attendanceId: string }
+  | { status: 'DENIED_NO_RESERVATION'; studentName: string; avatarUrl?: string | null }
   // Employee badge scan at the kiosk toggles clock-in/out — no seat/subscription checks.
   | { status: 'EMPLOYEE_CLOCKED_IN'; employeeName: string }
   | { status: 'EMPLOYEE_CLOCKED_OUT'; employeeName: string; clockedInAt: string }

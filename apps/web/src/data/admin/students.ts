@@ -11,7 +11,7 @@ export async function listAllProfiles(
   const supabase = await createSupabaseClient()
   let query = supabase
     .from('profiles')
-    .select('id, full_name, phone, role, university, study_level, is_archived, created_at')
+    .select('id, full_name, phone, role, university, study_level, is_archived, created_at, avatar_url')
     .order('created_at', { ascending: false })
 
   if (role) query = query.eq('role', role)
@@ -35,7 +35,7 @@ export async function getProfileById(id: string) {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, phone, role, university, study_level, is_archived, created_at')
+    .select('id, full_name, phone, role, university, study_level, is_archived, created_at, avatar_url')
     .eq('id', id)
     .single()
   if (error) throw error

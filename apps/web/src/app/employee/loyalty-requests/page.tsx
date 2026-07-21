@@ -5,6 +5,7 @@ import {
 } from '@/data/employee/loyalty-requests'
 import { PendingRequestRow, type PendingRequestRowData } from './PendingRequestRow'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -63,18 +64,21 @@ export default async function EmployeeLoyaltyRequestsPage() {
           <h2 className="font-medium text-base">Traitées récemment</h2>
           <div className="border rounded-lg divide-y">
             {recent.map((req) => {
-              const student = req.student as { id: string; full_name: string } | null
+              const student = req.student as { id: string; full_name: string; avatar_url: string | null } | null
               const rule = req.rule as { id: string; name: string; reward_type: string } | null
               return (
                 <div
                   key={req.id}
                   className="flex items-center justify-between px-4 py-3 text-sm"
                 >
-                  <div>
-                    <p className="font-medium">{student?.full_name ?? '—'}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {rule?.name} · {req.points_used} pts
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <UserAvatar fullName={student?.full_name} avatarUrl={student?.avatar_url} className="h-8 w-8" />
+                    <div>
+                      <p className="font-medium">{student?.full_name ?? '—'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {rule?.name} · {req.points_used} pts
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <span

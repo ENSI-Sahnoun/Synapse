@@ -10,13 +10,15 @@ export interface NotificationRow {
   is_read: boolean
   created_at: string
   link: string | null
+  progress_current: number | null
+  progress_target: number | null
 }
 
 export async function getMyNotifications(limit = 20): Promise<NotificationRow[]> {
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, message, is_read, created_at, link')
+    .select('id, type, message, is_read, created_at, link, progress_current, progress_target')
     .not('type', 'in', `(${INTERNAL_NOTIFICATION_TYPES.join(',')})`)
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -65,7 +67,7 @@ export async function getNotificationsForUser(
   const supabase = await createSupabaseClient()
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, message, is_read, created_at, link')
+    .select('id, type, message, is_read, created_at, link, progress_current, progress_target')
     .eq('user_id', userId)
     .not('type', 'in', `(${INTERNAL_NOTIFICATION_TYPES.join(',')})`)
     .order('created_at', { ascending: false })

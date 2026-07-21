@@ -10,7 +10,7 @@ const tabs = [
   { href: '/student/shop', label: 'Boutique', Icon: Storefront },
   { href: '/student/rewards', label: 'Récompenses', Icon: Trophy },
   { href: '/student/rooms', label: 'Réserver', Icon: CreditCard },
-  { href: '/student/settings', label: 'Paramètres', Icon: GearSix },
+  { href: '/student/settings', label: 'Profil', Icon: GearSix },
 ]
 
 // Routes reachable from the shell that have no tab of their own. Without this

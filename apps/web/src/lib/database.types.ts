@@ -847,6 +847,102 @@ export type Database = {
           },
         ]
       }
+      achievements: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          emoji: string
+          id: string
+          is_active: boolean
+          points: number
+          sort_order: number
+          threshold: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          emoji?: string
+          id?: string
+          is_active?: boolean
+          points: number
+          sort_order?: number
+          threshold?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          emoji?: string
+          id?: string
+          is_active?: boolean
+          points?: number
+          sort_order?: number
+          threshold?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      achievement_unlocks: {
+        Row: {
+          achievement_id: string
+          id: string
+          student_id: string
+          unlocked_at: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          student_id: string
+          unlocked_at?: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          student_id?: string
+          unlocked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievement_unlocks_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "achievement_unlocks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      levels: {
+        Row: {
+          label: string | null
+          level: number
+          xp_required: number
+        }
+        Insert: {
+          label?: string | null
+          level: number
+          xp_required: number
+        }
+        Update: {
+          label?: string | null
+          level?: number
+          xp_required?: number
+        }
+        Relationships: []
+      }
       loyalty_ledger: {
         Row: {
           created_at: string
@@ -1007,6 +1103,8 @@ export type Database = {
           is_read: boolean
           link: string | null
           message: string
+          progress_current: number | null
+          progress_target: number | null
           student_id: string | null
           type: string
           user_id: string
@@ -1020,6 +1118,8 @@ export type Database = {
           is_read?: boolean
           link?: string | null
           message: string
+          progress_current?: number | null
+          progress_target?: number | null
           student_id?: string | null
           type: string
           user_id: string
@@ -1033,6 +1133,8 @@ export type Database = {
           is_read?: boolean
           link?: string | null
           message?: string
+          progress_current?: number | null
+          progress_target?: number | null
           student_id?: string | null
           type?: string
           user_id?: string
@@ -1197,6 +1299,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           credentials_set: boolean
           full_name: string
@@ -1205,6 +1308,7 @@ export type Database = {
           is_archived: boolean
           leaderboard_opt_out: boolean
           monthly_salary_dt?: number | null
+          original_full_name: string
           phone: string | null
           qr_token: string | null
           role: string
@@ -1215,6 +1319,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           credentials_set?: boolean
           full_name?: string
@@ -1223,6 +1328,7 @@ export type Database = {
           is_archived?: boolean
           leaderboard_opt_out?: boolean
           monthly_salary_dt?: number | null
+          original_full_name?: string
           phone?: string | null
           qr_token?: string | null
           role?: string
@@ -1233,6 +1339,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           credentials_set?: boolean
           full_name?: string
@@ -1241,6 +1348,7 @@ export type Database = {
           is_archived?: boolean
           leaderboard_opt_out?: boolean
           monthly_salary_dt?: number | null
+          original_full_name?: string
           phone?: string | null
           qr_token?: string | null
           role?: string
@@ -2070,6 +2178,62 @@ export type Database = {
           rank: number | null
           value: number
         }[]
+      }
+      get_my_achievements: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          category: string
+          threshold: number | null
+          points: number
+          title: string
+          description: string | null
+          emoji: string
+          sort_order: number
+          unlocked: boolean
+          unlocked_at: string | null
+          progress: number
+        }[]
+      }
+      get_levels_for_students: {
+        Args: { p_student_ids: string[] }
+        Returns: {
+          student_id: string
+          level: number
+          xp: number
+        }[]
+      }
+      admin_grant_achievement: {
+        Args: { p_student_id: string; p_achievement_id: string }
+        Returns: undefined
+      }
+      get_achievement_unlockers: {
+        Args: { p_achievement_ids: string[] }
+        Returns: {
+          achievement_id: string
+          total_count: number
+          sample_names: string[] | null
+        }[]
+      }
+      get_achievements_for_student: {
+        Args: { p_student_id: string }
+        Returns: {
+          id: string
+          category: string
+          threshold: number | null
+          points: number
+          title: string
+          description: string | null
+          emoji: string
+          sort_order: number
+          unlocked: boolean
+          unlocked_at: string | null
+          progress: number
+        }[]
+      }
+      get_loyalty_balance_for_student: {
+        Args: { p_student_id: string }
+        Returns: number
       }
       fulfil_redemption: {
         Args: { p_request_id: string }

@@ -27,6 +27,8 @@ export const notificationTypeSchema = z.enum([
   'kiosk_qr_drop',
   'kiosk_qr_drop_cancel',
   'locker_free_reminder',
+  'achievement_progress',
+  'achievement_unlocked',
 ])
 
 export const notificationChannelSchema = z.enum(['email', 'sms', 'whatsapp', 'inapp'])

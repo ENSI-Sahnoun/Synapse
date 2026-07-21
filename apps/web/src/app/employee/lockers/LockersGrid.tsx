@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -31,6 +32,7 @@ interface EligibleStudent {
   full_name: string | null
   student_number: number | null
   phone: string | null
+  avatar_url: string | null
   is_eligible: boolean
 }
 
@@ -106,7 +108,10 @@ export function LockersGrid({ initialLockers, eligibleStudents }: Props) {
             <span className="text-lg font-bold">{locker.number}</span>
             <span className="text-xs font-normal">{STATUS_LABEL[locker.status]}</span>
             {locker.status === 'occupied' && (
-              <span className="text-xs truncate max-w-full px-1">{locker.student?.full_name}</span>
+              <div className="flex items-center gap-1 max-w-full">
+                <UserAvatar fullName={locker.student?.full_name ?? undefined} avatarUrl={locker.student?.avatar_url ?? null} className="h-6 w-6" />
+                <span className="text-xs truncate">{locker.student?.full_name}</span>
+              </div>
             )}
           </button>
         ))}
@@ -120,8 +125,10 @@ export function LockersGrid({ initialLockers, eligibleStudents }: Props) {
 
           {selected?.status === 'occupied' && (
             <div className="space-y-4">
-              <p className="text-sm">
-                Attribué à <span className="font-semibold">{selected.student?.full_name}</span>
+              <p className="text-sm flex items-center gap-3">
+                Attribué à
+                <UserAvatar fullName={selected.student?.full_name ?? undefined} avatarUrl={selected.student?.avatar_url ?? null} className="h-8 w-8" />
+                <span className="font-semibold">{selected.student?.full_name}</span>
               </p>
               <DialogFooter>
                 <AlertDialog>
@@ -134,7 +141,11 @@ export function LockersGrid({ initialLockers, eligibleStudents }: Props) {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Libérer ce casier ?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        <strong>{selected.student?.full_name}</strong> perdra l&apos;accès au casier {selected.number}.
+                        <div className="flex items-center gap-2 mb-2">
+                          <UserAvatar fullName={selected.student?.full_name ?? undefined} avatarUrl={selected.student?.avatar_url ?? null} className="h-6 w-6" />
+                          <strong>{selected.student?.full_name}</strong>
+                        </div>
+                        perdra l&apos;accès au casier {selected.number}.
                         Les frais d&apos;attribution déjà payés ne sont pas remboursés. Cette action est manuelle et
                         ne se produit pas automatiquement avant l&apos;expiration de l&apos;abonnement.
                       </AlertDialogDescription>
@@ -185,10 +196,11 @@ export function LockersGrid({ initialLockers, eligibleStudents }: Props) {
                         type="button"
                         disabled={busy || !s.is_eligible}
                         onClick={() => assign({ locker_id: selected.id, student_id: s.id })}
-                        className={`w-full text-left border rounded-md p-2 text-sm disabled:cursor-not-allowed ${
+                        className={`w-full text-left border rounded-md p-2 text-sm disabled:cursor-not-allowed flex items-center gap-2 ${
                           s.is_eligible ? 'hover:bg-muted' : 'text-muted-foreground opacity-50'
                         }`}
                       >
+                        <UserAvatar fullName={s.full_name ?? undefined} avatarUrl={s.avatar_url ?? null} className="h-6 w-6" />
                         <span className="font-medium">{s.full_name}</span>
                         {!s.is_eligible && <span className="text-xs"> (non éligible)</span>}
                       </button>

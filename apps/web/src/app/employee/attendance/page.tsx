@@ -24,7 +24,7 @@ export default async function EmployeeAttendancePage() {
       checked_out_at,
       room_id,
       seat_id,
-      profiles!attendance_student_id_fkey ( full_name )
+      profiles!attendance_student_id_fkey ( full_name, avatar_url )
     `)
     .gte('checked_in_at', todayStr)
     .order('checked_in_at', { ascending: false })
@@ -48,6 +48,7 @@ export default async function EmployeeAttendancePage() {
     id: row.id,
     studentId: row.student_id,
     studentName: (row as any).profiles?.full_name ?? 'Inconnu',
+    avatarUrl: (row as any).profiles?.avatar_url ?? null,
     room: row.room_id ? (roomMap[row.room_id] ?? 'Salle Inconnue') : 'Divers',
     seatLabel: row.seat_id ? (seatMap[row.seat_id] ?? null) : null,
     checkedInAt: row.checked_in_at,

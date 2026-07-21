@@ -6,6 +6,7 @@ import { useAction } from 'next-safe-action/hooks'
 import { formatDistanceToNow, parseISO, isPast, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cancelReservation, acceptReservation } from '@/actions/employee/reservations'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import { toast } from 'sonner'
 import { Check, X } from '@phosphor-icons/react'
 import type { ActiveReservation } from '@/data/employee/reservations'
@@ -150,23 +151,7 @@ export function ReservationsClient({ initialReservations }: { initialReservation
                 {/* Student */}
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div
-                      style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: '50%',
-                        background: r.is_priority ? 'var(--synapse-orange-100)' : 'var(--synapse-cream-200)',
-                        color: r.is_priority ? 'var(--synapse-orange-600)' : 'var(--accent-brand)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {initials(r.student_name)}
-                    </div>
+                    <UserAvatar fullName={r.student_name} avatarUrl={r.avatarUrl} className="h-8.5 w-8.5" />
                     <div>
                       <div style={{ fontWeight: 600, color: 'var(--foreground)', display: 'flex', alignItems: 'center', gap: 6 }}>
                         {r.student_name}
@@ -299,23 +284,7 @@ export function ReservationsClient({ initialReservations }: { initialReservation
           }}
         >
           <div className="flex items-center gap-2.5">
-            <div
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: '50%',
-                background: r.is_priority ? 'var(--synapse-orange-100)' : 'var(--synapse-cream-200)',
-                color: r.is_priority ? 'var(--synapse-orange-600)' : 'var(--accent-brand)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              {initials(r.student_name)}
-            </div>
+            <UserAvatar fullName={r.student_name} avatarUrl={r.avatarUrl} className="h-8.5 w-8.5" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 font-semibold" style={{ color: 'var(--foreground)' }}>
                 <span className="truncate">{r.student_name}</span>

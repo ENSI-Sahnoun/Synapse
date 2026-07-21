@@ -15,7 +15,7 @@ export const searchStudentsByNameAction = employeeActionClient
 
     const { data: profiles, error } = await supabase
       .from('profiles')
-      .select('id, full_name, phone')
+      .select('id, full_name, phone, avatar_url')
       .eq('role', 'student')
       .ilike('full_name', `%${parsedInput.query}%`)
       .order('full_name', { ascending: true })
@@ -40,6 +40,7 @@ export const searchStudentsByNameAction = employeeActionClient
       studentId: p.id,
       fullName: p.full_name,
       phone: p.phone,
+      avatarUrl: p.avatar_url,
       loyaltyBalance: balances.get(p.id) ?? 0,
     }))
   })

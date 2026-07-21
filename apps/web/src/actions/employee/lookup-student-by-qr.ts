@@ -15,7 +15,7 @@ export const lookupStudentByQrAction = employeeActionClient
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, full_name, phone')
+      .select('id, full_name, phone, avatar_url')
       .eq('qr_token', parsedInput.qr_token)
       .eq('role', 'student')
       .maybeSingle()
@@ -35,6 +35,7 @@ export const lookupStudentByQrAction = employeeActionClient
       studentId: profile.id,
       fullName: profile.full_name,
       phone: profile.phone,
+      avatarUrl: profile.avatar_url,
       loyaltyBalance: balance,
     }
   })

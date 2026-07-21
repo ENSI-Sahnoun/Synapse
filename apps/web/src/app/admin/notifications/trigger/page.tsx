@@ -31,6 +31,8 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   kiosk_qr_drop: 'Envoi QR au kiosque (interne, non configurable)',
   kiosk_qr_drop_cancel: 'Annulation envoi QR kiosque (interne, non configurable)',
   locker_free_reminder: 'Rappel de libération de casier (étudiant)',
+  achievement_progress: 'Progression vers un succès (étudiant)',
+  achievement_unlocked: 'Succès débloqué (étudiant)',
 }
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {

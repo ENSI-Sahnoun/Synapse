@@ -6,6 +6,7 @@ import { motion } from 'motion/react'
 import { ArrowsOut, X } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { createClient } from '@/supabase-clients/client'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import { CapacityBadge } from './CapacityBadge'
 import type { RoomTable, Seat } from '@/data/admin/seat-map'
 import type { Room } from '@/data/admin/rooms'
@@ -53,12 +54,12 @@ export type LiveSeatMapProps = {
 export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatClick, highlightSeatId, allowFullscreen, hideRoomName }: LiveSeatMapProps) {
   const [tables, setTables] = useState<RoomTable[]>(initialTables)
   const [seats, setSeats] = useState<Seat[]>(initialSeats)
-  const [occupantNames, setOccupantNames] = useState<Record<string, string>>({})
+  const [occupantNames, setOccupantNames] = useState<Record<string, { name: string; avatarUrl: string | null }>>({})
   // Occupied seat ids that actually have an open attendance row. null = not yet
   // loaded (don't override anything until we know). Occupied seats absent from
   // this set are stale (owner unknown) and render as vacant.
   const [attendedSeatIds, setAttendedSeatIds] = useState<Set<string> | null>(null)
-  const [hover, setHover] = useState<{ x: number; y: number; name: string } | null>(null)
+  const [hover, setHover] = useState<{ x: number; y: number; name: string; avatarUrl: string | null } | null>(null)
 
   // The seat plan is laid out on a fixed 900x600 canvas. Inline, the container
   // only has a real *width* to go on (height is self-imposed), so we scale
@@ -183,19 +184,19 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
     const reservedSeatIds = seats.filter((s) => s.status === 'reserved').map((s) => s.id)
 
     async function load() {
-      const names: Record<string, string> = {}
+      const names: Record<string, { name: string; avatarUrl: string | null }> = {}
 
       const attended = new Set<string>()
       if (occupiedSeatIds.length > 0) {
         const { data } = await supabase
           .from('attendance')
-          .select('seat_id, profiles!attendance_student_id_fkey(full_name)')
+          .select('seat_id, profiles!attendance_student_id_fkey(full_name, avatar_url)')
           .in('seat_id', occupiedSeatIds)
           .is('checked_out_at', null)
         for (const row of data ?? []) {
           if (row.seat_id) attended.add(row.seat_id)
-          const name = (row.profiles as unknown as { full_name: string | null } | null)?.full_name
-          if (row.seat_id && name) names[row.seat_id] = name
+          const profile = (row.profiles as unknown as { full_name: string | null; avatar_url: string | null } | null)
+          if (row.seat_id && profile?.full_name) names[row.seat_id] = { name: profile.full_name, avatarUrl: profile.avatar_url ?? null }
         }
       }
       setAttendedSeatIds(attended)
@@ -203,12 +204,12 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
       if (reservedSeatIds.length > 0) {
         const { data } = await supabase
           .from('reservations')
-          .select('seat_id, profiles!reservations_student_id_fkey(full_name)')
+          .select('seat_id, profiles!reservations_student_id_fkey(full_name, avatar_url)')
           .in('seat_id', reservedSeatIds)
           .eq('status', 'active')
         for (const row of data ?? []) {
-          const name = (row.profiles as unknown as { full_name: string | null } | null)?.full_name
-          if (row.seat_id && name) names[row.seat_id] = name
+          const profile = (row.profiles as unknown as { full_name: string | null; avatar_url: string | null } | null)
+          if (row.seat_id && profile?.full_name) names[row.seat_id] = { name: profile.full_name, avatarUrl: profile.avatar_url ?? null }
         }
       }
 
@@ -350,7 +351,7 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
       )}
         {hover && !rotated && (
           <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white shadow-lg"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white shadow-lg flex items-center gap-1.5"
             style={{
               // Content is scaled and centered in the box, so map the seat's
               // canvas coords through the same scale + centering offset.
@@ -358,6 +359,7 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
               top: (box.h - bounds.h * scale) / 2 + (hover.y - bounds.y) * scale,
             }}
           >
+            <UserAvatar fullName={hover.name} avatarUrl={hover.avatarUrl} className="h-5 w-5" />
             {hover.name}
           </div>
         )}
@@ -435,8 +437,8 @@ export function LiveSeatMap({ room, initialTables, initialSeats, mode, onSeatCli
                   onTap={() => handleSeatClick(seat)}
                   onMouseEnter={(e) => {
                     if (isClickable) e.target.getStage()!.container().style.cursor = 'pointer'
-                    const name = occupantNames[seat.id]
-                    if (name) setHover({ x: seat.position_x, y: seat.position_y - SEAT_H, name })
+                    const occupant = occupantNames[seat.id]
+                    if (occupant) setHover({ x: seat.position_x, y: seat.position_y - SEAT_H, name: occupant.name, avatarUrl: occupant.avatarUrl })
                   }}
                   onMouseLeave={(e) => {
                     e.target.getStage()!.container().style.cursor = 'default'

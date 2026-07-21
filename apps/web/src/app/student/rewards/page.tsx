@@ -12,6 +12,7 @@ import {
   getLeaderboardSettings,
   getLeaderboardConfig,
 } from '@/data/student/leaderboard'
+import { getMyAchievements, getLevelsForStudents, getAchievementUnlockers } from '@/data/student/achievements'
 import { getNextReward, weeklyDelta } from '@/lib/rewards'
 import { RewardsHub } from './RewardsHub'
 import type { RedemptionRequest } from './RewardsPanel'
@@ -20,7 +21,7 @@ import { LiveRefresher } from '@/components/live/LiveRefresher'
 export default async function StudentRewardsPage() {
   const studentId = await getCachedLoggedInUserId()
 
-  const [balance, ledger, rules, pendingRuleIds, requests, lbRows, lbMyRanks, lbSettings, lbConfig] =
+  const [balance, ledger, rules, pendingRuleIds, requests, lbRows, lbMyRanks, lbSettings, lbConfig, achievements] =
     await Promise.all([
       getStudentLoyaltyBalance(studentId),
       getStudentLoyaltyLedger(studentId),
@@ -31,11 +32,18 @@ export default async function StudentRewardsPage() {
       getMyLeaderboardRank(),
       getLeaderboardSettings(),
       getLeaderboardConfig(),
+      getMyAchievements(),
     ])
+
+  const lbStudentIds = [...new Set(lbRows.map((r) => r.student_id))]
+  const [levels, unlockers] = await Promise.all([
+    getLevelsForStudents(lbStudentIds),
+    getAchievementUnlockers(achievements.map((a) => a.id)),
+  ])
 
   return (
     <>
-    <LiveRefresher tables={['loyalty_ledger', 'loyalty_redemption_requests', 'loyalty_rules', 'profiles']} />
+    <LiveRefresher tables={['loyalty_ledger', 'loyalty_redemption_requests', 'loyalty_rules', 'profiles', 'achievement_unlocks']} />
     <RewardsHub
       balance={balance}
       delta={weeklyDelta(ledger)}
@@ -48,6 +56,9 @@ export default async function StudentRewardsPage() {
       lbMyRanks={lbMyRanks}
       lbSettings={lbSettings}
       lbConfig={lbConfig}
+      achievements={achievements}
+      levels={levels}
+      unlockers={unlockers}
     />
     </>
   )

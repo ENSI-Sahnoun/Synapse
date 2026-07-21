@@ -52,6 +52,7 @@ export const ADMIN_NAV_ITEMS: NavRegistryItem[] = [
   { key: '/admin/products',            href: '/admin/products',            label: 'Produits (POS)',   icon: 'ShoppingCart',  group: 'admin' },
   { key: '/admin/pos/sessions',        href: '/admin/pos/sessions',        label: 'Sessions caisse',  icon: 'Wallet',        group: 'admin' },
   { key: '/admin/loyalty',             href: '/admin/loyalty',             label: 'Fidélité',         icon: 'Star',          group: 'admin' },
+  { key: '/admin/achievements',        href: '/admin/achievements',        label: 'Succès',           icon: 'Trophy',        group: 'admin' },
   { key: '/admin/notifications/trigger', href: '/admin/notifications/trigger', label: 'Notifications', icon: 'Bell',        group: 'admin' },
   { key: '/admin/settings',            href: '/admin/settings',            label: 'Paramètres',       icon: 'Gear',          group: 'admin' },
 ]

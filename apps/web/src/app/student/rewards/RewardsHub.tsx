@@ -9,6 +9,7 @@ import type {
   MyRank,
 } from '@/data/student/leaderboard'
 import type { LoyaltyRule, NextReward } from '@/lib/rewards'
+import type { Achievement, StudentLevel, AchievementUnlockers } from '@/data/student/achievements'
 import { PointsHero } from './PointsHero'
 import { LeaderboardPanel } from './LeaderboardPanel'
 import { RewardsPanel, type RedemptionRequest } from './RewardsPanel'
@@ -28,6 +29,9 @@ export function RewardsHub({
   lbMyRanks,
   lbSettings,
   lbConfig,
+  achievements,
+  levels,
+  unlockers,
 }: {
   balance: number
   delta: number
@@ -40,6 +44,9 @@ export function RewardsHub({
   lbMyRanks: MyRank[]
   lbSettings: LeaderboardSettings
   lbConfig: LeaderboardConfigRow[]
+  achievements: Achievement[]
+  levels: StudentLevel[]
+  unlockers: AchievementUnlockers
 }) {
   const reduced = useReducedMotion()
   const leaderboardVisible = lbSettings.enabled && lbConfig.some((c) => c.enabled)
@@ -87,7 +94,15 @@ export function RewardsHub({
           transition={{ duration: 0.18 }}
         >
           {active === 'leaderboard' && (
-            <LeaderboardPanel rows={lbRows} myRanks={lbMyRanks} settings={lbSettings} config={lbConfig} />
+            <LeaderboardPanel
+              rows={lbRows}
+              myRanks={lbMyRanks}
+              settings={lbSettings}
+              config={lbConfig}
+              achievements={achievements}
+              levels={levels}
+              unlockers={unlockers}
+            />
           )}
           {active === 'rewards' && (
             <RewardsPanel balance={balance} rules={rules} pendingRuleIds={pendingRuleIds} requests={requests} />

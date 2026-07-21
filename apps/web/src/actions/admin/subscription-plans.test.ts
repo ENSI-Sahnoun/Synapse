@@ -64,7 +64,7 @@ describe('createPlanAction plan_create logging', () => {
     })
 
     expect(insertLogMock).toHaveBeenCalledTimes(1)
-    const [payload] = insertLogMock.mock.calls[0] as [
+    const [payload] = insertLogMock.mock.calls[0] as unknown as [
       { action: string; plan_id: string; actor_id: string; details: { new: Record<string, unknown> } },
     ]
     expect(payload.action).toBe('plan_create')
@@ -125,7 +125,7 @@ describe('updatePlanAction plan_update old/new price-change logging', () => {
     expect(updateEqMock).toHaveBeenCalledWith('id', 'plan1')
     expect(insertLogMock).toHaveBeenCalledTimes(1)
 
-    const [payload] = insertLogMock.mock.calls[0] as [
+    const [payload] = insertLogMock.mock.calls[0] as unknown as [
       { action: string; plan_id: string; actor_id: string; details: { old: Record<string, unknown>; new: Record<string, unknown> } },
     ]
 

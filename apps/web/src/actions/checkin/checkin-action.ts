@@ -21,7 +21,7 @@ export const checkinAction = employeeActionClient
     // Lookup by stored token value — could be a student or an employee badge.
     const { data: profile, error: profileError } = await admin
       .from('profiles')
-      .select('id, full_name, role')
+      .select('id, full_name, role, avatar_url')
       .eq('qr_token', qrToken)
       .in('role', ['student', 'employee'])
       .single()
@@ -49,6 +49,7 @@ export const checkinAction = employeeActionClient
       return {
         status: 'ALREADY_IN',
         studentName: profile.full_name,
+        avatarUrl: profile.avatar_url,
         checkedInAt: openAttendance.checked_in_at,
         attendanceId: openAttendance.id,
       }
@@ -82,6 +83,7 @@ export const checkinAction = employeeActionClient
         return {
           status: 'DENIED_EXPIRED',
           studentName: profile.full_name,
+          avatarUrl: profile.avatar_url,
           endDate: expiredSub.end_date,
         }
       }
@@ -89,6 +91,7 @@ export const checkinAction = employeeActionClient
       return {
         status: 'DENIED_NO_SUB',
         studentName: profile.full_name,
+        avatarUrl: profile.avatar_url,
       }
     }
 
@@ -111,6 +114,7 @@ export const checkinAction = employeeActionClient
         return {
           status: 'DENIED_NO_RESERVATION' as const,
           studentName: profile.full_name,
+          avatarUrl: profile.avatar_url,
         }
       }
     }
@@ -155,6 +159,7 @@ export const checkinAction = employeeActionClient
       return {
         status: 'AUTHORIZED',
         studentName: profile.full_name,
+        avatarUrl: profile.avatar_url,
         studentId,
         deferred: false,
         planName,
@@ -220,6 +225,7 @@ export const checkinAction = employeeActionClient
     return {
       status: 'AUTHORIZED',
       studentName: profile.full_name,
+      avatarUrl: profile.avatar_url,
       studentId,
       deferred: false,
       planName,

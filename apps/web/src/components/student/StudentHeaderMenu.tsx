@@ -15,9 +15,10 @@ import { signOutAction } from '@/data/auth/sign-out'
 interface StudentHeaderMenuProps {
   fullName: string | null
   initials: string
+  avatarUrl?: string | null
 }
 
-export function StudentHeaderMenu({ fullName, initials }: StudentHeaderMenuProps) {
+export function StudentHeaderMenu({ fullName, initials, avatarUrl }: StudentHeaderMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -27,12 +28,21 @@ export function StudentHeaderMenu({ fullName, initials }: StudentHeaderMenuProps
           className="w-11 h-11 -mx-1.5 flex items-center justify-center cursor-pointer"
           aria-label="Menu compte"
         >
-          <span
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-            style={{ backgroundColor: 'var(--synapse-brown-100)', color: 'var(--accent-brand)' }}
-          >
-            {initials}
-          </span>
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt={fullName ?? 'Avatar'}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <span
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+              style={{ backgroundColor: 'var(--synapse-brown-100)', color: 'var(--accent-brand)' }}
+            >
+              {initials}
+            </span>
+          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import type { CashSessionRow } from '@/data/admin/analytics/cash-sessions'
 
 type Props = { data: CashSessionRow[] }
@@ -47,9 +48,17 @@ export function CashSessionsTable({ data }: Props) {
                 return (
                   <TableRow key={r.id}>
                     <TableCell>{new Date(r.openedAt).toLocaleString('fr-FR')}</TableCell>
-                    <TableCell>{r.openedByName}</TableCell>
+                    <TableCell className="flex items-center gap-2">
+                      <UserAvatar fullName={r.openedByName} avatarUrl={r.openedByAvatarUrl} className="h-6 w-6" />
+                      {r.openedByName}
+                    </TableCell>
                     <TableCell>
-                      {r.closedByName ?? (
+                      {r.closedByName ? (
+                        <div className="flex items-center gap-2">
+                          <UserAvatar fullName={r.closedByName} avatarUrl={r.closedByAvatarUrl} className="h-6 w-6" />
+                          {r.closedByName}
+                        </div>
+                      ) : (
                         <Badge variant="outline">Ouverte</Badge>
                       )}
                     </TableCell>

@@ -4,6 +4,7 @@ import { getCachedLoggedInUserClaims } from '@/rsc-data/supabase'
 import { signOutAction } from '@/data/auth/sign-out'
 import { SignOut } from '@phosphor-icons/react/dist/ssr'
 import { StudentSettingsClient } from './StudentSettingsClient'
+import { ProfileForm } from '@/components/user/ProfileForm'
 
 export default async function StudentSettingsPage() {
   const claims = await getCachedLoggedInUserClaims()
@@ -37,18 +38,37 @@ export default async function StudentSettingsPage() {
         className="rounded-xl border p-5 flex items-center gap-4"
         style={{ background: 'white', borderColor: 'var(--border-subtle)' }}
       >
-        <div
-          className="flex-shrink-0 flex items-center justify-center rounded-full text-white font-bold text-lg"
-          style={{ width: 52, height: 52, background: 'var(--accent-brand)' }}
-        >
-          {initials}
-        </div>
+        {profile.avatar_url ? (
+          <img
+            src={profile.avatar_url}
+            alt={profile.full_name}
+            className="flex-shrink-0 rounded-full object-cover"
+            style={{ width: 52, height: 52 }}
+          />
+        ) : (
+          <div
+            className="flex-shrink-0 flex items-center justify-center rounded-full text-white font-bold text-lg"
+            style={{ width: 52, height: 52, background: 'var(--accent-brand)' }}
+          >
+            {initials}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <p className="font-bold text-base truncate">{profile.full_name}</p>
-          <p className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>
-            {email}
-          </p>
         </div>
+      </div>
+
+      {/* Profile editing form */}
+      <div
+        className="rounded-xl border p-5"
+        style={{ background: 'white', borderColor: 'var(--border-subtle)' }}
+      >
+        <ProfileForm
+          userId={userId}
+          fullName={profile.full_name ?? ''}
+          phone={profile.phone ?? null}
+          avatarUrl={profile.avatar_url ?? null}
+        />
       </div>
 
       {/* Functional client section: toggles + email/password reset */}

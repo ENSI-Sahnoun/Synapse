@@ -31,7 +31,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
   const supabase = await createSupabaseClient()
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name, credentials_set')
+    .select('role, full_name, credentials_set, avatar_url')
     .eq('id', userId)
     .single()
 
@@ -83,7 +83,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
           />
 
           {/* Avatar — opens account menu (name, historique, logout) */}
-          <StudentHeaderMenu fullName={profile.full_name} initials={initials} />
+          <StudentHeaderMenu fullName={profile.full_name} initials={initials} avatarUrl={profile.avatar_url} />
         </div>
       </header>
 

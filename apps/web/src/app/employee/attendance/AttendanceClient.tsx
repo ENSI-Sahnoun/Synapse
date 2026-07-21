@@ -8,20 +8,18 @@ import { MagnifyingGlass } from '@phosphor-icons/react'
 import { useAction } from 'next-safe-action/hooks'
 import { checkoutAction } from '@/actions/checkin/checkout-action'
 import { createClient } from '@/supabase-clients/client'
+import { UserAvatar } from '@/components/user/UserAvatar'
 
 interface Session {
   id: string
   studentId: string | null
   studentName: string
+  avatarUrl: string | null
   room: string
   seatLabel: string | null
   checkedInAt: string
   checkedOutAt: string | null
   status: 'in' | 'out'
-}
-
-function initials(name: string) {
-  return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || '?'
 }
 
 function roomColor(room: string): string {
@@ -176,12 +174,7 @@ export function AttendanceClient({ sessions: initialSessions }: { sessions: Sess
               style={{ pointerEvents: s.studentId ? 'auto' : 'none', textDecoration: 'none', color: 'inherit' }}
             >
               {/* Avatar */}
-              <div
-                className="flex-shrink-0 flex items-center justify-center rounded-full text-white text-xs font-bold"
-                style={{ width: 38, height: 38, background: s.status === 'in' ? 'var(--accent-brand)' : 'var(--synapse-stone-400)' }}
-              >
-                {initials(s.studentName)}
-              </div>
+              <UserAvatar fullName={s.studentName} avatarUrl={s.avatarUrl} className="h-10 w-10 flex-shrink-0" />
 
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate">{s.studentName}</p>

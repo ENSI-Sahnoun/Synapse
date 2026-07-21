@@ -2,6 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server'
 import { redirect } from 'next/navigation'
 import { getCachedLoggedInUserClaims } from '@/rsc-data/supabase'
 import { signOutAction } from '@/data/auth/sign-out'
+import { ProfileForm } from '@/components/user/ProfileForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ export default async function EmployeeProfilePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name, phone, created_at')
+    .select('role, full_name, phone, created_at, avatar_url')
     .eq('id', user.id)
     .single()
 
@@ -35,11 +36,17 @@ export default async function EmployeeProfilePage() {
       }}>
         <div style={{
           width: 72, height: 72, borderRadius: '50%',
-          background: 'var(--accent-brand)', color: '#fff',
+          background: profile?.avatar_url ? 'transparent' : 'var(--accent-brand)',
+          color: '#fff',
           fontSize: 26, fontWeight: 700,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden',
         }}>
-          {initials}
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt={profile?.full_name ?? 'Avatar'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            initials
+          )}
         </div>
         <div>
           <div style={{ fontSize: 18, fontWeight: 700 }}>{profile?.full_name ?? '—'}</div>
@@ -53,10 +60,16 @@ export default async function EmployeeProfilePage() {
 
       <div style={{
         background: '#fff', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-lg)', padding: 20,
+      }}>
+        <ProfileForm userId={user.id} fullName={profile?.full_name ?? ''} phone={profile?.phone ?? null} avatarUrl={profile?.avatar_url ?? null} />
+      </div>
+
+      <div style={{
+        background: '#fff', border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius-lg)', overflow: 'hidden',
       }}>
         {[
-          { label: 'Email', value: user.email ?? '—' },
           { label: 'Téléphone', value: profile?.phone ?? '—' },
           { label: 'Rôle', value: roleLabel },
           { label: 'Membre depuis', value: joinDate },

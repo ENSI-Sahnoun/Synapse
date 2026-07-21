@@ -6,6 +6,7 @@ import { RestoreButton } from '@/components/admin/RestoreButton'
 import { HardDeleteButton } from '@/components/admin/HardDeleteButton'
 import { ArchivedToggle } from './ArchivedToggle'
 import { EmptyStateText } from './EmptyStateText'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import { Suspense } from 'react'
 
 export default async function AdminEmployeesPage({
@@ -70,7 +71,12 @@ export default async function AdminEmployeesPage({
             )}
             {employees.map((e) => (
               <tr key={e.id} className="border-b last:border-0">
-                <td className="px-4 py-2">{e.full_name}</td>
+                <td className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <UserAvatar fullName={e.full_name} avatarUrl={e.avatar_url} className="h-8 w-8" />
+                    {e.full_name}
+                  </div>
+                </td>
                 <td className="px-4 py-2 text-muted-foreground">{e.phone ?? '—'}</td>
                 <td className="px-4 py-2">
                   <div className="flex gap-2 justify-end">
@@ -119,7 +125,12 @@ export default async function AdminEmployeesPage({
             )}
             {kioskAccounts.map((k) => (
               <tr key={k.id} className="border-b last:border-0">
-                <td className="px-4 py-2">{k.full_name}</td>
+                <td className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <UserAvatar fullName={k.full_name} avatarUrl={k.avatar_url} className="h-8 w-8" />
+                    {k.full_name}
+                  </div>
+                </td>
                 <td className="px-4 py-2">
                   <div className="flex gap-2 justify-end">
                     {showArchived ? (

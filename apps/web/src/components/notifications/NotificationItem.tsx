@@ -7,7 +7,7 @@ import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import {
   Armchair, Star, Gift, Clock, WarningCircle, Megaphone,
-  Bell, XCircle, CaretRight, CreditCard, Users, type Icon as PhosphorIcon,
+  Bell, XCircle, CaretRight, CreditCard, Users, Trophy, type Icon as PhosphorIcon,
 } from '@phosphor-icons/react'
 import type { NotificationRow } from '@/data/notifications/list'
 
@@ -39,6 +39,8 @@ function metaFor(type: string): { Icon: PhosphorIcon; label: string; tone: Tone 
   if (type === 'locker_free_reminder') return { Icon: Clock, label: 'Casier à libérer', tone: 'orange' }
   if (type === 'subscription_new' || type === 'purchase_completed') return { Icon: CreditCard, label: 'Paiement', tone: 'green' }
   if (type === 'room_almost_full') return { Icon: Users, label: 'Salle presque pleine', tone: 'orange' }
+  if (type === 'achievement_unlocked') return { Icon: Trophy, label: 'Succès débloqué', tone: 'amber' }
+  if (type === 'achievement_progress') return { Icon: Trophy, label: 'Progression', tone: 'brand' }
   if (type === 'broadcast' || type === 'manual' || type === 'announcement_new') return { Icon: Megaphone, label: 'Annonce', tone: 'brand' }
   return { Icon: Bell, label: 'Notification', tone: 'neutral' }
 }
@@ -148,6 +150,20 @@ export function NotificationItem({ notification, onMarkRead, onClear, href, onOp
             )}
           </div>
           <p className="text-sm leading-snug text-foreground">{notification.message}</p>
+          {notification.type === 'achievement_progress' &&
+            notification.progress_current != null &&
+            notification.progress_target != null &&
+            notification.progress_target > 0 && (
+              <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted mt-1">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(100, Math.round((notification.progress_current / notification.progress_target) * 100))}%`,
+                    background: 'var(--synapse-green-600)',
+                  }}
+                />
+              </div>
+            )}
           <p className="text-xs text-muted-foreground">{timeAgo}</p>
         </div>
 

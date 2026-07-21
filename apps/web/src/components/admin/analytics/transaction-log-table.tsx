@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import { voidPurchaseAction, voidSubscriptionAction, voidChargeAction } from '@/actions/admin/transactions'
 import type { Transaction } from '@/data/admin/analytics/transactions'
 import { cn } from '@/lib/utils'
@@ -106,7 +107,10 @@ export function TransactionLogTable({ transactions }: { transactions: Transactio
             <TableRow key={`${tx.type}-${tx.id}`} className={cn(voided && 'text-muted-foreground opacity-60')}>
               <TableCell className={cn(voided && 'line-through')}>{formatWhen(tx.at)}</TableCell>
               <TableCell>{typeBadge(tx.type)}</TableCell>
-              <TableCell className={cn(voided && 'line-through')}>{tx.who ?? '—'}</TableCell>
+              <TableCell className={cn('flex items-center gap-2', voided && 'line-through')}>
+                {tx.who && <UserAvatar fullName={tx.who} avatarUrl={tx.who_avatar_url} className="h-6 w-6" />}
+                {tx.who ?? '—'}
+              </TableCell>
               <TableCell className={cn(voided && 'line-through')}>{describe(tx)}</TableCell>
               <TableCell className={cn('text-right font-mono', voided && 'line-through')}>
                 {amount(tx).toFixed(3)}

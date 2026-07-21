@@ -10,6 +10,7 @@ export type ActiveReservation = {
   queue_position: number | null
   is_priority: boolean
   student_name: string
+  avatarUrl: string | null
   seat_label: string
   room_name: string
 }
@@ -21,7 +22,7 @@ export async function getActiveReservations(): Promise<ActiveReservation[]> {
     .from('reservations')
     .select(`
       id, student_id, seat_id, status, expires_at, reserved_at, queue_position, is_priority,
-      profiles!reservations_student_id_fkey(full_name),
+      profiles!reservations_student_id_fkey(full_name, avatar_url),
       seats!reservations_seat_id_fkey(label, rooms(name))
     `)
     .eq('status', 'active')
@@ -30,7 +31,7 @@ export async function getActiveReservations(): Promise<ActiveReservation[]> {
   if (error || !data) return []
 
   return data.map((r) => {
-    const profile = r.profiles as { full_name: string } | null
+    const profile = r.profiles as { full_name: string; avatar_url: string | null } | null
     const seat = r.seats as { label: string; rooms: { name: string } | null } | null
     return {
       id: r.id,
@@ -42,6 +43,7 @@ export async function getActiveReservations(): Promise<ActiveReservation[]> {
       queue_position: r.queue_position,
       is_priority: r.is_priority,
       student_name: profile?.full_name ?? 'Inconnu',
+      avatarUrl: profile?.avatar_url ?? null,
       seat_label: seat?.label ?? '—',
       room_name: seat?.rooms?.name ?? '—',
     }

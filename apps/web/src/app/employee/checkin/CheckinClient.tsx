@@ -10,6 +10,7 @@ import { PostCheckinSeatDialog } from '@/components/checkin/PostCheckinSeatDialo
 import type { CheckinResult as CheckinResultType } from '@/utils/zod-schemas/checkin'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { UserAvatar } from '@/components/user/UserAvatar'
 
 interface CheckinClientProps {
   todayTotal: number
@@ -18,15 +19,6 @@ interface CheckinClientProps {
 }
 
 const PREFIX = 'SYNAPSE-'
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((p) => p[0] ?? '')
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
 
 export function CheckinClient({
   todayTotal,
@@ -402,24 +394,7 @@ export function CheckinClient({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-            <div
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: '50%',
-                background: 'var(--accent-brand)',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: 15,
-                fontFamily: 'var(--font-display)',
-                flexShrink: 0,
-              }}
-            >
-              {getInitials(lastResult.studentName)}
-            </div>
+            <UserAvatar fullName={lastResult.studentName} avatarUrl={lastResult.avatarUrl} className="h-10 w-10 flex-shrink-0" />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: 16, lineHeight: 1.2 }}>
                 {lastResult.studentName}

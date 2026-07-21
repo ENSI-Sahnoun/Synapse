@@ -6,10 +6,12 @@ export type CashSessionRow = {
   status: string
   openedById: string
   openedByName: string
+  openedByAvatarUrl: string | null
   openedAt: string
   openingAmountDt: number
   closedById: string | null
   closedByName: string | null
+  closedByAvatarUrl: string | null
   closedAt: string | null
   closingAmountDt: number | null
   expectedAmountDt: number | null
@@ -29,8 +31,8 @@ type CashSessionRawRow = {
   expected_amount_dt: number | null
   discrepancy_dt: number | null
   notes: string | null
-  opener: { full_name: string } | null
-  closer: { full_name: string } | null
+  opener: { full_name: string; avatar_url: string | null } | null
+  closer: { full_name: string; avatar_url: string | null } | null
 }
 
 function mapRow(r: CashSessionRawRow): CashSessionRow {
@@ -39,10 +41,12 @@ function mapRow(r: CashSessionRawRow): CashSessionRow {
     status: r.status,
     openedById: r.opened_by,
     openedByName: r.opener?.full_name ?? 'Inconnu',
+    openedByAvatarUrl: r.opener?.avatar_url ?? null,
     openedAt: r.opened_at,
     openingAmountDt: Number(r.opening_amount_dt),
     closedById: r.closed_by,
     closedByName: r.closer?.full_name ?? null,
+    closedByAvatarUrl: r.closer?.avatar_url ?? null,
     closedAt: r.closed_at,
     closingAmountDt: r.closing_amount_dt === null ? null : Number(r.closing_amount_dt),
     expectedAmountDt: r.expected_amount_dt === null ? null : Number(r.expected_amount_dt),
@@ -52,7 +56,7 @@ function mapRow(r: CashSessionRawRow): CashSessionRow {
 }
 
 const SESSION_SELECT =
-  'id, status, opened_by, opened_at, opening_amount_dt, closed_by, closed_at, closing_amount_dt, expected_amount_dt, discrepancy_dt, notes, opener:profiles!cash_register_sessions_opened_by_fkey(full_name), closer:profiles!cash_register_sessions_closed_by_fkey(full_name)'
+  'id, status, opened_by, opened_at, opening_amount_dt, closed_by, closed_at, closing_amount_dt, expected_amount_dt, discrepancy_dt, notes, opener:profiles!cash_register_sessions_opened_by_fkey(full_name, avatar_url), closer:profiles!cash_register_sessions_closed_by_fkey(full_name, avatar_url)'
 
 export async function getCurrentCashSession(): Promise<CashSessionRow | null> {
   const supabase = await createSupabaseClient()

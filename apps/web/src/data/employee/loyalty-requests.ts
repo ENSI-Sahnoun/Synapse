@@ -11,7 +11,7 @@ export async function listPendingRedemptionRequests() {
       status,
       points_used,
       created_at,
-      student:profiles!student_id(id, full_name, phone),
+      student:profiles!student_id(id, full_name, phone, avatar_url),
       rule:loyalty_rules!rule_id(id, name, reward_type, reward_value)
     `)
     .eq('status', 'pending')
@@ -30,7 +30,7 @@ export async function listRecentFulfilledRequests(limit = 20) {
       points_used,
       created_at,
       handled_at,
-      student:profiles!student_id(id, full_name),
+      student:profiles!student_id(id, full_name, avatar_url),
       rule:loyalty_rules!rule_id(id, name, reward_type)
     `)
     .in('status', ['fulfilled', 'rejected'])

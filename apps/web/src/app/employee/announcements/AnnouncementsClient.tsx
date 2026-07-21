@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import { createAnnouncementAction, deleteAnnouncementAction } from '@/actions/employee/announcements'
 
 interface Announcement {
@@ -19,6 +20,7 @@ interface Announcement {
 interface Recipient {
   id: string
   full_name: string | null
+  avatar_url: string | null
 }
 
 export function AnnouncementsClient({
@@ -132,7 +134,10 @@ export function AnnouncementsClient({
                 border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)',
                 padding: '10px 12px', fontSize: 14,
               }}>
-                <span>{selectedRecipient.full_name ?? selectedRecipient.id}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <UserAvatar fullName={selectedRecipient.full_name} avatarUrl={selectedRecipient.avatar_url} className="h-6 w-6" />
+                  <span>{selectedRecipient.full_name ?? selectedRecipient.id}</span>
+                </div>
                 <button
                   type="button"
                   onClick={() => { setRecipientId(''); setRecipientQuery('') }}
@@ -164,11 +169,12 @@ export function AnnouncementsClient({
                         type="button"
                         onClick={() => { setRecipientId(r.id); setRecipientQuery('') }}
                         style={{
-                          display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                          display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'none', border: 'none',
                           padding: '10px 12px', fontSize: 13, cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)',
                         }}
                       >
-                        {r.full_name ?? r.id}
+                        <UserAvatar fullName={r.full_name} avatarUrl={r.avatar_url} className="h-6 w-6" />
+                        <span>{r.full_name ?? r.id}</span>
                       </button>
                     ))}
                   </div>
@@ -225,8 +231,11 @@ export function AnnouncementsClient({
                     <span style={{
                       fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
                       background: 'var(--muted, #f1f1f1)', borderRadius: 99, padding: '1px 8px',
+                      display: 'flex', alignItems: 'center', gap: 4,
                     }}>
-                      → {recipients.find(r => r.id === a.recipient_id)?.full_name ?? 'Destinataire inconnu'}
+                      →
+                      <UserAvatar fullName={recipients.find(r => r.id === a.recipient_id)?.full_name ?? undefined} avatarUrl={recipients.find(r => r.id === a.recipient_id)?.avatar_url ?? null} className="h-4 w-4" />
+                      {recipients.find(r => r.id === a.recipient_id)?.full_name ?? 'Destinataire inconnu'}
                     </span>
                     <span style={{
                       fontSize: 11, fontWeight: 600,

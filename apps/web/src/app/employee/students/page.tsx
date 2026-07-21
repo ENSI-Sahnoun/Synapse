@@ -29,7 +29,7 @@ export default async function EmployeeStudentsPage({
   const [studentsResult, openAttResult, plansResult, roomsResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, phone, university, qr_token, student_number')
+      .select('id, full_name, phone, university, qr_token, student_number, avatar_url')
       .eq('role', 'student')
       .eq('is_archived', showArchived)
       .order('full_name'),

@@ -14,6 +14,7 @@ import {
 } from '@/actions/employee/cash-sessions'
 import { QrScanDialog } from './qr-scan-dialog'
 import { OpenSessionForm } from './open-session-form'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import { type Product } from '@/data/employee/products'
 import { type OpenCashSession } from '@/data/employee/cash-sessions'
 
@@ -26,6 +27,7 @@ interface StudentInfo {
   studentId: string
   fullName: string
   phone: string | null
+  avatarUrl: string | null
   loyaltyBalance: number
 }
 
@@ -347,9 +349,30 @@ export function PosClient({
   }, [cart.length])
 
   function purchaseForSelf() {
-    setPendingStudent({ studentId: currentUser.id, fullName: currentUser.fullName, phone: null, loyaltyBalance: 0 })
+    setPendingStudent({ studentId: currentUser.id, fullName: currentUser.fullName, phone: null, avatarUrl: null, loyaltyBalance: 0 })
     confirmPurchase(currentUser.id)
   }
+
+  // Group the (filtered) products by category ONCE per input change instead of
+  // re-filtering the whole list inside categories.map on every keystroke /
+  // cart change (was O(categories × products) per render on the hot sale path).
+  const { categories, productsByCategory, visibleCount } = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const visible = q
+      ? products.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+      : products
+    const catRank = new Map(categoryOrder.map((name, i) => [name, i]))
+    const byCategory = new Map<string, Product[]>()
+    for (const p of visible) {
+      const list = byCategory.get(p.category) ?? []
+      list.push(p)
+      byCategory.set(p.category, list)
+    }
+    const cats = [...byCategory.keys()].sort(
+      (a, b) => (catRank.get(a) ?? 999) - (catRank.get(b) ?? 999)
+    )
+    return { categories: cats, productsByCategory: byCategory, visibleCount: visible.length }
+  }, [products, categoryOrder, search])
 
   if (closeResult) {
     const hasDiscrepancy = Math.abs(closeResult.discrepancyDt) > 0.001
@@ -486,27 +509,6 @@ export function PosClient({
       </div>
     )
   }
-
-  // Group the (filtered) products by category ONCE per input change instead of
-  // re-filtering the whole list inside categories.map on every keystroke /
-  // cart change (was O(categories × products) per render on the hot sale path).
-  const { categories, productsByCategory, visibleCount } = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    const visible = q
-      ? products.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
-      : products
-    const catRank = new Map(categoryOrder.map((name, i) => [name, i]))
-    const byCategory = new Map<string, Product[]>()
-    for (const p of visible) {
-      const list = byCategory.get(p.category) ?? []
-      list.push(p)
-      byCategory.set(p.category, list)
-    }
-    const cats = [...byCategory.keys()].sort(
-      (a, b) => (catRank.get(a) ?? 999) - (catRank.get(b) ?? 999)
-    )
-    return { categories: cats, productsByCategory: byCategory, visibleCount: visible.length }
-  }, [products, categoryOrder, search])
 
   function renderCard(product: Product) {
     const outOfStock = product.stock_quantity === 0
@@ -1163,21 +1165,7 @@ export function PosClient({
                     textAlign: 'left',
                   }}
                 >
-                  <div style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: '50%',
-                    background: 'var(--accent-brand)',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    flexShrink: 0,
-                  }}>
-                    {initials(student.fullName)}
-                  </div>
+                  <UserAvatar fullName={student.fullName} avatarUrl={student.avatarUrl} className="h-9 w-9 flex-shrink-0" />
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{student.fullName}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
@@ -1216,21 +1204,7 @@ export function PosClient({
               borderRadius: 'var(--radius-lg)',
               marginBottom: 20,
             }}>
-              <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                background: 'var(--accent-brand)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: 15,
-                flexShrink: 0,
-              }}>
-                {initials(pendingStudent.fullName)}
-              </div>
+              <UserAvatar fullName={pendingStudent.fullName} avatarUrl={pendingStudent.avatarUrl} className="h-10 w-10 flex-shrink-0" />
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15 }}>{pendingStudent.fullName}</div>
                 <div style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>

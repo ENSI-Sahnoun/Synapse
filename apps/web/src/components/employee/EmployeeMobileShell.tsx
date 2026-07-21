@@ -212,9 +212,13 @@ export function EmployeeMobileShell({ fullName, role, navItems, initialNotificat
           </nav>
 
           <div className="px-5 py-4 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
-            <p className="text-xs font-medium truncate" style={{ color: 'var(--sidebar-foreground)' }}>
+            <Link
+              href={role === 'admin' ? '/admin/profile' : '/employee/profile'}
+              className="text-xs font-medium truncate block hover:underline"
+              style={{ color: 'var(--sidebar-foreground)' }}
+            >
               {fullName}
-            </p>
+            </Link>
             <form action={signOutAction} className="mt-2">
               <button
                 type="submit"

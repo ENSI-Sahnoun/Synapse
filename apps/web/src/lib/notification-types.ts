@@ -25,6 +25,8 @@ export type NotificationType =
   | 'kiosk_qr_drop'
   | 'kiosk_qr_drop_cancel'
   | 'locker_free_reminder'
+  | 'achievement_progress'
+  | 'achievement_unlocked'
 
 export type NotificationChannel = 'email' | 'sms' | 'whatsapp' | 'inapp'
 

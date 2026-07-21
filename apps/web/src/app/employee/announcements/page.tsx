@@ -21,7 +21,7 @@ export default async function AnnouncementsPage() {
 
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, full_name')
+    .select('id, full_name, avatar_url')
     .order('full_name', { ascending: true })
 
   const announcementIds = (announcements ?? []).map((a) => a.id)
@@ -44,7 +44,7 @@ export default async function AnnouncementsPage() {
       <AnnouncementsClient
         announcements={announcements ?? []}
         currentUserId={userId}
-        recipients={(profiles ?? []) as { id: string; full_name: string | null }[]}
+        recipients={(profiles ?? []) as { id: string; full_name: string | null; avatar_url: string | null }[]}
         readStats={readStats}
       />
     </div>

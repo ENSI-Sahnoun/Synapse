@@ -8,7 +8,7 @@ export interface LockerRow {
   id: string
   number: number
   status: LockerStatus
-  student: { id: string; full_name: string | null; student_number: number | null } | null
+  student: { id: string; full_name: string | null; student_number: number | null; avatar_url: string | null } | null
   subscriptionEndDate: string | null
 }
 
@@ -20,7 +20,7 @@ export async function getLockersWithStatus(): Promise<LockerRow[]> {
     .from('lockers')
     .select(`
       id, number, is_unavailable, assigned_student_id,
-      profiles:assigned_student_id ( id, full_name, student_number ),
+      profiles:assigned_student_id ( id, full_name, student_number, avatar_url ),
       subscriptions:assigned_subscription_id ( end_date )
     `)
     .order('number', { ascending: true })
@@ -39,7 +39,7 @@ export async function getLockersWithStatus(): Promise<LockerRow[]> {
     )
     const student =
       status === 'occupied'
-        ? (row.profiles as { id: string; full_name: string | null; student_number: number | null } | null)
+        ? (row.profiles as { id: string; full_name: string | null; student_number: number | null; avatar_url: string | null } | null)
         : null
     return { id: row.id, number: row.number, status, student, subscriptionEndDate }
   })
@@ -50,6 +50,7 @@ export interface StudentForLocker {
   full_name: string | null
   student_number: number | null
   phone: string | null
+  avatar_url: string | null
   is_eligible: boolean
 }
 
@@ -96,7 +97,7 @@ export async function getEligibleStudentsForLocker(): Promise<StudentForLocker[]
       .gte('subscription_plans.duration_days', minDurationDays),
     supabase
       .from('profiles')
-      .select('id, full_name, student_number, phone')
+      .select('id, full_name, student_number, phone, avatar_url')
       .eq('role', 'student')
       .eq('is_archived', false)
       .order('full_name', { ascending: true }),

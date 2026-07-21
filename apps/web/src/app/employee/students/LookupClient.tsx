@@ -13,6 +13,7 @@ import { archiveUserAction, restoreUserAction, hardDeleteUserAction } from '@/ac
 import { QrCodeImage } from '@/components/student/QrCodeImage'
 import { PostCheckinSeatDialog } from '@/components/checkin/PostCheckinSeatDialog'
 import { createClient } from '@/supabase-clients/client'
+import { UserAvatar } from '@/components/user/UserAvatar'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ArchivedToggle } from './ArchivedToggle'
@@ -44,6 +45,7 @@ interface Student {
   university: string | null
   qr_token: string | null
   student_number: number | null
+  avatar_url: string | null
 }
 
 interface CurrentlyIn {
@@ -76,33 +78,6 @@ interface LookupClientProps {
   plans: Plan[]
   role: string
   showArchived: boolean
-}
-
-function getInitials(name: string | null): string {
-  if (!name) return '?'
-  return name.split(' ').map(p => p[0] ?? '').join('').toUpperCase().slice(0, 2)
-}
-
-function Avatar({ name, size = 36 }: { name: string | null; size?: number }) {
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        minWidth: size,
-        borderRadius: '50%',
-        background: 'var(--accent-brand)',
-        color: '#fff',
-        fontWeight: 700,
-        fontSize: size * 0.38,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {getInitials(name)}
-    </div>
-  )
 }
 
 function ArchiveButtonWithRefresh({ id, onDone }: { id: string; onDone: () => void }) {
@@ -218,7 +193,7 @@ function StudentCard({
         cursor: 'pointer',
       }}
     >
-      <Avatar name={student.full_name} />
+      <UserAvatar fullName={student.full_name} avatarUrl={student.avatar_url} className="h-8 w-8" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {student.full_name ?? '—'}
@@ -646,7 +621,7 @@ function DetailView({
           gap: 14,
         }}
       >
-        <Avatar name={student.full_name} size={48} />
+        <UserAvatar fullName={student.full_name} avatarUrl={student.avatar_url} className="h-12 w-12" />
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <span

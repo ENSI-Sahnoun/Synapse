@@ -69,7 +69,7 @@ describe('updateProductAction old/new price-change logging', () => {
     expect(updateEqMock).toHaveBeenCalledWith('id', 'p1')
     expect(insertMock).toHaveBeenCalledTimes(1)
 
-    const [payload] = insertMock.mock.calls[0] as [
+    const [payload] = insertMock.mock.calls[0] as unknown as [
       { action: string; product_id: string; actor_id: string; details: { old: Record<string, unknown>; new: Record<string, unknown> } },
     ]
 
@@ -122,7 +122,7 @@ describe('createProductAction price-change logging', () => {
     })
 
     expect(insertMock).toHaveBeenCalledTimes(1)
-    const [payload] = insertMock.mock.calls[0] as [
+    const [payload] = insertMock.mock.calls[0] as unknown as [
       { action: string; product_id: string; actor_id: string; details: { new: Record<string, unknown> } },
     ]
 
