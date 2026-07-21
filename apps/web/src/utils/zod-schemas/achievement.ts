@@ -10,41 +10,48 @@ export const ACHIEVEMENT_CATEGORIES = [
 ] as const
 export type AchievementCategory = typeof ACHIEVEMENT_CATEGORIES[number]
 
-export const createAchievementSchema = z
-  .object({
-    category: z.enum(ACHIEVEMENT_CATEGORIES, { error: 'Catégorie invalide' }),
-    threshold: z.coerce.number().int().min(1, 'Seuil minimum 1').nullable().optional(),
-    points: z.coerce.number().int().min(0, 'Points minimum 0'),
-    title: z.string().min(2, 'Titre requis'),
-    description: z.string().optional(),
-    emoji: z.string().default('🏆'),
-    sort_order: z.coerce.number().int().default(0),
-  })
-  .superRefine((data, ctx) => {
-    if (data.category === 'manual') {
-      if (data.threshold !== null && data.threshold !== undefined) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['threshold'],
-          message: 'Le seuil doit être null pour les succès manuels',
-        })
-      }
-    } else {
-      if (data.threshold === null || data.threshold === undefined) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['threshold'],
-          message: 'Le seuil est requis',
-        })
-      }
+// Base object kept refinement-free so both create (full) and update (partial)
+// schemas can derive from it — zod disallows .partial() on a schema that
+// already carries a superRefine.
+const achievementBaseSchema = z.object({
+  category: z.enum(ACHIEVEMENT_CATEGORIES, { error: 'Catégorie invalide' }),
+  threshold: z.coerce.number().int().min(1, 'Seuil minimum 1').nullable().optional(),
+  points: z.coerce.number().int().min(0, 'Points minimum 0'),
+  title: z.string().min(2, 'Titre requis'),
+  description: z.string().optional(),
+  emoji: z.string().default('🏆'),
+  sort_order: z.coerce.number().int().default(0),
+})
+
+function refineThreshold(data: { category?: AchievementCategory; threshold?: number | null }, ctx: z.RefinementCtx) {
+  if (data.category === undefined) return // update payload without category: nothing to cross-check
+  if (data.category === 'manual') {
+    if (data.threshold !== null && data.threshold !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['threshold'],
+        message: 'Le seuil doit être null pour les succès manuels',
+      })
     }
-  })
+  } else {
+    if (data.threshold === null || data.threshold === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['threshold'],
+        message: 'Le seuil est requis',
+      })
+    }
+  }
+}
+
+export const createAchievementSchema = achievementBaseSchema.superRefine(refineThreshold)
 
 export type CreateAchievementInput = z.infer<typeof createAchievementSchema>
 
-export const updateAchievementSchema = createAchievementSchema.partial().extend({
-  id: z.string().uuid(),
-})
+export const updateAchievementSchema = achievementBaseSchema
+  .partial()
+  .extend({ id: z.string().uuid() })
+  .superRefine(refineThreshold)
 
 export type UpdateAchievementInput = z.infer<typeof updateAchievementSchema>
 
