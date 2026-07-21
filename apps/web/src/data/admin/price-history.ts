@@ -3,8 +3,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server'
 import { extractPriceChange, type PriceChangeEntry } from '@/data/admin/price-history-helpers'
 
-export type { PriceChangeEntry }
-
 export async function getProductPriceHistory(productId: string): Promise<PriceChangeEntry[]> {
   const supabase = await createSupabaseClient()
   const { data } = await supabase
