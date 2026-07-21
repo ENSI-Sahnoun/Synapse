@@ -19,6 +19,7 @@ interface HistoryRow {
   startDate: string
   endDate: string
   paidAmount: number
+  voidedAt: string | null
 }
 
 function SubscriptionRow({ row, plans }: { row: HistoryRow; plans: Plan[] }) {
@@ -98,46 +99,59 @@ function SubscriptionRow({ row, plans }: { row: HistoryRow; plans: Plan[] }) {
     )
   }
 
+  const cancelled = row.voidedAt !== null
+
   return (
-    <div className="flex justify-between items-center border rounded-md p-3 gap-2">
+    <div className={`flex justify-between items-center border rounded-md p-3 gap-2 ${cancelled ? 'opacity-60' : ''}`}>
       <div>
-        <div className="text-sm font-medium">{row.planName}</div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-sm font-medium flex items-center gap-2">
+          {row.planName}
+          {cancelled && (
+            <span className="text-xs font-semibold text-destructive border border-destructive/30 rounded px-1.5 py-0.5">
+              Annulé
+            </span>
+          )}
+        </div>
+        <div className={`text-xs text-muted-foreground ${cancelled ? 'line-through' : ''}`}>
           {new Date(row.startDate).toLocaleDateString('fr-FR')} → {new Date(row.endDate).toLocaleDateString('fr-FR')}
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold">{row.paidAmount} DT</span>
-        <button
-          onClick={() => setEditing(true)}
-          disabled={busy}
-          title="Modifier"
-          className="text-muted-foreground"
-        >
-          <PencilSimple size={16} />
-        </button>
-        <button
-          onClick={() => {
-            if (window.confirm('Annuler cet abonnement ? Les points de fidélité gagnés seront repris.')) {
-              doUpdate({ subscription_id: row.id, cancel: true })
-            }
-          }}
-          disabled={busy}
-          title="Annuler l'abonnement"
-          className="text-muted-foreground"
-        >
-          <Prohibit size={16} />
-        </button>
-        <button
-          onClick={() => {
-            if (window.confirm('Supprimer définitivement cet abonnement ? (réservé aux administrateurs)')) doDelete({ subscription_id: row.id })
-          }}
-          disabled={busy}
-          title="Supprimer (admin)"
-          className="text-destructive"
-        >
-          <Trash size={16} />
-        </button>
+        <span className={`text-sm font-semibold ${cancelled ? 'line-through' : ''}`}>{row.paidAmount} DT</span>
+        {!cancelled && (
+          <>
+            <button
+              onClick={() => setEditing(true)}
+              disabled={busy}
+              title="Modifier"
+              className="text-muted-foreground"
+            >
+              <PencilSimple size={16} />
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm('Annuler cet abonnement ? Les points de fidélité gagnés seront repris.')) {
+                  doUpdate({ subscription_id: row.id, cancel: true })
+                }
+              }}
+              disabled={busy}
+              title="Annuler l'abonnement"
+              className="text-muted-foreground"
+            >
+              <Prohibit size={16} />
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm('Supprimer définitivement cet abonnement ? (réservé aux administrateurs)')) doDelete({ subscription_id: row.id })
+              }}
+              disabled={busy}
+              title="Supprimer (admin)"
+              className="text-destructive"
+            >
+              <Trash size={16} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

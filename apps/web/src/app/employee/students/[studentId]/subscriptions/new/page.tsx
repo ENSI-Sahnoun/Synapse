@@ -62,6 +62,7 @@ export default async function NewSubscriptionPage({
             startDate: s.start_date,
             endDate: s.end_date,
             paidAmount: s.paid_amount,
+            voidedAt: s.voided_at,
           }))}
       />
     </div>

@@ -44,27 +44,35 @@ async function reverseSubscriptionLoyaltyPoints(
 
 export const updateSubscriptionAction = employeeActionClient
   .schema(updateSubscriptionSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     const { subscription_id, start_date, end_date, plan_id, cancel } = parsedInput
     const supabase = createSupabaseAdminClient()
 
     const { data: current, error: fetchError } = await supabase
       .from('subscriptions')
-      .select('student_id, start_date, end_date, plan_id, paid_amount')
+      .select('student_id, start_date, end_date, plan_id, paid_amount, voided_at')
       .eq('id', subscription_id)
       .single()
     if (fetchError || !current) throw new Error('Abonnement introuvable')
+    if (cancel && current.voided_at) throw new Error('Abonnement déjà annulé')
 
     type UpdatesType = {
       start_date?: string
       end_date?: string
       plan_id?: string
       paid_amount?: number
+      voided_at?: string
+      voided_by?: string
     }
     const updates: UpdatesType = {}
 
     if (cancel) {
+      // Same "cancelled" semantics as the admin Journal's void action
+      // (pos_void_subscription): end the membership and mark voided_at so
+      // both surfaces show the same "Annulé" state.
       updates.end_date = format(subDays(new Date(), 1), 'yyyy-MM-dd')
+      updates.voided_at = new Date().toISOString()
+      updates.voided_by = ctx.userId
     } else {
       if (start_date) updates.start_date = start_date
       if (plan_id) updates.plan_id = plan_id
