@@ -6,8 +6,15 @@
 -- needs to consume stock and be visible in the POS activity log (so it can
 -- be distinguished from a normal free sale), it just no longer creates a
 -- second expenses row.
+--
+-- NOTE: the live signature is (jsonb, uuid) — added by
+-- 20260718010002_pos_employee_charge_employee_id.sql, which the app always
+-- calls with an explicit (possibly null) p_employee_id. CREATE OR REPLACE
+-- only overwrites a matching arity, so this must target (jsonb, uuid), not
+-- the older (jsonb)-only form (which no longer exists — it was dropped by
+-- that same migration).
 
-CREATE OR REPLACE FUNCTION public.pos_employee_charge(p_items jsonb)
+CREATE OR REPLACE FUNCTION public.pos_employee_charge(p_items jsonb, p_employee_id uuid DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -23,6 +30,8 @@ DECLARE
   v_name        text;
   v_is_active   boolean;
   v_stock       int;
+  v_employee_name text;
+  v_employee_role text;
 BEGIN
   IF v_actor_id IS NULL THEN
     RAISE EXCEPTION 'Non authentifié';
@@ -34,6 +43,18 @@ BEGIN
 
   IF jsonb_array_length(p_items) = 0 THEN
     RAISE EXCEPTION 'Le panier est vide';
+  END IF;
+
+  IF p_employee_id IS NOT NULL THEN
+    SELECT full_name, role INTO v_employee_name, v_employee_role
+      FROM public.profiles WHERE id = p_employee_id;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Employé introuvable: %', p_employee_id;
+    END IF;
+    IF v_employee_role NOT IN ('employee', 'admin') THEN
+      RAISE EXCEPTION 'Ce profil n''est pas un employé: %', v_employee_name;
+    END IF;
   END IF;
 
   -- Pre-validate without mutating (fail fast, no partial decrements)
@@ -76,11 +97,12 @@ BEGIN
     END IF;
 
     INSERT INTO public.pos_activity_log (action, product_id, actor_id, quantity, amount_dt, details)
-    VALUES ('employee_charge', v_product_id, v_actor_id, v_quantity, v_cost * v_quantity, '{}'::jsonb);
+    VALUES ('employee_charge', v_product_id, v_actor_id, v_quantity, v_cost * v_quantity,
+            jsonb_build_object('expense_id', null, 'employee_id', p_employee_id, 'is_guest', p_employee_id IS NULL));
   END LOOP;
 
   RETURN jsonb_build_object('expense_id', null, 'total_dt', v_total_dt);
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.pos_employee_charge(jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.pos_employee_charge(jsonb, uuid) TO authenticated;
