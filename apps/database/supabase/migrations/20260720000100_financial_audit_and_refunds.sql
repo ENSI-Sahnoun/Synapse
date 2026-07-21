@@ -347,6 +347,7 @@ CREATE POLICY "subscriptions_delete" ON public.subscriptions
 
 -- Every all-time treasury figure must subtract what was handed back, or the
 -- Caisse balance overstates by the full refund amount forever.
+DROP FUNCTION IF EXISTS public.analytics_capital_totals();
 CREATE OR REPLACE FUNCTION public.analytics_capital_totals()
 RETURNS TABLE (subs numeric, pos numeric, lockers numeric, expenses numeric, refunds numeric)
 LANGUAGE plpgsql

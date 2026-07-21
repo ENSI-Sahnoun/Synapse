@@ -75,9 +75,9 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- Rooms + seats
-INSERT INTO public.rooms (id, name, capacity) VALUES
-  ('a0000000-0000-4000-8000-000000000001', 'Salle Alpha', 20),
-  ('a0000000-0000-4000-8000-000000000002', 'Salle Beta', 15)
+INSERT INTO public.rooms (id, name) VALUES
+  ('a0000000-0000-4000-8000-000000000001', 'Salle Alpha'),
+  ('a0000000-0000-4000-8000-000000000002', 'Salle Beta')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.seats (id, room_id, label, position_x, position_y) VALUES

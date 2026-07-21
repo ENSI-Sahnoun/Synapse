@@ -13,14 +13,8 @@
 -- SECURITY DEFINER function so a failure halfway cannot leave stock and
 -- revenue disagreeing — same pattern as pos_checkout / pos_employee_charge.
 
-ALTER TABLE public.purchases
-  ADD COLUMN voided_at timestamptz,
-  ADD COLUMN voided_by uuid REFERENCES public.profiles(id);
-
--- Partial: the overwhelming majority of purchases are never voided, so only
--- the exceptions are worth indexing.
-CREATE INDEX purchases_voided_at_idx
-  ON public.purchases (voided_at) WHERE voided_at IS NOT NULL;
+-- voided_at / voided_by / purchases_voided_at_idx already added by
+-- 20260719010000_purchases_subscriptions_voided.sql.
 
 -- Allow the new action in the POS activity log.
 ALTER TABLE public.pos_activity_log DROP CONSTRAINT pos_activity_log_action_check;
