@@ -201,10 +201,18 @@ BEGIN
     FROM public.attendance
     WHERE student_id = p_student_id AND checked_out_at IS NOT NULL;
 
-  SELECT COALESCE(SUM(total_dt), 0), count(*)
-    INTO v_spend, v_purchase_count
+  SELECT COALESCE(SUM(total_dt), 0)
+    INTO v_spend
     FROM public.purchases
     WHERE student_id = p_student_id AND voided_at IS NULL;
+
+  -- purchase_count deliberately excludes POS purchases — it tracks
+  -- subscriptions and locker rentals only, not counter sales.
+  SELECT
+    (SELECT count(*) FROM public.subscriptions WHERE student_id = p_student_id AND voided_at IS NULL)
+    + (SELECT count(*) FROM public.locker_payments lp WHERE lp.student_id = p_student_id
+         AND NOT EXISTS (SELECT 1 FROM public.refunds r WHERE r.locker_payment_id = lp.id))
+    INTO v_purchase_count;
 
   WITH days AS (
     SELECT DISTINCT (checked_in_at AT TIME ZONE 'Africa/Tunis')::date AS d
@@ -329,11 +337,13 @@ CREATE TRIGGER achievements_on_checkout
   AFTER UPDATE OF checked_out_at ON public.attendance
   FOR EACH ROW EXECUTE FUNCTION public.trg_evaluate_achievements_checkout();
 
+-- POS purchases only move `spend` — purchase_count tracks subscriptions
+-- and locker rentals, not counter sales (see evaluator's purchase_count calc).
 CREATE OR REPLACE FUNCTION public.trg_evaluate_achievements_purchase()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   IF NEW.student_id IS NOT NULL THEN
-    PERFORM public.evaluate_achievements_for_student(NEW.student_id, ARRAY['spend', 'purchase_count']);
+    PERFORM public.evaluate_achievements_for_student(NEW.student_id, ARRAY['spend']);
   END IF;
   RETURN NEW;
 END;
@@ -342,6 +352,30 @@ $$;
 CREATE TRIGGER achievements_on_purchase
   AFTER INSERT ON public.purchases
   FOR EACH ROW EXECUTE FUNCTION public.trg_evaluate_achievements_purchase();
+
+CREATE OR REPLACE FUNCTION public.trg_evaluate_achievements_subscription()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  PERFORM public.evaluate_achievements_for_student(NEW.student_id, ARRAY['purchase_count']);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER achievements_on_subscription
+  AFTER INSERT ON public.subscriptions
+  FOR EACH ROW EXECUTE FUNCTION public.trg_evaluate_achievements_subscription();
+
+CREATE OR REPLACE FUNCTION public.trg_evaluate_achievements_locker_payment()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  PERFORM public.evaluate_achievements_for_student(NEW.student_id, ARRAY['purchase_count']);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER achievements_on_locker_payment
+  AFTER INSERT ON public.locker_payments
+  FOR EACH ROW EXECUTE FUNCTION public.trg_evaluate_achievements_locker_payment();
 
 -- ── Read API ────────────────────────────────────────────────────────────
 
@@ -369,10 +403,16 @@ BEGIN
     FROM public.attendance
     WHERE student_id = v_student AND checked_out_at IS NOT NULL;
 
-  SELECT COALESCE(SUM(total_dt), 0), count(*)
-    INTO v_spend, v_purchase_count
+  SELECT COALESCE(SUM(total_dt), 0)
+    INTO v_spend
     FROM public.purchases
     WHERE student_id = v_student AND voided_at IS NULL;
+
+  SELECT
+    (SELECT count(*) FROM public.subscriptions WHERE student_id = v_student AND voided_at IS NULL)
+    + (SELECT count(*) FROM public.locker_payments lp WHERE lp.student_id = v_student
+         AND NOT EXISTS (SELECT 1 FROM public.refunds r WHERE r.locker_payment_id = lp.id))
+    INTO v_purchase_count;
 
   WITH days AS (
     SELECT DISTINCT (checked_in_at AT TIME ZONE 'Africa/Tunis')::date AS d
@@ -518,11 +558,11 @@ INSERT INTO public.achievements (category, threshold, points, title, description
   ('spend', 100, 80,  'Gourmand IV',  '100 DT dépensés au total.',          '💳', 43),
   ('spend', 250, 200, 'Gourmand V',   '250 DT dépensés au total.',          '💎', 44),
 
-  ('purchase_count', 5,   10,  'Client fidèle I',   '5 achats effectués.',    '🛍️', 50),
-  ('purchase_count', 10,  25,  'Client fidèle II',  '10 achats effectués.',   '🛍️', 51),
-  ('purchase_count', 25,  60,  'Client fidèle III', '25 achats effectués.',   '🛒', 52),
-  ('purchase_count', 50,  120, 'Client fidèle IV',  '50 achats effectués.',   '🛒', 53),
-  ('purchase_count', 100, 250, 'Client fidèle V',   '100 achats effectués.',  '👑', 54),
+  ('purchase_count', 1,  10,  'Client fidèle I',   '1 abonnement ou casier loué.',    '🛍️', 50),
+  ('purchase_count', 2,  25,  'Client fidèle II',  '2 abonnements ou casiers loués.',  '🛍️', 51),
+  ('purchase_count', 4,  60,  'Client fidèle III', '4 abonnements ou casiers loués.',  '🛒', 52),
+  ('purchase_count', 6,  120, 'Client fidèle IV',  '6 abonnements ou casiers loués.',  '🛒', 53),
+  ('purchase_count', 10, 250, 'Client fidèle V',   '10 abonnements ou casiers loués.', '👑', 54),
 
   ('manual', NULL, 50, 'Bénévole', 'Aide exceptionnelle apportée à Synapse.', '🌟', 200)
 ON CONFLICT DO NOTHING;

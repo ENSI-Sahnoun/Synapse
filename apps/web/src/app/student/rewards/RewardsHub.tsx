@@ -9,7 +9,7 @@ import type {
   MyRank,
 } from '@/data/student/leaderboard'
 import type { LoyaltyRule, NextReward } from '@/lib/rewards'
-import type { Achievement, StudentLevel, AchievementUnlockers } from '@/data/student/achievements'
+import type { Achievement, AchievementUnlockers } from '@/data/student/achievements'
 import { PointsHero } from './PointsHero'
 import { LeaderboardPanel } from './LeaderboardPanel'
 import { RewardsPanel, type RedemptionRequest } from './RewardsPanel'
@@ -30,7 +30,6 @@ export function RewardsHub({
   lbSettings,
   lbConfig,
   achievements,
-  levels,
   unlockers,
 }: {
   balance: number
@@ -45,7 +44,6 @@ export function RewardsHub({
   lbSettings: LeaderboardSettings
   lbConfig: LeaderboardConfigRow[]
   achievements: Achievement[]
-  levels: StudentLevel[]
   unlockers: AchievementUnlockers
 }) {
   const reduced = useReducedMotion()
@@ -100,7 +98,6 @@ export function RewardsHub({
               settings={lbSettings}
               config={lbConfig}
               achievements={achievements}
-              levels={levels}
               unlockers={unlockers}
             />
           )}

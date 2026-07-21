@@ -1,6 +1,5 @@
 import { getCachedLoggedInUserClaims } from '@/rsc-data/supabase'
 import { getProfileById, getAchievementsForStudent, getLoyaltyBalanceForStudent } from '@/data/user/profile'
-import { getLevelsForStudents } from '@/data/student/achievements'
 import { redirect } from 'next/navigation'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -34,7 +33,6 @@ export default async function ProfilePage({
     ? await Promise.all([getAchievementsForStudent(id), getLoyaltyBalanceForStudent(id)])
     : [[], 0]
 
-  const levels = isStudent ? await getLevelsForStudents([id]) : []
   const unlockedCount = achievements.filter((a) => a.unlocked).length
 
   const initials = profile.full_name
@@ -76,7 +74,6 @@ export default async function ProfilePage({
 
           <div className="flex justify-center flex-wrap gap-2">
             <Badge variant="secondary">{roleLabel}</Badge>
-            {profile.level != null && <Badge variant="secondary">Niveau {profile.level}</Badge>}
           </div>
 
           {isStudent && (profile.university || profile.study_level) && (
@@ -119,7 +116,7 @@ export default async function ProfilePage({
               </p>
             </div>
 
-            <AchievementRoadmap achievements={achievements} levels={levels} />
+            <AchievementRoadmap achievements={achievements} />
           </>
         )}
       </div>

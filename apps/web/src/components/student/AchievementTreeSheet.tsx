@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Trophy } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { Achievement, AchievementUnlockers } from '@/data/student/achievements'
 
@@ -146,12 +146,16 @@ export function AchievementTreeSheet({
 
       <SheetContent side="bottom" className="h-[100dvh] w-full max-w-none flex flex-col p-0 gap-0">
         <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-          <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--synapse-brown-500)' }}>
-            Parcours de succès
-          </p>
-          <p className="text-lg font-bold" style={{ fontFamily: 'var(--font-display)' }}>
-            {unlockedTotal}/{achievements.length} débloqués
-          </p>
+          <SheetTitle asChild>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--synapse-brown-500)' }}>
+              Parcours de succès
+            </p>
+          </SheetTitle>
+          <SheetDescription asChild>
+            <p className="text-lg font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--foreground)' }}>
+              {unlockedTotal}/{achievements.length} débloqués
+            </p>
+          </SheetDescription>
         </div>
 
         <Tabs defaultValue={categories[0]} className="flex-1 flex flex-col min-h-0">

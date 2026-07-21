@@ -12,14 +12,7 @@ export async function getProfileById(id: string) {
     .maybeSingle()
 
   if (error || !data) notFound()
-
-  let level: number | null = null
-  if (data.role === 'student') {
-    const { data: lvl } = await supabase.rpc('get_levels_for_students', { p_student_ids: [id] })
-    level = lvl?.[0]?.level ?? null
-  }
-
-  return { ...data, level }
+  return data
 }
 
 export async function getAchievementsForStudent(id: string) {

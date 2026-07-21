@@ -26,10 +26,16 @@ BEGIN
     FROM public.attendance
     WHERE student_id = p_student_id AND checked_out_at IS NOT NULL;
 
-  SELECT COALESCE(SUM(total_dt), 0), count(*)
-    INTO v_spend, v_purchase_count
+  SELECT COALESCE(SUM(total_dt), 0)
+    INTO v_spend
     FROM public.purchases
     WHERE student_id = p_student_id AND voided_at IS NULL;
+
+  SELECT
+    (SELECT count(*) FROM public.subscriptions WHERE student_id = p_student_id AND voided_at IS NULL)
+    + (SELECT count(*) FROM public.locker_payments lp WHERE lp.student_id = p_student_id
+         AND NOT EXISTS (SELECT 1 FROM public.refunds r WHERE r.locker_payment_id = lp.id))
+    INTO v_purchase_count;
 
   WITH days AS (
     SELECT DISTINCT (checked_in_at AT TIME ZONE 'Africa/Tunis')::date AS d

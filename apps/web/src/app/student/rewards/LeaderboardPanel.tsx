@@ -10,7 +10,7 @@ import type {
   MyRank,
   LeaderboardCategory,
 } from '@/data/student/leaderboard'
-import type { Achievement, StudentLevel, AchievementUnlockers } from '@/data/student/achievements'
+import type { Achievement, AchievementUnlockers } from '@/data/student/achievements'
 import { AchievementTreeSheet } from '@/components/student/AchievementTreeSheet'
 
 function formatValue(category: LeaderboardCategory, value: number): string {
@@ -33,7 +33,6 @@ export function LeaderboardPanel({
   settings,
   config,
   achievements,
-  levels,
   unlockers,
 }: {
   rows: LeaderboardRow[]
@@ -41,15 +40,11 @@ export function LeaderboardPanel({
   settings: LeaderboardSettings
   config: LeaderboardConfigRow[]
   achievements: Achievement[]
-  levels: StudentLevel[]
   unlockers: AchievementUnlockers
 }) {
   const reduced = useReducedMotion()
   const enabledCats = config.filter((c) => c.enabled).sort((a, b) => a.sort_order - b.sort_order)
   const [active, setActive] = useState<LeaderboardCategory>(enabledCats[0]?.category ?? 'visits')
-
-  // Build level lookup from levels prop
-  const levelMap = Object.fromEntries(levels.map((l) => [l.student_id, l.level]))
 
   if (!settings.enabled || enabledCats.length === 0) return null
 
@@ -109,14 +104,6 @@ export function LeaderboardPanel({
               >
                 <div className="relative w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold bg-white shadow-sm">
                   {initials(r.full_name)}
-                  {levelMap[r.student_id] && (
-                    <div
-                      className="absolute -bottom-1 -right-1 text-[9px] font-bold rounded-full px-1 min-w-[16px] text-center"
-                      style={{ background: 'var(--accent-brand)', color: 'white' }}
-                    >
-                      {levelMap[r.student_id]}
-                    </div>
-                  )}
                 </div>
                 <span className="text-[11px] font-semibold text-center truncate w-full" title={r.full_name ?? ''}>
                   {r.full_name ?? 'Anonyme'}

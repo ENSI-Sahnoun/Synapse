@@ -35,13 +35,39 @@ export function NotificationToaster() {
             const row = payload.new as NotificationRow
             if ((INTERNAL_NOTIFICATION_TYPES as readonly string[]).includes(row.type)) return
             const route = resolveNotificationHref(row)
-            toast(row.message, {
-              position: 'top-center',
-              icon: <Bell className="h-4 w-4" />,
+            const toastOpts = {
+              position: 'top-center' as const,
               action: route
                 ? { label: 'Voir', onClick: () => router.push(route) }
                 : undefined,
-            })
+            }
+
+            if (
+              row.type === 'achievement_progress' &&
+              row.progress_current != null &&
+              row.progress_target != null &&
+              row.progress_target > 0
+            ) {
+              const pct = Math.min(100, Math.round((row.progress_current / row.progress_target) * 100))
+              toast(
+                <div className="flex flex-col gap-1.5 w-full">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-4 w-4 shrink-0" />
+                    <span className="text-sm">{row.message}</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted">
+                    <div
+                      className="h-full rounded-full transition-[width] duration-500 ease-out"
+                      style={{ width: `${pct}%`, background: 'var(--synapse-green-600)' }}
+                    />
+                  </div>
+                </div>,
+                toastOpts,
+              )
+              return
+            }
+
+            toast(row.message, { ...toastOpts, icon: <Bell className="h-4 w-4" /> })
           },
         )
         .subscribe()

@@ -12,7 +12,7 @@ import {
   getLeaderboardSettings,
   getLeaderboardConfig,
 } from '@/data/student/leaderboard'
-import { getMyAchievements, getLevelsForStudents, getAchievementUnlockers } from '@/data/student/achievements'
+import { getMyAchievements, getAchievementUnlockers } from '@/data/student/achievements'
 import { getNextReward, weeklyDelta } from '@/lib/rewards'
 import { RewardsHub } from './RewardsHub'
 import type { RedemptionRequest } from './RewardsPanel'
@@ -35,11 +35,7 @@ export default async function StudentRewardsPage() {
       getMyAchievements(),
     ])
 
-  const lbStudentIds = [...new Set(lbRows.map((r) => r.student_id))]
-  const [levels, unlockers] = await Promise.all([
-    getLevelsForStudents(lbStudentIds),
-    getAchievementUnlockers(achievements.map((a) => a.id)),
-  ])
+  const unlockers = await getAchievementUnlockers(achievements.map((a) => a.id))
 
   return (
     <>
@@ -57,7 +53,6 @@ export default async function StudentRewardsPage() {
       lbSettings={lbSettings}
       lbConfig={lbConfig}
       achievements={achievements}
-      levels={levels}
       unlockers={unlockers}
     />
     </>
