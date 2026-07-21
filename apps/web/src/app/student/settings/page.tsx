@@ -13,13 +13,6 @@ export default async function StudentSettingsPage() {
   const meta = (claims.user_metadata ?? {}) as Record<string, unknown>
   const profile = await getMyProfile()
 
-  const initials = profile.full_name
-    ?.split(' ')
-    .map((n: string) => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() ?? '?'
-
   const supabase = await createSupabaseClient()
   const { data: credRow } = await supabase
     .from('profiles')
@@ -32,31 +25,6 @@ export default async function StudentSettingsPage() {
       <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
         Paramètres
       </h1>
-
-      {/* Profile card */}
-      <div
-        className="rounded-xl border p-5 flex items-center gap-4"
-        style={{ background: 'white', borderColor: 'var(--border-subtle)' }}
-      >
-        {profile.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt={profile.full_name}
-            className="flex-shrink-0 rounded-full object-cover"
-            style={{ width: 52, height: 52 }}
-          />
-        ) : (
-          <div
-            className="flex-shrink-0 flex items-center justify-center rounded-full text-white font-bold text-lg"
-            style={{ width: 52, height: 52, background: 'var(--accent-brand)' }}
-          >
-            {initials}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-base truncate">{profile.full_name}</p>
-        </div>
-      </div>
 
       {/* Profile editing form */}
       <div

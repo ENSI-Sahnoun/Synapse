@@ -18,7 +18,6 @@ export default async function EmployeeProfilePage() {
     .eq('id', user.id)
     .single()
 
-  const initials = (profile?.full_name ?? '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
   const roleLabel = profile?.role === 'admin' ? 'Administrateur' : 'Employé'
   const joinDate = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' })
@@ -30,59 +29,25 @@ export default async function EmployeeProfilePage() {
 
       <div style={{
         background: '#fff', border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-xl)', padding: 20,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-        textAlign: 'center',
-      }}>
-        <div style={{
-          width: 72, height: 72, borderRadius: '50%',
-          background: profile?.avatar_url ? 'transparent' : 'var(--accent-brand)',
-          color: '#fff',
-          fontSize: 26, fontWeight: 700,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden',
-        }}>
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt={profile?.full_name ?? 'Avatar'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            initials
-          )}
-        </div>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{profile?.full_name ?? '—'}</div>
-          <span style={{
-            fontSize: 12, fontWeight: 600, color: 'var(--accent-brand)',
-            background: 'rgba(162,114,74,0.1)', borderRadius: 99,
-            padding: '2px 10px', display: 'inline-block', marginTop: 6,
-          }}>{roleLabel}</span>
-        </div>
-      </div>
-
-      <div style={{
-        background: '#fff', border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius-lg)', padding: 20,
       }}>
-        <ProfileForm userId={user.id} fullName={profile?.full_name ?? ''} phone={profile?.phone ?? null} avatarUrl={profile?.avatar_url ?? null} />
+        <ProfileForm
+          userId={user.id}
+          fullName={profile?.full_name ?? ''}
+          phone={profile?.phone ?? null}
+          avatarUrl={profile?.avatar_url ?? null}
+          roleLabel={roleLabel}
+        />
       </div>
 
       <div style={{
         background: '#fff', border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+        borderRadius: 'var(--radius-lg)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px',
       }}>
-        {[
-          { label: 'Téléphone', value: profile?.phone ?? '—' },
-          { label: 'Rôle', value: roleLabel },
-          { label: 'Membre depuis', value: joinDate },
-        ].map((row, i, arr) => (
-          <div key={row.label} style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 16px',
-            borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-          }}>
-            <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>{row.label}</span>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{row.value}</span>
-          </div>
-        ))}
+        <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Membre depuis</span>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>{joinDate}</span>
       </div>
 
       <form action={signOutAction}>

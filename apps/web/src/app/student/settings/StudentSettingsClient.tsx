@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { useAction } from 'next-safe-action/hooks'
 import { toast } from 'sonner'
-import { Bell, EnvelopeSimple, LockKey, At, CaretDown, ShieldCheck, Trophy } from '@phosphor-icons/react'
+import { Bell, LockKey, At, CaretDown, ShieldCheck, Trophy } from '@phosphor-icons/react'
 import { Switch } from '@/components/ui/switch'
 import { setupCredentialsAction, updateEmailAction, updatePasswordAction, updateNotificationPrefsAction } from '@/actions/student/account'
 import { setLeaderboardOptOut } from '@/actions/student/leaderboard-optout'
@@ -41,7 +41,6 @@ function isIosNotInstalledPwa(): boolean {
 export function StudentSettingsClient({ initialPush, initialEmailDigest, currentEmail, credentialsSet, initialOptOut }: Props) {
   const reduced = useReducedMotion()
   const [pushPrefEnabled, setPushPrefEnabled] = useState(initialPush)
-  const [emailEnabled, setEmailEnabled] = useState(initialEmailDigest)
   const [, startTransition] = useTransition()
   const { supported: pushSupported, subscribed: pushSubscribed, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushSubscription()
   const [pushPermissionDenied, setPushPermissionDenied] = useState(false)
@@ -104,7 +103,7 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
             toast.error('Autorisation refusée. Activez les notifications dans les réglages du navigateur.')
             return
           }
-          await updateNotificationPrefsAction({ push_enabled: true, email_digest: emailEnabled })
+          await updateNotificationPrefsAction({ push_enabled: true, email_digest: initialEmailDigest })
         } catch {
           setPushPrefEnabled(false) // revert optimistic update
           toast.error('Impossible d\'activer les notifications push.')
@@ -115,20 +114,13 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
       startTransition(async () => {
         try {
           await pushUnsubscribe()
-          await updateNotificationPrefsAction({ push_enabled: false, email_digest: emailEnabled })
+          await updateNotificationPrefsAction({ push_enabled: false, email_digest: initialEmailDigest })
         } catch {
           setPushPrefEnabled(true) // revert optimistic update
           toast.error('Impossible de désactiver les notifications push.')
         }
       })
     }
-  }
-
-  function handleEmailDigestToggle(val: boolean) {
-    setEmailEnabled(val)
-    startTransition(async () => {
-      await updateNotificationPrefsAction({ push_enabled: pushPrefEnabled, email_digest: val })
-    })
   }
 
   async function handleEmailSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -201,7 +193,7 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
 
       {/* Notification toggles */}
       <div className="rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
-        <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+        <div className="flex items-center gap-3 px-4 py-3">
           <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: 'var(--synapse-orange-100)' }}>
             <Bell size={17} style={{ color: 'var(--warning)' }} />
           </div>
@@ -230,16 +222,6 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
             <Switch checked={pushDisplayed} onCheckedChange={handlePushToggle} disabled={pushPermissionDenied} />
           ) : null}
         </div>
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="flex-shrink-0 flex items-center justify-center rounded-[10px]" style={{ width: 36, height: 36, background: 'var(--synapse-green-100)' }}>
-            <EnvelopeSimple size={17} style={{ color: 'var(--synapse-green-600)' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">Résumé email</p>
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>Récapitulatif hebdomadaire</p>
-          </div>
-          <Switch checked={emailEnabled} onCheckedChange={handleEmailDigestToggle} />
-        </div>
       </div>
 
       {/* Leaderboard opt-out */}
@@ -258,6 +240,10 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
         </div>
       </div>
 
+      {/* Email + password — hidden until the account is secured, so the
+          alert above is the only path in rather than a redundant second one */}
+      {secured && (
+      <>
       {/* Email — collapsed by default */}
       <div className="rounded-xl border overflow-hidden" style={{ background: 'white', borderColor: 'var(--border-subtle)' }}>
         <button
@@ -370,6 +356,8 @@ export function StudentSettingsClient({ initialPush, initialEmailDigest, current
           )}
         </AnimatePresence>
       </div>
+      </>
+      )}
     </div>
   )
 }
