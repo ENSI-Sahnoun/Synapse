@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Trophy, ArrowRight } from '@phosphor-icons/react/dist/ssr'
+import { Trophy, Sparkle, ArrowRight } from '@phosphor-icons/react/dist/ssr'
 
 export function GamificationTeaser({
   balance,
@@ -23,8 +23,8 @@ export function GamificationTeaser({
         <Trophy size={20} weight="fill" style={{ color: '#ffd873' }} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold" style={{ color: '#ffd873' }}>
-          {balance.toLocaleString('fr-FR')} pts ✦
+        <p className="text-sm font-bold flex items-center gap-1" style={{ color: '#ffd873' }}>
+          {balance.toLocaleString('fr-FR')} pts <Sparkle size={12} weight="fill" />
         </p>
         <p className="text-xs" style={{ color: '#bfae85' }}>
           {leaderboardVisible && myRank ? `#${myRank} au classement du mois` : 'Récompenses & classement'}

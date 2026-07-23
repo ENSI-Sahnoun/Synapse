@@ -13,8 +13,8 @@ const CATEGORY_META: Record<Achievement['category'], { label: string; Icon: Icon
   visits: { label: 'Visites', Icon: DoorOpen },
   hours: { label: 'Heures', Icon: BookOpen },
   streak: { label: 'Série', Icon: Fire },
-  spend: { label: 'Dépenses', Icon: CreditCard },
-  purchase_count: { label: 'Achats', Icon: ShoppingBag },
+  spend: { label: 'Achats', Icon: ShoppingBag },
+  purchase_count: { label: 'Dépenses', Icon: CreditCard },
   manual: { label: 'Spécial', Icon: Sparkle },
 }
 

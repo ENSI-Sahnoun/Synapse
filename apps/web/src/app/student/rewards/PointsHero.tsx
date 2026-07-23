@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, useReducedMotion, useSpring, useTransform } from 'motion/react'
+import { Sparkle } from '@phosphor-icons/react'
 import type { NextReward } from '@/lib/rewards'
 
 const GOLD = '#ffd873'
@@ -55,8 +56,8 @@ export function PointsHero({
       <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: LABEL }}>
         Points Synapse
       </p>
-      <p className="text-4xl font-extrabold mt-1" style={{ color: GOLD, fontFamily: 'var(--font-display)' }}>
-        <AnimatedNumber value={balance} /> ✦
+      <p className="text-4xl font-extrabold mt-1 flex items-center gap-2" style={{ color: GOLD, fontFamily: 'var(--font-display)' }}>
+        <AnimatedNumber value={balance} /> <Sparkle size={24} weight="fill" />
       </p>
       {delta !== 0 && (
         <p className="text-xs mt-1 font-medium" style={{ color: GOLD_MUTED }}>

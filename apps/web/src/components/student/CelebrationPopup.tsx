@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { Confetti, Rocket, LockKey, ShoppingBag, Sparkle, type Icon } from '@phosphor-icons/react'
 import { useLiveRefetch } from '@/hooks/use-live-refetch'
 import { waitForSplashEnd } from '@/components/student/StudentSplash'
 import {
@@ -14,10 +15,10 @@ const CONFETTI_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', 
 const CONFETTI_COUNT = 40
 const AUTO_DISMISS_MS = 6000
 
-const KIND_META: Record<CelebrationEvent['kind'], { emoji: string; title: string }> = {
-  purchase: { emoji: '🎉', title: 'Merci pour votre achat !' },
-  subscription: { emoji: '🚀', title: 'Abonnement activé !' },
-  locker: { emoji: '🔐', title: 'Casier attribué !' },
+const KIND_META: Record<CelebrationEvent['kind'], { Icon: Icon; title: string }> = {
+  purchase: { Icon: Confetti, title: 'Merci pour votre achat !' },
+  subscription: { Icon: Rocket, title: 'Abonnement activé !' },
+  locker: { Icon: LockKey, title: 'Casier attribué !' },
 }
 
 function ConfettiPiece({ index }: { index: number }) {
@@ -157,10 +158,10 @@ export function CelebrationPopup() {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.05, type: 'spring', stiffness: 420, damping: 16 }}
-            className="text-4xl"
+            className="flex items-center justify-center"
             aria-hidden
           >
-            {meta.emoji}
+            <meta.Icon size={40} weight="fill" style={{ color: 'var(--accent-brand)' }} />
           </motion.div>
           <h2 className="mt-2 text-lg font-semibold">{meta.title}</h2>
 
@@ -184,11 +185,11 @@ export function CelebrationPopup() {
                       />
                     ) : (
                       <span
-                        className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-xs"
+                        className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center"
                         style={{ background: 'var(--synapse-cream-100)' }}
                         aria-hidden
                       >
-                        🛍️
+                        <ShoppingBag size={14} weight="fill" />
                       </span>
                     )}
                     <span className="truncate">{item.name}</span>
@@ -217,7 +218,10 @@ export function CelebrationPopup() {
               className="mt-5 rounded-xl py-3 font-semibold"
               style={{ backgroundColor: 'var(--synapse-brown-100)', color: 'var(--accent-brand)' }}
             >
-              +<PointsCounter points={event.points} delayMs={reduceMotion ? 0 : pointsDelay * 1000} /> point(s) Synapse ✨
+              <span className="inline-flex items-center gap-1">
+                +<PointsCounter points={event.points} delayMs={reduceMotion ? 0 : pointsDelay * 1000} /> point(s) Synapse
+                <Sparkle size={14} weight="fill" />
+              </span>
             </motion.div>
           )}
 

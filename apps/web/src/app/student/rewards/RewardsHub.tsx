@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
+import { Trophy, Gift, Scroll, type Icon } from '@phosphor-icons/react'
 import type {
   LeaderboardRow,
   LeaderboardConfigRow,
@@ -49,10 +50,10 @@ export function RewardsHub({
   const reduced = useReducedMotion()
   const leaderboardVisible = lbSettings.enabled && lbConfig.some((c) => c.enabled)
 
-  const tabs: { id: TabId; label: string }[] = [
-    ...(leaderboardVisible ? [{ id: 'leaderboard' as const, label: '🏆 Classement' }] : []),
-    { id: 'rewards', label: '🎁 Récompenses' },
-    { id: 'history', label: '📜 Historique' },
+  const tabs: { id: TabId; label: string; Icon: Icon }[] = [
+    ...(leaderboardVisible ? [{ id: 'leaderboard' as const, label: 'Classement', Icon: Trophy }] : []),
+    { id: 'rewards', label: 'Récompenses', Icon: Gift },
+    { id: 'history', label: 'Historique', Icon: Scroll },
   ]
   const [active, setActive] = useState<TabId>(tabs[0].id)
 
@@ -61,12 +62,12 @@ export function RewardsHub({
       <PointsHero balance={balance} delta={delta} next={next} />
 
       {/* Tabs */}
-      <div className="flex gap-2 overflow-x-auto">
+      <div className="flex gap-2">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setActive(t.id)}
-            className="relative flex items-center min-h-11 text-xs font-semibold px-3.5 py-2 rounded-full whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+            className="relative flex flex-1 items-center justify-center min-w-0 min-h-11 text-xs font-semibold px-2 py-2 rounded-full whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
             style={{ color: t.id === active ? 'white' : 'var(--synapse-brown-700)' }}
           >
             {t.id === active && (
@@ -77,7 +78,10 @@ export function RewardsHub({
                 transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 32 }}
               />
             )}
-            <span className="relative">{t.label}</span>
+            <span className="relative flex items-center gap-1.5 min-w-0">
+              <t.Icon size={14} weight="fill" />
+              <span className="truncate">{t.label}</span>
+            </span>
           </button>
         ))}
       </div>

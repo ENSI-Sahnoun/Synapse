@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion, useReducedMotion } from 'motion/react'
+import { Medal, Gift, DoorOpen, BookOpen, CreditCard, type Icon } from '@phosphor-icons/react'
 import type {
   LeaderboardRow,
   LeaderboardConfigRow,
@@ -25,7 +26,13 @@ function initials(name: string | null): string {
 }
 
 const PODIUM_HEIGHTS = [64, 96, 48] // px: 2nd, 1st, 3rd
-const MEDALS = ['🥈', '🥇', '🥉']
+const MEDAL_COLORS = ['#c0c0c0', '#ffd873', '#cd7f32'] // 2nd, 1st, 3rd
+
+const CATEGORY_ICONS: Record<LeaderboardCategory, Icon> = {
+  visits: DoorOpen,
+  hours: BookOpen,
+  spend: CreditCard,
+}
 
 export function LeaderboardPanel({
   rows,
@@ -50,16 +57,27 @@ export function LeaderboardPanel({
 
   const activeCfg = enabledCats.find((c) => c.category === active) ?? enabledCats[0]
   const catRows = rows.filter((r) => r.category === active).sort((a, b) => a.rank - b.rank)
-  const podium = catRows.filter((r) => r.rank <= 3)
-  const rest = catRows.filter((r) => r.rank > 3)
+  // Top 3 *positions*, not literal rank numbers — ties make Postgres' rank()
+  // skip numbers (e.g. two people tied at #1 puts the next distinct row at
+  // #3), which used to leave an empty pedestal in the podium.
+  const podium = catRows.slice(0, 3)
+  const rest = catRows.slice(3)
   const mine = myRanks.find((m) => m.category === active)
 
-  const byRank = (n: number) => podium.find((r) => r.rank === n)
-  const podiumOrder = [byRank(2), byRank(1), byRank(3)]
+  const podiumOrder = [podium[1], podium[0], podium[2]]
 
-  const prizeLabel = settings.prizeSecret
-    ? '🎁 Prix mystère'
-    : `Fin du mois : 🥇${activeCfg.points_1} · 🥈${activeCfg.points_2} · 🥉${activeCfg.points_3} pts`
+  const prizeLabel = settings.prizeSecret ? (
+    <span className="inline-flex items-center gap-1">
+      <Gift size={12} weight="fill" /> Prix mystère
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 flex-wrap">
+      Fin du mois :
+      <Medal size={12} weight="fill" style={{ color: MEDAL_COLORS[1] }} />{activeCfg.points_1} ·
+      <Medal size={12} weight="fill" style={{ color: MEDAL_COLORS[0] }} />{activeCfg.points_2} ·
+      <Medal size={12} weight="fill" style={{ color: MEDAL_COLORS[2] }} />{activeCfg.points_3} pts
+    </span>
+  )
 
   return (
     <div className="space-y-4">
@@ -75,21 +93,25 @@ export function LeaderboardPanel({
       </div>
 
       {/* Category chips */}
-      <div className="flex gap-2 px-5 pt-3 pb-1 overflow-x-auto">
-        {enabledCats.map((c) => (
-          <button
-            key={c.category}
-            onClick={() => setActive(c.category)}
-            className="flex items-center min-h-11 text-xs font-semibold px-4 py-1.5 rounded-full whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
-            style={
-              c.category === active
-                ? { background: 'var(--synapse-green-600)', color: 'white' }
-                : { background: 'white', color: 'var(--synapse-brown-700)' }
-            }
-          >
-            {c.emoji} {c.label}
-          </button>
-        ))}
+      <div className="flex gap-2 px-5 pt-3 pb-1">
+        {enabledCats.map((c) => {
+          const CatIcon = CATEGORY_ICONS[c.category]
+          return (
+            <button
+              key={c.category}
+              onClick={() => setActive(c.category)}
+              className="flex flex-1 items-center justify-center gap-1 min-w-0 min-h-11 text-xs font-semibold px-2 py-1.5 rounded-full whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+              style={
+                c.category === active
+                  ? { background: 'var(--synapse-green-600)', color: 'white' }
+                  : { background: 'white', color: 'var(--synapse-brown-700)' }
+              }
+            >
+              <CatIcon size={14} weight="fill" />
+              <span className="truncate">{c.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Podium */}
@@ -118,7 +140,12 @@ export function LeaderboardPanel({
                   animate={{ scaleY: 1 }}
                   transition={{ type: 'spring', stiffness: 160, damping: 20, delay: reduced ? 0 : 0.1 * i }}
                 >
-                  <span className="text-lg">{MEDALS[i]}</span>
+                  <span
+                    className="flex items-center justify-center w-8 h-8 rounded-full"
+                    style={{ background: 'white', boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}
+                  >
+                    <Medal size={20} weight="fill" style={{ color: MEDAL_COLORS[i] }} />
+                  </span>
                 </motion.div>
               </Link>
             ) : (
