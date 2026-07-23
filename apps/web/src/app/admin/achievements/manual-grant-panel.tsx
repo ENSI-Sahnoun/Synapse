@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card } from '@/components/ui/card'
+import { resolveAchievementIcon } from '@/utils/achievement-icons'
 
 interface ManualAchievement {
   id: string
@@ -169,11 +170,17 @@ export function ManualGrantPanel({ achievements }: Props) {
               <SelectValue placeholder="Choisir un succès" />
             </SelectTrigger>
             <SelectContent>
-              {achievements.map((ach) => (
-                <SelectItem key={ach.id} value={ach.id}>
-                  {ach.emoji} {ach.title}
-                </SelectItem>
-              ))}
+              {achievements.map((ach) => {
+                const Icon = resolveAchievementIcon(ach.emoji)
+                return (
+                  <SelectItem key={ach.id} value={ach.id}>
+                    <span className="flex items-center gap-2">
+                      <Icon size={16} />
+                      {ach.title}
+                    </span>
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         </div>

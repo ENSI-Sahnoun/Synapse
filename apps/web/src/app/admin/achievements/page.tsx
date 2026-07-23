@@ -4,6 +4,7 @@ import { LevelDialog } from './level-dialog'
 import { ManualGrantPanel } from './manual-grant-panel'
 import { ToggleAchievementButton } from './toggle-achievement-button'
 import { LiveRefresher } from '@/components/live/LiveRefresher'
+import { resolveAchievementIcon } from '@/utils/achievement-icons'
 
 const CATEGORY_LABELS: Record<string, string> = {
   visits: 'Visites',
@@ -43,7 +44,7 @@ export default async function AdminAchievementsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="text-left px-4 py-2">Emoji</th>
+                <th className="text-left px-4 py-2">Icône</th>
                 <th className="text-left px-4 py-2">Titre</th>
                 <th className="text-left px-4 py-2">Catégorie</th>
                 <th className="text-left px-4 py-2">Seuil</th>
@@ -63,9 +64,11 @@ export default async function AdminAchievementsPage() {
                   </td>
                 </tr>
               )}
-              {achievements.map((achievement) => (
+              {achievements.map((achievement) => {
+                const Icon = resolveAchievementIcon(achievement.emoji)
+                return (
                 <tr key={achievement.id} className="border-b last:border-0">
-                  <td className="px-4 py-2 text-lg">{achievement.emoji}</td>
+                  <td className="px-4 py-2"><Icon size={20} /></td>
                   <td className="px-4 py-2 font-medium">{achievement.title}</td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {CATEGORY_LABELS[achievement.category] ??
@@ -94,7 +97,8 @@ export default async function AdminAchievementsPage() {
                     />
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>

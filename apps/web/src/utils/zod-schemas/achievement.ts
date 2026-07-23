@@ -19,7 +19,7 @@ const achievementBaseSchema = z.object({
   points: z.coerce.number().int().min(0, 'Points minimum 0'),
   title: z.string().min(2, 'Titre requis'),
   description: z.string().optional(),
-  emoji: z.string().default('🏆'),
+  emoji: z.string().default('Trophy'), // stores a phosphor icon name, see achievement-icons.ts
   sort_order: z.coerce.number().int().default(0),
 })
 

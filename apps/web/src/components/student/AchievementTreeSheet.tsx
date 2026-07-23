@@ -2,19 +2,20 @@
 
 import { useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { Trophy } from '@phosphor-icons/react'
+import { Trophy, Lock, DoorOpen, BookOpen, Fire, CreditCard, ShoppingBag, Sparkle, Medal, type Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { Achievement, AchievementUnlockers } from '@/data/student/achievements'
+import { resolveAchievementIcon } from '@/utils/achievement-icons'
 
-const CATEGORY_META: Record<Achievement['category'], { label: string; emoji: string }> = {
-  visits: { label: 'Visites', emoji: '🚪' },
-  hours: { label: 'Heures', emoji: '📚' },
-  streak: { label: 'Série', emoji: '🔥' },
-  spend: { label: 'Dépenses', emoji: '💳' },
-  purchase_count: { label: 'Achats', emoji: '🛍️' },
-  manual: { label: 'Spécial', emoji: '🌟' },
+const CATEGORY_META: Record<Achievement['category'], { label: string; Icon: Icon }> = {
+  visits: { label: 'Visites', Icon: DoorOpen },
+  hours: { label: 'Heures', Icon: BookOpen },
+  streak: { label: 'Série', Icon: Fire },
+  spend: { label: 'Dépenses', Icon: CreditCard },
+  purchase_count: { label: 'Achats', Icon: ShoppingBag },
+  manual: { label: 'Spécial', Icon: Sparkle },
 }
 
 function socialProof(u: { totalCount: number; sampleNames: string[] } | undefined): string | null {
@@ -34,6 +35,7 @@ function TreeBranch({ achievements, unlockers }: { achievements: Achievement[]; 
       {achievements.map((a, i) => {
         const proof = socialProof(unlockers[a.id])
         const isLast = i === achievements.length - 1
+        const AchIcon = resolveAchievementIcon(a.emoji)
         return (
           <div key={a.id} className="relative flex gap-3">
             {/* connecting line */}
@@ -55,7 +57,7 @@ function TreeBranch({ achievements, unlockers }: { achievements: Achievement[]; 
                 border: a.unlocked ? '2px solid var(--synapse-green-700)' : '2px solid var(--synapse-cream-300)',
               }}
             >
-              {a.category === 'manual' && !a.unlocked ? '🔒' : a.emoji}
+              {a.category === 'manual' && !a.unlocked ? <Lock size={20} weight="fill" /> : <AchIcon size={20} weight="fill" />}
             </motion.div>
 
             <div className="flex-1 pb-8 min-w-0">
@@ -97,8 +99,8 @@ function TreeBranch({ achievements, unlockers }: { achievements: Achievement[]; 
               )}
 
               {proof && (
-                <p className="text-[10px] mt-1.5 italic" style={{ color: 'var(--synapse-brown-500)' }}>
-                  🏅 {proof}
+                <p className="text-[10px] mt-1.5 italic flex items-center gap-1" style={{ color: 'var(--synapse-brown-500)' }}>
+                  <Medal size={12} weight="fill" /> {proof}
                 </p>
               )}
             </div>
@@ -160,15 +162,19 @@ export function AchievementTreeSheet({
 
         <Tabs defaultValue={categories[0]} className="flex-1 flex flex-col min-h-0">
           <TabsList className="mx-5 mt-3 flex-wrap h-auto justify-start gap-1 bg-transparent p-0">
-            {categories.map((c) => (
-              <TabsTrigger
-                key={c}
-                value={c}
-                className="rounded-full text-xs data-[state=active]:bg-[var(--synapse-green-600)] data-[state=active]:text-white data-[state=active]:shadow-none"
-              >
-                {CATEGORY_META[c].emoji} {CATEGORY_META[c].label}
-              </TabsTrigger>
-            ))}
+            {categories.map((c) => {
+              const CatIcon = CATEGORY_META[c].Icon
+              return (
+                <TabsTrigger
+                  key={c}
+                  value={c}
+                  className="rounded-full text-xs gap-1 data-[state=active]:bg-[var(--synapse-green-600)] data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  <CatIcon size={14} weight="fill" />
+                  {CATEGORY_META[c].label}
+                </TabsTrigger>
+              )
+            })}
           </TabsList>
 
           {categories.map((c) => (

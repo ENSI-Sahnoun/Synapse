@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from 'motion/react'
 import type { Achievement } from '@/data/student/achievements'
+import { resolveAchievementIcon } from '@/utils/achievement-icons'
 
 const CATEGORY_ORDER: Achievement['category'][] = ['visits', 'hours', 'streak', 'spend', 'purchase_count', 'manual']
 
@@ -61,6 +62,7 @@ export function AchievementRoadmap({ achievements }: { achievements: Achievement
 }
 
 function UnlockedCard({ achievement, reduced }: { achievement: Achievement; reduced: boolean }) {
+  const Icon = resolveAchievementIcon(achievement.emoji)
   return (
     <div className="flex items-center gap-3">
       <div
@@ -75,7 +77,7 @@ function UnlockedCard({ achievement, reduced }: { achievement: Achievement; redu
             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
           />
         )}
-        {achievement.emoji}
+        <Icon size={20} weight="fill" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-bold">{achievement.title}</p>
@@ -96,51 +98,48 @@ function UnlockedCard({ achievement, reduced }: { achievement: Achievement; redu
 }
 
 function QuestCard({ achievement, reduced }: { achievement: Achievement; reduced: boolean }) {
+  const Icon = resolveAchievementIcon(achievement.emoji)
   const progressPercent = Math.round(achievement.progress * 100)
   const progressValue = Math.round(achievement.progress * (achievement.threshold ?? 100))
 
   return (
     <div
-      className="relative flex items-center gap-3 rounded-xl p-2.5 overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #2b2419, #3d3320)' }}
+      className="relative flex items-center gap-3 rounded-xl p-2.5 overflow-hidden border"
+      style={{ background: 'var(--synapse-cream-50)', borderColor: 'var(--synapse-cream-300)' }}
     >
       {/* ambient sweep, purely decorative — this card is seen rarely (once per profile visit) */}
       {!reduced && (
         <motion.div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.06) 45%, transparent 70%)',
+            background: 'linear-gradient(120deg, transparent 20%, rgba(47,115,80,0.06) 45%, transparent 70%)',
           }}
           animate={{ x: ['-100%', '150%'] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: 'linear', repeatDelay: 1.4 }}
         />
       )}
 
-      <div className="relative w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)' }}>
-        {!reduced && (
-          <motion.span
-            className="absolute inset-0 rounded-full"
-            animate={{ boxShadow: ['0 0 0px 0px rgba(255,216,115,0.0)', '0 0 10px 2px rgba(255,216,115,0.35)', '0 0 0px 0px rgba(255,216,115,0.0)'] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        )}
-        <span style={{ filter: 'saturate(0.4) brightness(0.85)', opacity: 0.85 }}>{achievement.emoji}</span>
+      <div
+        className="relative w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+        style={{ background: 'var(--synapse-green-100)', color: 'var(--synapse-green-700)' }}
+      >
+        <Icon size={20} weight="fill" />
       </div>
 
       <div className="relative flex-1 min-w-0">
-        <p className="text-sm font-bold" style={{ color: '#f3ead9' }}>{achievement.title}</p>
+        <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{achievement.title}</p>
         {achievement.threshold !== null && (
           <>
-            <div className="h-1.5 rounded-full overflow-hidden mt-1.5" style={{ background: 'rgba(255,255,255,0.12)' }}>
+            <div className="h-1.5 rounded-full overflow-hidden mt-1.5" style={{ background: 'var(--synapse-cream-300)' }}>
               <motion.div
                 className="h-full rounded-full"
-                style={{ background: 'linear-gradient(90deg, #ffd873, #ffb347)' }}
+                style={{ background: 'var(--synapse-green-600)' }}
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
                 transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
               />
             </div>
-            <p className="text-[10px] mt-1" style={{ color: '#bfae85' }}>
+            <p className="text-[10px] mt-1" style={{ color: 'var(--muted-foreground)' }}>
               {progressValue}/{achievement.threshold}
             </p>
           </>

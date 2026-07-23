@@ -31,6 +31,7 @@ import {
   ACHIEVEMENT_CATEGORIES,
   type CreateAchievementInput,
 } from '@/utils/zod-schemas/achievement'
+import { ACHIEVEMENT_ICON_NAMES, resolveAchievementIcon } from '@/utils/achievement-icons'
 
 interface Achievement {
   id: string
@@ -80,7 +81,7 @@ export function AchievementDialog({ mode, achievement }: Props) {
             points: 0,
             title: '',
             description: '',
-            emoji: '🏆',
+            emoji: 'Trophy',
             sort_order: 0,
           },
   })
@@ -184,12 +185,28 @@ export function AchievementDialog({ mode, achievement }: Props) {
           </div>
 
           <div className="space-y-1">
-            <Label>Emoji</Label>
-            <Input
-              {...form.register('emoji')}
-              placeholder="🏆"
-              maxLength={10}
-            />
+            <Label>Icône</Label>
+            <Select
+              value={form.watch('emoji')}
+              onValueChange={(v) => form.setValue('emoji', v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ACHIEVEMENT_ICON_NAMES.map((name) => {
+                  const Icon = resolveAchievementIcon(name)
+                  return (
+                    <SelectItem key={name} value={name}>
+                      <span className="flex items-center gap-2">
+                        <Icon size={16} />
+                        {name}
+                      </span>
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
             {form.formState.errors.emoji && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.emoji.message}
