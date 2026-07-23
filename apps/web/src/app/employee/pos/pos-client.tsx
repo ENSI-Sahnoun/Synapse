@@ -31,7 +31,7 @@ interface StudentInfo {
   loyaltyBalance: number
 }
 
-type AssignStep = 'choose' | 'scan' | 'name' | 'confirm'
+type AssignStep = 'choose' | 'scan' | 'confirm'
 
 function formatDt(amount: number) {
   return amount.toLocaleString('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' DT'
@@ -167,6 +167,18 @@ export function PosClient({
     onSuccess: ({ data }) => setNameResults(data ?? []),
     onError: ({ error }) => toast.error(error.serverError ?? 'Erreur de recherche'),
   })
+
+  // Live search-as-you-type on the assign panel's name field, debounced.
+  useEffect(() => {
+    const query = nameQuery.trim()
+    if (query.length < 2) {
+      setNameResults([])
+      return
+    }
+    const t = setTimeout(() => searchByName({ query }), 250)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nameQuery])
 
   const subtotalDt = cart.reduce((sum, item) => sum + item.product.price_dt * item.quantity, 0)
   const appliedDiscountDt =
@@ -1033,24 +1045,54 @@ export function PosClient({
               >
                 Scanner le QR étudiant
               </button>
-              <button
-                onClick={() => setAssignStep('name')}
+              <input
+                value={nameQuery}
+                onChange={(e) => setNameQuery(e.target.value)}
+                placeholder="Rechercher par nom"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
                   padding: '14px 16px',
                   border: '1px solid var(--border-default)',
                   borderRadius: 'var(--radius-lg)',
                   background: '#fff',
-                  cursor: 'pointer',
-                  textAlign: 'left',
                   fontWeight: 600,
                   fontSize: 14,
                 }}
-              >
-                Rechercher par nom
-              </button>
+              />
+              {nameQuery.trim().length >= 2 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {nameResults.map((student) => (
+                    <button
+                      key={student.studentId}
+                      onClick={() => pickStudent(student)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        border: '1px solid var(--border-default)',
+                        borderRadius: 'var(--radius-lg)',
+                        background: '#fff',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <UserAvatar fullName={student.fullName} avatarUrl={student.avatarUrl} className="h-9 w-9 flex-shrink-0" />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>{student.fullName}</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                          Solde: {student.loyaltyBalance} pts
+                          {student.phone && ` · ${student.phone}`}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                  {searchStatus === 'hasSucceeded' && nameResults.length === 0 && (
+                    <p style={{ fontSize: 13, color: 'var(--muted-foreground)', textAlign: 'center', padding: '8px 0' }}>
+                      Aucun étudiant trouvé
+                    </p>
+                  )}
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 10 }}>
                 <button
                   disabled={status === 'executing'}
@@ -1103,84 +1145,6 @@ export function PosClient({
               <span style={{ fontWeight: 700, fontSize: 17 }}>Scanner le QR</span>
             </div>
             <QrScanDialog onStudentScanned={handleStudentScanned} />
-          </div>
-        )}
-
-        {assignStep === 'name' && (
-          <div style={{ padding: '20px 20px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <button
-                onClick={() => setAssignStep('choose')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 14, padding: 0 }}
-              >
-                ← Retour
-              </button>
-              <span style={{ fontWeight: 700, fontSize: 17 }}>Rechercher par nom</span>
-            </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                if (nameQuery.trim().length >= 2) searchByName({ query: nameQuery.trim() })
-              }}
-              style={{ display: 'flex', gap: 8 }}
-            >
-              <input
-                autoFocus
-                value={nameQuery}
-                onChange={(e) => setNameQuery(e.target.value)}
-                placeholder="Nom de l'étudiant"
-                style={{ flex: 1, padding: '10px 12px', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: 14 }}
-              />
-              <button
-                type="submit"
-                disabled={nameQuery.trim().length < 2 || searchStatus === 'executing'}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  background: nameQuery.trim().length < 2 ? 'var(--border-subtle)' : 'var(--accent-brand)',
-                  color: nameQuery.trim().length < 2 ? 'var(--muted-foreground)' : '#fff',
-                  border: 'none',
-                  fontWeight: 600,
-                  fontSize: 14,
-                  cursor: nameQuery.trim().length < 2 ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {searchStatus === 'executing' ? '...' : 'Trouver'}
-              </button>
-            </form>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
-              {nameResults.map((student) => (
-                <button
-                  key={student.studentId}
-                  onClick={() => pickStudent(student)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '12px 14px',
-                    border: '1px solid var(--border-default)',
-                    borderRadius: 'var(--radius-lg)',
-                    background: '#fff',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
-                  <UserAvatar fullName={student.fullName} avatarUrl={student.avatarUrl} className="h-9 w-9 flex-shrink-0" />
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{student.fullName}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                      Solde: {student.loyaltyBalance} pts
-                      {student.phone && ` · ${student.phone}`}
-                    </div>
-                  </div>
-                </button>
-              ))}
-              {searchStatus === 'hasSucceeded' && nameResults.length === 0 && (
-                <p style={{ fontSize: 13, color: 'var(--muted-foreground)', textAlign: 'center', padding: '8px 0' }}>
-                  Aucun étudiant trouvé
-                </p>
-              )}
-            </div>
           </div>
         )}
 
